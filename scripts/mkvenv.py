@@ -281,7 +281,6 @@ def run_qt_smoke_test(venv_dir: pathlib.Path) -> None:
         'print()',
     ]
     env = {
-        'QUTE_QT_WRAPPER': 'PyQt6',
         'QT_DEBUG_PLUGINS': '1',
     }
 

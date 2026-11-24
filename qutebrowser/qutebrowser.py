@@ -40,7 +40,6 @@ check_python_version()
 
 import argparse
 from qutebrowser.misc import earlyinit
-from qutebrowser.qt import machinery
 
 
 def get_argparser():
@@ -69,11 +68,6 @@ def get_argparser():
                              "qutebrowser instance running.")
     parser.add_argument('--backend', choices=['webengine'],
                         help="Which backend to use.")
-    parser.add_argument('--qt-wrapper', choices=machinery.WRAPPERS,
-                        help="Which Qt wrapper to use. This can also be set "
-                        "via the QUTE_QT_WRAPPER environment variable. "
-                        "If both are set, the command line argument takes "
-                        "precedence.")
     parser.add_argument('--desktop-file-name',
                         default="org.qutebrowser.qutebrowser",
                         help="Set the base name of the desktop entry for this "

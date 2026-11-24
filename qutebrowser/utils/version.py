@@ -22,7 +22,6 @@ import importlib.metadata
 from typing import ClassVar, Any
 from collections.abc import Mapping, Sequence
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.core import PYQT_VERSION_STR
 from qutebrowser.qt.network import QSslSocket
 from qutebrowser.qt.gui import QOpenGLContext, QOffscreenSurface
@@ -794,8 +793,6 @@ def version_info() -> str:
         '{}: {}'.format(platform.python_implementation(),
                         platform.python_version()),
         'PyQt: {}'.format(PYQT_VERSION_STR),
-        '',
-        str(machinery.INFO),
         '',
     ]
 

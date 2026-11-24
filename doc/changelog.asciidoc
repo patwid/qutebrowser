@@ -34,7 +34,9 @@ Removed
     `qute://warning/webkit` page were removed.
 - Support for Qt 5 (PyQt5) and for Qt 6.2 to 6.7 was removed, Qt 6.8 / PyQt 6.8
   or newer is now required. As a consequence:
-  * `PyQt5` is not accepted as `--qt-wrapper` / `QUTE_QT_WRAPPER` value anymore.
+  * The `--qt-wrapper` argument and the `QUTE_QT_WRAPPER` environment variable
+    were removed, as PyQt6 is the only supported Qt wrapper. The "Qt wrapper"
+    line is gone from `:version`.
   * The Qt 5.15-only settings `qt.workarounds.locale` and
     `colors.webpage.darkmode.policy.page` were removed.
   * The `js-string-replaceall` value for `content.site_specific_quirks.skip`

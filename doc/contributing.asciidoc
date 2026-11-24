@@ -680,11 +680,6 @@ Return:
     parties is always correct. Mypy will raise a new issue if it spots an
     "ignore" statement which is no longer needed because the underlying
     issue has been resolved.
-  - There are a handful of variables in `qutebrowser/qt/machinery.py` (such as
-    `machinery.USE_PYQT6`) describing the Qt wrapper in use. Mypy needs to be
-    https://mypy.readthedocs.io/en/latest/command_line.html#cmdoption-mypy-always-true[told]
-    to treat those as constant values, which the `mypy-pyqt6` tox job takes care
-    of.
 
 Checklists
 ----------

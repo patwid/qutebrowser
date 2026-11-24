@@ -117,9 +117,6 @@ def whitelist_generator():  # noqa: C901
     yield 'ParserDictType'
     yield 'qutebrowser.config.configutils.Values._VmapKeyType'
 
-    # used in tests
-    yield 'qutebrowser.qt.machinery.SelectionReason.fake'
-
     # For completeness
     for name in list(qtutils.LibraryPath):
         yield f'qutebrowser.utils.qtutils.LibraryPath.{name}'

@@ -16,7 +16,6 @@ import dataclasses
 from typing import Any
 from collections.abc import Sequence
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.core import Qt
 from qutebrowser.qt.widgets import (QDialog, QPushButton, QHBoxLayout, QVBoxLayout, QLabel,
                              QMessageBox, QWidget)
@@ -55,8 +54,6 @@ def _error_text(
     text = (f"<b>Failed to start with the {backend.name} backend!</b>"
             f"<p>qutebrowser tried to start with the {backend.name} backend but "
             f"failed because {because}.</p>{text}")
-
-    text += f"<p>{machinery.INFO.to_html()}</p>"
     return text
 
 
@@ -199,13 +196,6 @@ class _BackendProblemChecker:
         """Ask if there are Chromium downgrades or a Qt 5 -> 6 upgrade."""
         versions = version.qtwebengine_versions(avoid_init=True)
         change = configfiles.state.chromium_version_changed
-        info = f"<br><br>{machinery.INFO.to_html()}"
-        if machinery.INFO.reason == machinery.SelectionReason.auto:
-            info += (
-                "<br><br>"
-                "You can use <tt>--qt-wrapper</tt> or set <tt>QUTE_QT_WRAPPER</tt> "
-                "in your environment to override this."
-            )
         webengine_data_dir = os.path.join(standarddir.data(), "webengine")
 
         if change == configfiles.VersionChange.major:
@@ -220,7 +210,7 @@ class _BackendProblemChecker:
                 "This affects page data such as cookies, but not data managed by "
                 "qutebrowser, such as your configuration or <tt>:open</tt> history.<br>"
                 f"The affected data is in <tt>{webengine_data_dir}</tt>."
-            ) + info
+            )
         elif change == configfiles.VersionChange.downgrade:
             icon = QMessageBox.Icon.Warning
             text = (
@@ -232,7 +222,7 @@ class _BackendProblemChecker:
                 "This affects page data such as cookies, but not data managed by "
                 "qutebrowser, such as your configuration or <tt>:open</tt> history.<br>"
                 f"The affected data is in <tt>{webengine_data_dir}</tt>."
-            ) + info
+            )
         else:
             return
 

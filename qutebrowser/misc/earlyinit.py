@@ -30,10 +30,6 @@ except ImportError:
 
 # NOTE: No qutebrowser or PyQt import should be done here, as some early
 # initialization needs to take place before that!
-#
-# The machinery module is an exception, as it also is required to never import Qt
-# itself at import time.
-from qutebrowser.qt import machinery
 
 
 START_TIME = datetime.datetime.now()
@@ -142,12 +138,9 @@ def _fatal_qt_error(text: str) -> NoReturn:
     sys.exit(1)
 
 
-def check_qt_available(info: machinery.SelectionInfo) -> None:
+def check_qt_available() -> None:
     """Check if Qt core modules (QtCore/QtWidgets) are installed."""
-    if info.wrapper is None:
-        _fatal_qt_error(f"No Qt wrapper was importable.\n\n{info}")
-
-    packages = [f'{info.wrapper}.QtCore', f'{info.wrapper}.QtWidgets']
+    packages = ['PyQt6.QtCore', 'PyQt6.QtWidgets']
     for name in packages:
         try:
             importlib.import_module(name)
@@ -157,7 +150,6 @@ def check_qt_available(info: machinery.SelectionInfo) -> None:
             text = text.replace('</b>', '')
             text = text.replace('<br />', '\n')
             text = text.replace('%ERROR%', str(e))
-            text += '\n\n' + str(info)
             _fatal_qt_error(text)
 
 
@@ -240,7 +232,7 @@ def check_libraries():
     }
 
     for subpkg in ['QtQml', 'QtOpenGL', 'QtDBus']:
-        package = f'{machinery.INFO.wrapper}.{subpkg}'
+        package = f'PyQt6.{subpkg}'
         modules[package] = _missing_str(package)
 
     _check_modules(modules)
@@ -314,12 +306,10 @@ def early_init(args):
     # First we initialize the faulthandler as early as possible, so we
     # theoretically could catch segfaults occurring later during earlyinit.
     init_faulthandler()
-    # Then we configure the selected Qt wrapper
-    info = machinery.init(args)
     # Here we check if QtCore is available, and if not, print a message to the
     # console or via Tk.
-    check_qt_available(info)
-    # Init Qt logging after machinery is initialized
+    check_qt_available()
+    # Init Qt logging once we know Qt is available
     init_qtlog(args)
     # Now we can be sure QtCore is available, so we can print dialogs on
     # errors, so people only using the GUI notice them as well.

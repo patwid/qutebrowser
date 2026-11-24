@@ -107,11 +107,7 @@ def get_lib_path(executable, name, required=True):
         return data
     elif prefix == 'ImportError':
         if required:
-            wrapper = os.environ.get("QUTE_QT_WRAPPER", "unset")
-            raise Error(
-                f"Could not import {name} with {executable}: {data} "
-                f"(QUTE_QT_WRAPPER: {wrapper})"
-            )
+            raise Error(f"Could not import {name} with {executable}: {data}")
         return None
     else:
         raise ValueError("Unexpected output: {!r}".format(output))
@@ -216,8 +212,7 @@ def main():
     executable = get_tox_syspython(args.path) if args.tox else sys.executable
 
     venv_path = get_venv_lib_path(args.path)
-    wrapper = os.environ["QUTE_QT_WRAPPER"]
-    link_pyqt(executable, venv_path, version=wrapper[-1])
+    link_pyqt(executable, venv_path, version="6")
 
 
 if __name__ == '__main__':

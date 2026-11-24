@@ -22,7 +22,6 @@ import pytest
 import pytest_mock
 import hypothesis
 import hypothesis.strategies
-from qutebrowser.qt import machinery
 from qutebrowser.qt.core import QUrl
 from qutebrowser.qt.webenginecore import QWebEngineProfile
 
@@ -1201,10 +1200,6 @@ def test_version_info(params, stubs, monkeypatch, config_stub):
         'sql.version': lambda: 'SQLITE VERSION',
         '_uptime': lambda: datetime.timedelta(hours=1, minutes=23, seconds=45),
         'config.instance.yaml_loaded': params.autoconfig_loaded,
-        'machinery.INFO': machinery.SelectionInfo(
-            wrapper='QT WRAPPER',
-            reason=machinery.SelectionReason.fake
-        ),
     }
 
     version.opengl_info.cache_clear()
@@ -1293,8 +1288,6 @@ def test_version_info(params, stubs, monkeypatch, config_stub):
 
         PYTHON IMPLEMENTATION: PYTHON VERSION
         PyQt: PYQT VERSION
-
-        Qt wrapper: QT WRAPPER (via fake)
 
         MODULE VERSION 1
         MODULE VERSION 2

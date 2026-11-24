@@ -7,22 +7,10 @@
 """Wrapped Qt imports for Qt WebEngine Widgets.
 
 All code in qutebrowser should use this module instead of importing from
-PyQt/PySide directly. This allows supporting different Qt wrappers.
-
-See machinery.py for details on how Qt wrapper selection works.
+PyQt directly.
 
 Any API exported from this module is based on the Qt 6 API:
 https://doc.qt.io/qt-6/qtwebenginewidgets-index.html
 """
 
-from qutebrowser.qt import machinery
-
-machinery.init_implicit()
-
-
-if machinery.USE_PYSIDE6:
-    from PySide6.QtWebEngineWidgets import *
-elif machinery.USE_PYQT6:
-    from PyQt6.QtWebEngineWidgets import *
-else:
-    raise machinery.UnknownWrapper()
+from PyQt6.QtWebEngineWidgets import *
