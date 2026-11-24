@@ -8,8 +8,6 @@ This entire file is a great WORKAROUND for https://bugreports.qt.io/browse/QTBUG
 and the fact we can't just simply disable the hangouts extension:
 https://bugreports.qt.io/browse/QTBUG-118452
 
-It's yet another big hack. If you think this is bad, look at elf.py instead.
-
 The name of this file might or might not be inspired by a certain vegetable,
 as well as the "joy" this bug has caused me.
 
@@ -37,7 +35,7 @@ from collections.abc import Iterator
 from qutebrowser.config import config
 from qutebrowser.misc import binparsing, objects
 from qutebrowser.qt import core
-from qutebrowser.utils import qtutils, standarddir, version, utils, log, message
+from qutebrowser.utils import qtutils, standarddir, utils, log, message
 from qutebrowser.qt.webenginecore import QWebEngineProfile
 
 
@@ -219,19 +217,12 @@ def copy_webengine_resources() -> pathlib.Path | None:
         log.misc.debug(f"Removing existing {work_dir}")
         shutil.rmtree(work_dir)
 
-    versions = version.qtwebengine_versions(avoid_init=True)
-    if not (
-        # https://bugreports.qt.io/browse/QTBUG-118157
-        versions.webengine == utils.VersionNumber(6, 6)
-        # https://bugreports.qt.io/browse/QTBUG-113369
-        or (
-            utils.VersionNumber(6, 5) <= versions.webengine < utils.VersionNumber(6, 5, 3)
-            and config.val.colors.webpage.darkmode.enabled
-        )
-        # newer hardcoded versions handled in webenginesettings.py
+    if (
         # https://github.com/qutebrowser/qutebrowser/issues/8257
-        or config.val.qt.workarounds.disable_hangouts_extension
-    ) or hasattr(QWebEngineProfile, "extensionManager"):  # Qt 6.10+
+        not config.val.qt.workarounds.disable_hangouts_extension
+        # Qt 6.10+, handled in webenginesettings.py
+        or hasattr(QWebEngineProfile, "extensionManager")
+    ):
         # No patching needed
         return None
 
@@ -288,8 +279,8 @@ def patch_webengine() -> Iterator[None]:
         return
 
     try:
-        # Still calling this on Qt != 6.6 so that the directory is cleaned up
-        # when not needed anymore.
+        # Always calling this so that the directory is cleaned up when not needed
+        # anymore.
         webengine_resources_path = copy_webengine_resources()
     except OSError as e:
         _error(e, "Failed to copy webengine resources, not applying quirk")

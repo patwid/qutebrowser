@@ -395,8 +395,7 @@ qt.workarounds.disable_hangouts_extension:
     which appears to work without this extension.
 
     Note this setting gets ignored and the Hangouts extension is always
-    disabled to avoid crashes on Qt 6.5.0 to 6.5.3 if dark mode is enabled,
-    as well as on Qt 6.6.0 and Qt 6.11.0.
+    disabled to avoid crashes on Qt 6.11.0.
 
 qt.workarounds.disable_accessibility:
   type:
@@ -613,7 +612,6 @@ content.site_specific_quirks.skip:
       - ua-gnome-gitlab
       - js-whatsapp-web
       - js-discord
-      - js-array-at
       - misc-krunker
       - misc-mathml-darkmode
     none_ok: true
@@ -680,7 +678,7 @@ content.headers.referer:
   type:
     name: String
     valid_values:
-      - always: "Always send the Referer. With QtWebEngine 6.2+, this value is
+      - always: "Always send the Referer. With QtWebEngine, this value is
           unavailable and will act like `same-domain`."
       - never: "Never send the Referer. This is not recommended, as some sites
           may break."
@@ -887,9 +885,6 @@ content.javascript.clipboard:
 
     With QtWebEngine, writing the clipboard as response to a user interaction
     is always allowed.
-
-    On Qt < 6.8, the `ask` setting is equivalent to `none` and permission needs
-    to be granted manually via this setting.
 
 content.javascript.can_close_tabs:
   deleted: true
@@ -3219,9 +3214,6 @@ colors.webpage.darkmode.enabled:
   desc: >-
     Render all web contents using a dark theme.
 
-    On QtWebEngine < 6.7, this setting requires a restart and does not support
-    URL patterns, only the global setting is applied.
-
     Example configurations from Chromium's `chrome://flags`:
 
     - "With simple HSL/CIELAB/RGB-based inversion": Set
@@ -3276,9 +3268,8 @@ colors.webpage.darkmode.policy.images:
       - always: Apply dark mode filter to all images.
       - never: Never apply dark mode filter to any images.
       - smart: "Apply dark mode based on image content."
-      - smart-simple: "On QtWebEngine 6.6, use a simpler algorithm for smart mode (based
-      on numbers of colors and transparency), rather than an ML-based model.
-      Same as 'smart' on older QtWebEnigne versions."
+      - smart-simple: "Use a simpler algorithm for smart mode (based on numbers of
+      colors and transparency), rather than an ML-based model."
   desc: >-
       Which images to apply dark mode to.
   restart: true

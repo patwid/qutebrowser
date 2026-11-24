@@ -272,7 +272,7 @@ class TestParseYamlBackend:
     def test_dict(self, monkeypatch, has_new_version, expected):
         data = self._yaml("""
             backend:
-              QtWebEngine: Qt 6.3
+              QtWebEngine: Qt 6.9
         """)
         monkeypatch.setattr(configdata.qtutils, 'version_check',
                             lambda v: has_new_version)

@@ -112,7 +112,7 @@ Currently, the following tox environments are available:
 
 * Tests using https://www.pytest.org[pytest]:
   - `py310`, `py311`, ...: Run pytest for python 3.10/3.11/... with the system-wide PyQt.
-  - `py310-pyqt62`, ..., `py314-pyqt611`: Run pytest with the given PyQt version (`py311-*` etc. also works).
+  - `py310-pyqt68`, ..., `py314-pyqt611`: Run pytest with the given PyQt version (`py311-*` etc. also works).
   - `py314-pyqt611-cov`: Run with coverage support (other Python/PyQt versions work too).
 * `flake8`: Run various linting checks via https://pypi.python.org/pypi/flake8[flake8].
 * `vulture`: Run https://pypi.python.org/pypi/vulture[vulture] to find

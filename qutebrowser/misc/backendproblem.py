@@ -140,11 +140,6 @@ class _BackendProblemChecker:
         text = ("Could not initialize QtNetwork SSL support. This only "
                 "affects downloads and :adblock-update.")
 
-        text += ("\nHint: If installed via mkvenv.py on a system without "
-                 "OpenSSL 3.x (e.g. Ubuntu 20.04), you can use --pyqt-version 6.4 "
-                 "to get an older Qt still compatible with OpenSSL 1.1 (at the "
-                 "expense of running an older QtWebEngine/Chromium)")
-
         log.init.warning(text)
 
     def _check_backend_modules(self) -> None:
@@ -253,37 +248,6 @@ class _BackendProblemChecker:
         if response != QMessageBox.StandardButton.Ok:
             sys.exit(usertypes.Exit.err_init)
 
-    def _check_software_rendering(self) -> None:
-        """Avoid crashing software rendering settings.
-
-        WORKAROUND for https://bugreports.qt.io/browse/QTBUG-103372
-        Fixed with QtWebEngine 6.3.1.
-        """
-        self._assert_backend(usertypes.Backend.QtWebEngine)
-        versions = version.qtwebengine_versions(avoid_init=True)
-
-        if versions.webengine != utils.VersionNumber(6, 3):
-            return
-
-        if os.environ.get('QT_QUICK_BACKEND') != 'software':
-            return
-
-        text = ("You can instead force software rendering on the Chromium level (sets "
-                "<tt>qt.force_software_rendering</tt> to <tt>chromium</tt> instead of "
-                "<tt>qt-quick</tt>).")
-
-        button = _Button("Force Chromium software rendering",
-                         'qt.force_software_rendering',
-                         'chromium')
-        self._show_dialog(
-            backend=usertypes.Backend.QtWebEngine,
-            because="a Qt 6.3.0 bug causes instant crashes with Qt Quick software rendering",
-            text=text,
-            buttons=[button],
-        )
-
-        raise utils.Unreachable
-
     def _force_wayland_hardware_acceleration(self) -> None:
         """Set environment variable so hardware acceleration works on Wayland.
 
@@ -352,7 +316,6 @@ class _BackendProblemChecker:
         self._check_backend_modules()
         self._handle_ssl_support()
         self._handle_serviceworker_nuking()
-        self._check_software_rendering()
         self._force_wayland_hardware_acceleration()
         self._fix_wayland_amd_gbm()
         self._confirm_chromium_version_changes()

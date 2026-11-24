@@ -4,84 +4,27 @@
 
 """Get darkmode arguments to pass to Qt.
 
-Overview of blink setting names based on the Qt version:
+Dark mode is turned on/off at runtime via QWebEngineSettings (see
+webenginesettings.py). Everything else is configured via Chromium commandline
+switches, which is what this module takes care of:
 
-Qt 6.2
-------
-
-Baseline for the settings we support (same as the last Qt 5.15 releases):
-
-- "forceDarkModeEnabled" is passed via --blink-settings, all other settings via the
-  separate --dark-mode-settings switch:
-  https://chromium-review.googlesource.com/c/chromium/src/+/2390588
-- "prefers color scheme" needs to be 0 for dark and 1 for light.
-
-Qt 6.3
-------
-
-- New IncreaseTextContrast:
-  https://chromium-review.googlesource.com/c/chromium/src/+/2893236
-  (UNSUPPORTED because dropped in 6.5)
-
-Qt 6.4
-------
-
-- Renamed TextBrightnessThreshold to ForegroundBrightnessThreshold
-
-  "Correct brightness threshold of darkmode color classifier"
-  https://chromium-review.googlesource.com/c/chromium/src/+/3344100
-
-  "Rename text_classifier to foreground_classifier"
-  https://chromium-review.googlesource.com/c/chromium/src/+/3226389
-
-- Grayscale darkmode support removed:
-  https://chromium-review.googlesource.com/c/chromium/src/+/3238985
-
-Qt 6.5
-------
-
-- IncreaseTextContrast removed:
-  https://chromium-review.googlesource.com/c/chromium/src/+/3821841
-
-Qt 6.6
-------
-
-- New alternative image classifier:
-  https://chromium-review.googlesource.com/c/chromium/src/+/3987823
-
-Qt 6.7
-------
-
-Enabling dark mode can now be done at runtime via QWebEngineSettings.
+- All dark mode settings go to the --dark-mode-settings switch, see Chromium's
+  dark_mode_settings.h.
+- "prefers color scheme" is passed via --blink-settings, and needs to be 0 for dark
+  and 1 for light.
 """
 
-import os
-import copy
-import enum
 import dataclasses
 import collections
 from typing import (Any, TypeAlias)
-from collections.abc import Iterator, Mapping, MutableMapping, Sequence
+from collections.abc import Mapping, Sequence
 
 from qutebrowser.config import config
-from qutebrowser.utils import usertypes, utils, log, version
-
-# Note: We *cannot* initialize QtWebEngine (even implicitly) in here, but checking for
-# the enum attribute seems to be okay.
-from qutebrowser.qt.webenginecore import QWebEngineSettings
+from qutebrowser.utils import usertypes
 
 
 _BLINK_SETTINGS = 'blink-settings'
-
-
-class Variant(enum.Enum):
-
-    """A dark mode variant."""
-
-    qt_62 = enum.auto()
-    qt_64 = enum.auto()
-    qt_66 = enum.auto()
-    qt_67 = enum.auto()
+_DARK_MODE_SETTINGS = 'dark-mode-settings'
 
 
 # Mapping from a colors.webpage.darkmode.algorithm setting value to
@@ -112,11 +55,6 @@ _IMAGE_CLASSIFIERS = {
     'smart-simple': 1,  # kTransparencyAndNumColors
 }
 
-_BOOLS = {
-    True: 'true',
-    False: 'false',
-}
-
 
 @dataclasses.dataclass
 class _Setting:
@@ -138,111 +76,22 @@ class _Setting:
             return None
         return self.chromium_key, self._value_str(value)
 
-    def with_prefix(self, prefix: str) -> '_Setting':
-        return _Setting(
-            option=self.option,
-            chromium_key=prefix + self.chromium_key,
-            mapping=self.mapping,
-        )
 
+_SETTINGS: Sequence[_Setting] = [
+    _Setting('algorithm', 'InversionAlgorithm', _ALGORITHMS),
 
-class _Definition:
+    _Setting('policy.images', 'ImagePolicy', _IMAGE_POLICIES),
+    _Setting('contrast', 'ContrastPercent'),
 
-    """A collection of dark mode setting names for the given QtWebEngine version.
+    _Setting('threshold.foreground', 'ForegroundBrightnessThreshold'),
+    _Setting('threshold.background', 'BackgroundBrightnessThreshold'),
 
-    Attributes:
-        _settings: A list of _Setting objects for this definition.
-        mandatory: A set of settings which should always be passed to Chromium, even if
-                   not customized from the default.
-        prefix: A string prefix to add to all Chromium setting names.
-        switch_names: A dict mapping option names to the Chromium switch they belong to.
-                      None is used as fallback key, i.e. for settings not in the dict.
-    """
-
-    def __init__(
-            self,
-            *args: _Setting,
-            mandatory: set[str],
-            prefix: str,
-            switch_names: Mapping[str | None, str] | None = None,
-    ) -> None:
-        self._settings = args
-        self.mandatory = mandatory
-        self.prefix = prefix
-
-        if switch_names is not None:
-            self._switch_names = switch_names
-        else:
-            self._switch_names = {None: _BLINK_SETTINGS}
-
-    def prefixed_settings(self) -> Iterator[tuple[str, _Setting]]:
-        """Get all "prepared" settings.
-
-        Yields tuples which contain the Chromium setting key (e.g. 'blink-settings' or
-        'dark-mode-settings') and the corresponding _Settings object.
-        """
-        for setting in self._settings:
-            switch = self._switch_names.get(setting.option, self._switch_names[None])
-            yield switch, setting.with_prefix(self.prefix)
-
-    def copy_add_setting(self, setting: _Setting) -> '_Definition':
-        """Get a new _Definition object with an additional setting."""
-        new = copy.copy(self)
-        new._settings = self._settings + (setting,)  # pylint: disable=protected-access
-        return new
-
-    def copy_remove_setting(self, name: str) -> '_Definition':
-        """Get a new _Definition object with a setting removed."""
-        new = copy.copy(self)
-        filtered_settings = tuple(s for s in self._settings if s.option != name)
-        if len(filtered_settings) == len(self._settings):
-            raise ValueError(f"Setting {name} not found in {self}")
-        new._settings = filtered_settings  # pylint: disable=protected-access
-        return new
-
-    def copy_replace_setting(self, option: str, chromium_key: str) -> '_Definition':
-        """Get a new _Definition object with `old` replaced by `new`.
-
-        If `old` is not in the settings list, raise ValueError.
-        """
-        new = copy.deepcopy(self)
-
-        for setting in new._settings:  # pylint: disable=protected-access
-            if setting.option == option:
-                setting.chromium_key = chromium_key
-                return new
-
-        raise ValueError(f"Setting {option} not found in {self}")
-
+    _Setting('policy.images', 'ImageClassifierPolicy', _IMAGE_CLASSIFIERS),
+]
 
 # Our defaults for policy.images are different from Chromium's, so we mark it as
 # mandatory setting.
-
-_DEFINITIONS: MutableMapping[Variant, _Definition] = {
-    Variant.qt_62: _Definition(
-        # Different switch for settings
-        _Setting('enabled', 'forceDarkModeEnabled', _BOOLS),
-        _Setting('algorithm', 'InversionAlgorithm', _ALGORITHMS),
-
-        _Setting('policy.images', 'ImagePolicy', _IMAGE_POLICIES),
-        _Setting('contrast', 'ContrastPercent'),
-
-        _Setting('threshold.foreground', 'TextBrightnessThreshold'),
-        _Setting('threshold.background', 'BackgroundBrightnessThreshold'),
-
-        mandatory={'enabled', 'policy.images'},
-        prefix='',
-        switch_names={'enabled': _BLINK_SETTINGS, None: 'dark-mode-settings'},
-    ),
-}
-_DEFINITIONS[Variant.qt_64] = _DEFINITIONS[Variant.qt_62].copy_replace_setting(
-    'threshold.foreground', 'ForegroundBrightnessThreshold',
-)
-_DEFINITIONS[Variant.qt_66] = _DEFINITIONS[Variant.qt_64].copy_add_setting(
-    _Setting('policy.images', 'ImageClassifierPolicy', _IMAGE_CLASSIFIERS),
-)
-# Qt 6.7: Enabled is now handled dynamically via QWebEngineSettings
-_DEFINITIONS[Variant.qt_67] = _DEFINITIONS[Variant.qt_66].copy_remove_setting('enabled')
+_MANDATORY = {'policy.images'}
 
 
 _SettingValType: TypeAlias = str | usertypes.Unset
@@ -252,35 +101,11 @@ _PREFERRED_COLOR_SCHEME_DEFINITION: Mapping[_SettingValType, str] = {
 }
 
 
-def _variant(versions: version.WebEngineVersions) -> Variant:
-    """Get the dark mode variant based on the underlying Qt version."""
-    env_var = os.environ.get('QUTE_DARKMODE_VARIANT')
-    if env_var is not None:
-        try:
-            return Variant[env_var]
-        except KeyError:
-            log.init.warning(f"Ignoring invalid QUTE_DARKMODE_VARIANT={env_var}")
-
-    if (
-        # We need a PyQt 6.7 as well with the API available, otherwise we can't turn on
-        # dark mode later in webenginesettings.py.
-        versions.webengine >= utils.VersionNumber(6, 7) and
-        hasattr(QWebEngineSettings.WebAttribute, 'ForceDarkMode')
-    ):
-        return Variant.qt_67
-    elif versions.webengine >= utils.VersionNumber(6, 6):
-        return Variant.qt_66
-    elif versions.webengine >= utils.VersionNumber(6, 4):
-        return Variant.qt_64
-    return Variant.qt_62
-
-
 def settings(
         *,
-        versions: version.WebEngineVersions,
         special_flags: Sequence[str],
 ) -> Mapping[str, Sequence[tuple[str, str]]]:
-    """Get necessary blink settings to configure dark mode for QtWebEngine.
+    """Get necessary Chromium settings to configure dark mode for QtWebEngine.
 
     Args:
        Existing '--blink-settings=...' flags, if any.
@@ -290,9 +115,6 @@ def settings(
         to a sequence of tuples, each tuple being a key/value pair to pass to that
         setting.
     """
-    variant = _variant(versions)
-    log.init.debug(f"Darkmode variant: {variant.name}")
-
     result: Mapping[str, list[tuple[str, str]]] = collections.defaultdict(list)
 
     blink_settings_flag = f'--{_BLINK_SETTINGS}='
@@ -311,21 +133,18 @@ def settings(
     if not config.val.colors.webpage.darkmode.enabled:
         return result
 
-    definition = _DEFINITIONS[variant]
-
-    for switch_name, setting in definition.prefixed_settings():
+    for setting in _SETTINGS:
         # To avoid blowing up the commandline length, we only pass modified
         # settings to Chromium, as our defaults line up with Chromium's.
-        # However, we always pass enabled/algorithm to make sure dark mode gets
-        # actually turned on.
+        # However, we always pass mandatory settings, where our defaults differ.
         value = config.instance.get(
             'colors.webpage.darkmode.' + setting.option,
-            fallback=setting.option in definition.mandatory)
+            fallback=setting.option in _MANDATORY)
         if isinstance(value, usertypes.Unset):
             continue
 
         chromium_tuple = setting.chromium_tuple(value)
         if chromium_tuple is not None:
-            result[switch_name].append(chromium_tuple)
+            result[_DARK_MODE_SETTINGS].append(chromium_tuple)
 
     return result

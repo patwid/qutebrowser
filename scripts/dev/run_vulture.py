@@ -18,7 +18,7 @@ import vulture
 
 import qutebrowser.app  # pylint: disable=unused-import
 from qutebrowser.extensions import loader
-from qutebrowser.misc import objects, sql, nativeeventfilter
+from qutebrowser.misc import objects, sql
 from qutebrowser.utils import utils, version, qtutils
 from qutebrowser.browser import qutescheme
 from qutebrowser.config import configtypes
@@ -97,9 +97,6 @@ def whitelist_generator():  # noqa: C901
     for dist in version.Distribution:
         yield 'qutebrowser.utils.version.Distribution.{}'.format(dist.name)
 
-    for opcode in nativeeventfilter.XcbInputOpcodes:
-        yield f'qutebrowser.misc.nativeeventfilter.XcbInputOpcodes.{opcode.name}'
-
     # attrs
     yield 'qutebrowser.browser.greasemonkey.MatchingScripts.idle'
     yield 'qutebrowser.browser.network.networkmanager.ProxyId.hostname'
@@ -122,13 +119,6 @@ def whitelist_generator():  # noqa: C901
 
     # used in tests
     yield 'qutebrowser.qt.machinery.SelectionReason.fake'
-
-    # ELF
-    yield 'qutebrowser.misc.elf.Endianness.big'
-    for name in ['phoff', 'ehsize', 'phentsize', 'phnum']:
-        yield f'qutebrowser.misc.elf.Header.{name}'
-    for name in ['addr', 'addralign', 'entsize']:
-        yield f'qutebrowser.misc.elf.SectionHeader.{name}'
 
     # For completeness
     for name in list(qtutils.LibraryPath):

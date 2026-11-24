@@ -4,7 +4,7 @@
 
 """Utilities for parsing binary files.
 
-Used by elf.py as well as pakjoy.py.
+Used by pakjoy.py.
 """
 
 import struct

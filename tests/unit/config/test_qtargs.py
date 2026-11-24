@@ -47,7 +47,7 @@ def version_patcher(monkeypatch):
 @pytest.fixture
 def reduce_args(config_stub, version_patcher, monkeypatch):
     """Make sure no --disable-shared-workers/referer argument get added."""
-    version_patcher('6.2.0')
+    version_patcher('6.8.2')
     config_stub.val.content.headers.referer = 'always'
     config_stub.val.scrolling.bar = 'never'
     config_stub.val.qt.chromium.experimental_web_platform_features = 'never'
@@ -78,7 +78,12 @@ class TestQtArgs:
     ])
     def test_qt_args(self, request, monkeypatch, config_stub, args, expected, parser):
         """Test commandline with no Qt arguments given."""
-        expected.append("--touch-events=disabled")  # passed unconditionally
+        # passed unconditionally
+        expected.insert(1, "--webEngineArgs")
+        expected += [
+            "--disable-features=DocumentPictureInPictureAPI",
+            "--touch-events=disabled",
+        ]
         parsed = parser.parse_args(args)
         assert qtargs.qt_args(parsed) == expected
 
@@ -142,8 +147,8 @@ class TestWebEngineArgs:
 
     @pytest.mark.parametrize('backend, qt_version, debug_flag, expected', [
         # QtWebEngine: Enable with -D stack, do nothing without it.
-        (usertypes.Backend.QtWebEngine, '6.2.0', True, True),
-        (usertypes.Backend.QtWebEngine, '6.2.0', False, None),
+        (usertypes.Backend.QtWebEngine, '6.8.2', True, True),
+        (usertypes.Backend.QtWebEngine, '6.8.2', False, None),
     ])
     def test_in_process_stack_traces(self, monkeypatch, parser, backend, version_patcher,
                                      qt_version, debug_flag, expected):
@@ -166,13 +171,11 @@ class TestWebEngineArgs:
     @pytest.mark.parametrize(
         'qt_version, value, has_arg',
         [
-            ('6.5.3', 'auto', True),
-            ('6.6.0', 'auto', True),
-            ('6.7.0', 'auto', True),
+            ('6.8.0', 'auto', True),
             ('6.8.1', 'auto', True),
             ('6.8.2', 'auto', False),
-            ('6.5.3', 'always', True),
-            ('6.5.3', 'never', False),
+            ('6.8.1', 'always', True),
+            ('6.8.1', 'never', False),
             ('6.8.2', 'always', True),
         ],
     )
@@ -422,7 +425,8 @@ class TestWebEngineArgs:
             arg for arg in args
             if arg.startswith(qtargs._DISABLE_FEATURES)
         ]
-        assert disable_features_args == [flag]
+        # DocumentPictureInPictureAPI is always disabled
+        assert disable_features_args == [flag + ',DocumentPictureInPictureAPI']
 
     def test_blink_settings_passthrough(self, parser, config_stub):
         config_stub.val.colors.webpage.darkmode.enabled = True
@@ -435,17 +439,9 @@ class TestWebEngineArgs:
             arg for arg in args
             if arg.startswith(qtargs._BLINK_SETTINGS)
         ]
-        assert len(blink_settings_args) == 1
-        assert blink_settings_args[0].startswith('--blink-settings=foo=bar,')
+        assert blink_settings_args == ['--blink-settings=foo=bar']
 
     @pytest.mark.parametrize('qt_version, disabled', [
-        # Qt 6.6
-        ('6.6.3', None),
-        # Qt 6.7
-        ('6.7.0', "DocumentPictureInPictureAPI"),
-        ('6.7.1', "DocumentPictureInPictureAPI"),
-        ('6.7.2', "DocumentPictureInPictureAPI"),
-        ('6.7.3', "DocumentPictureInPictureAPI"),
         # Qt 6.8
         ('6.8.0', "DocumentPictureInPictureAPI"),
         ('6.8.1', "DocumentPictureInPictureAPI"),
@@ -480,30 +476,22 @@ class TestWebEngineArgs:
         parsed = parser.parse_args([])
         args = qtargs.qt_args(parsed)
 
-        assert ('--disable-features=HardwareMediaKeyHandling' in args) != enabled
+        disable_features_args = [
+            arg for arg in args
+            if arg.startswith(qtargs._DISABLE_FEATURES)
+        ]
+        assert len(disable_features_args) == 1
+        features = disable_features_args[0].split('=', maxsplit=1)[1].split(',')
+        assert ('HardwareMediaKeyHandling' in features) != enabled
 
-    @pytest.mark.parametrize('variant, expected', [
-        (
-            'qt_62',
-            [
-                '--blink-settings=forceDarkModeEnabled=true',
-                '--dark-mode-settings=ImagePolicy=2',
-            ]
-        ),
-    ])
-    def test_dark_mode_settings(self, config_stub, monkeypatch, parser,
-                                variant, expected):
-        from qutebrowser.browser.webengine import darkmode
-        monkeypatch.setattr(
-            darkmode, '_variant', lambda _versions: darkmode.Variant[variant])
-
+    def test_dark_mode_settings(self, config_stub, parser):
         config_stub.val.colors.webpage.darkmode.enabled = True
 
         parsed = parser.parse_args([])
         args = qtargs.qt_args(parsed)
 
-        for arg in expected:
-            assert arg in args
+        assert '--dark-mode-settings=ImagePolicy=2,ImageClassifierPolicy=0' in args
+        assert not any(arg.startswith(qtargs._BLINK_SETTINGS) for arg in args)
 
     @pytest.mark.parametrize('value, has_arg', [
         ('always', True),
@@ -519,25 +507,10 @@ class TestWebEngineArgs:
         args = qtargs.qt_args(parsed)
         assert ('--enable-experimental-web-platform-features' in args) == has_arg
 
-    @pytest.mark.parametrize("version, expected", [
-        ('6.2.4', False),
-        ('6.3.1', False),
-        ('6.4.0', True),
-        ('6.5.0', True),
-    ])
-    def test_webengine_args(self, version_patcher, parser, version, expected):
-        known_chromium = version_patcher(version)
-        if not known_chromium:
-            pytest.skip("Don't know associated Chromium version")
-
+    def test_webengine_args(self, parser):
         parsed = parser.parse_args([])
         args = qtargs.qt_args(parsed)
-
-        flag = "--webEngineArgs"
-        if expected:
-            assert args[1] == flag
-        else:
-            assert flag not in args
+        assert args[1] == "--webEngineArgs"
 
 
 class TestEnvVars:

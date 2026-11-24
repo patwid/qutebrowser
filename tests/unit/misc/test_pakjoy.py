@@ -32,38 +32,30 @@ def prepare_env(qapp, monkeypatch):
     monkeypatch.delenv(pakjoy.DISABLE_ENV_VAR, raising=False)
 
 
-def patch_version(monkeypatch: pytest.MonkeyPatch, qtwe_version: utils.VersionNumber):
-    monkeypatch.setattr(
-        pakjoy.version,
-        "qtwebengine_versions",
-        lambda **kwargs: version.WebEngineVersions(
-            webengine=qtwe_version,
-            chromium=None,
-            source="unittest",
-        ),
-    )
+class _ProfileWithoutExtensionManager:
+
+    """Stand-in for QWebEngineProfile before Qt 6.10 (no extensionManager)."""
 
 
-@pytest.fixture(params=[
-    utils.VersionNumber(6, 4),
-    utils.VersionNumber(6, 5, 3),
-    utils.VersionNumber(6, 6, 1),
-    utils.VersionNumber(6, 7),
-])
+@pytest.fixture(params=["setting-off", "extension-manager"])
 def unaffected_version(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest, config_stub):
-    config_stub.val.colors.webpage.darkmode.enabled = True
-    patch_version(monkeypatch, request.param)
+    """Situations where no patching is needed."""
+    if request.param == "setting-off":
+        config_stub.val.qt.workarounds.disable_hangouts_extension = False
+        monkeypatch.setattr(pakjoy, "QWebEngineProfile", _ProfileWithoutExtensionManager)
+    else:
+        # Qt 6.10+: Handled via the extension manager in webenginesettings.py
+        config_stub.val.qt.workarounds.disable_hangouts_extension = True
+        monkeypatch.setattr(
+            pakjoy.QWebEngineProfile, "extensionManager", lambda self: None,
+            raising=False)
 
 
-@pytest.fixture(params=[
-    utils.VersionNumber(6, 5),
-    utils.VersionNumber(6, 5, 1),
-    utils.VersionNumber(6, 5, 2),
-    utils.VersionNumber(6, 6),
-])
-def affected_version(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest, config_stub):
-    config_stub.val.colors.webpage.darkmode.enabled = True
-    patch_version(monkeypatch, request.param)
+@pytest.fixture
+def affected_version(monkeypatch: pytest.MonkeyPatch, config_stub):
+    """Disabling the Hangouts extension requested on Qt < 6.10."""
+    config_stub.val.qt.workarounds.disable_hangouts_extension = True
+    monkeypatch.setattr(pakjoy, "QWebEngineProfile", _ProfileWithoutExtensionManager)
 
 
 @pytest.mark.parametrize("workdir_exists", [True, False])
@@ -81,9 +73,7 @@ def test_version_gate(cache_tmpdir, unaffected_version, mocker, config_stub, wor
     assert not workdir.exists()
 
 
-@pytest.mark.parametrize("explicit", [True, False])
-def test_escape_hatch(affected_version, mocker, monkeypatch, config_stub, explicit):
-    config_stub.val.qt.workarounds.disable_hangouts_extension = explicit
+def test_escape_hatch(affected_version, mocker, monkeypatch):
     fake_open = mocker.patch("qutebrowser.misc.pakjoy.open")
     monkeypatch.setenv(pakjoy.DISABLE_ENV_VAR, "1")
 
@@ -466,7 +456,8 @@ class TestWithConstructedResourcesFile:
 
     @skip_if_incompatible
     def test_explicitly_enabled(self, monkeypatch: pytest.MonkeyPatch, config_stub):
-        patch_version(monkeypatch, utils.VersionNumber(6, 7))  # unaffected
+        monkeypatch.setattr(
+            pakjoy, "QWebEngineProfile", _ProfileWithoutExtensionManager)
         config_stub.val.qt.workarounds.disable_hangouts_extension = True
         with pakjoy.patch_webengine():
             assert pakjoy.RESOURCES_ENV_VAR in os.environ

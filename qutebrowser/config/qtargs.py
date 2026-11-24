@@ -55,9 +55,8 @@ def qt_args(namespace: argparse.Namespace) -> list[str]:
         return argv
 
     versions = version.qtwebengine_versions(avoid_init=True)
-    if versions.webengine >= utils.VersionNumber(6, 4):
-        # https://codereview.qt-project.org/c/qt/qtwebengine/+/376704
-        argv.insert(1, "--webEngineArgs")
+    # https://codereview.qt-project.org/c/qt/qtwebengine/+/376704
+    argv.insert(1, "--webEngineArgs")
 
     special_prefixes = (_ENABLE_FEATURES, _DISABLE_FEATURES, _BLINK_SETTINGS)
     special_flags = [flag for flag in argv if flag.startswith(special_prefixes)]
@@ -125,10 +124,9 @@ def _qtwebengine_features(  # noqa: C901
         if config.val.scrolling.bar == 'overlay':
             enabled_features.append('OverlayScrollbar')
 
-    if versions.webengine >= utils.VersionNumber(6, 7):
-        # WORKAROUND for https://bugreports.qt.io/browse/QTBUG-132681
-        # TODO adjust if fixed in Qt 6.9.2+
-        disabled_features.append('DocumentPictureInPictureAPI')
+    # WORKAROUND for https://bugreports.qt.io/browse/QTBUG-132681
+    # TODO adjust if fixed in Qt 6.9.2+
+    disabled_features.append('DocumentPictureInPictureAPI')
 
     if utils.VersionNumber(6, 9) <= versions.webengine < utils.VersionNumber(6, 10, 1):
         # WORKAROUND for https://bugreports.qt.io/browse/QTBUG-135787
@@ -160,10 +158,7 @@ def _qtwebengine_args(
         yield '--renderer-startup-dialog'
 
     from qutebrowser.browser.webengine import darkmode
-    darkmode_settings = darkmode.settings(
-        versions=versions,
-        special_flags=special_flags,
-    )
+    darkmode_settings = darkmode.settings(special_flags=special_flags)
     for switch_name, values in darkmode_settings.items():
         # If we need to use other switches (say, --enable-features), we might need to
         # refactor this so values still get combined with existing ones.

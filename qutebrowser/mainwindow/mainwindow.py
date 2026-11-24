@@ -573,15 +573,6 @@ class MainWindow(QWidget):
             window_flags |= modifiers
         self.setWindowFlags(window_flags)
 
-        if utils.is_mac and hidden and not qtutils.version_check('6.3', compiled=False):
-            # WORKAROUND for https://codereview.qt-project.org/c/qt/qtbase/+/371279
-            from ctypes import c_void_p
-            # pylint: disable=import-error
-            from objc import objc_object
-            from AppKit import NSWindowStyleMaskResizable
-            win = objc_object(c_void_p=c_void_p(int(self.winId()))).window()
-            win.setStyleMask_(win.styleMask() | NSWindowStyleMaskResizable)
-
         if refresh_window:
             self.show()
 

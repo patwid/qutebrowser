@@ -1184,7 +1184,6 @@ class _WebEngineScripts(QObject):
 
     def _get_quirks(self):
         """Get a list of all available JS quirks."""
-        versions = version.qtwebengine_versions()
         return [
             # FIXME:qt6 Double check which of those are still required
             _Quirk(
@@ -1197,11 +1196,6 @@ class _WebEngineScripts(QObject):
                 'googledocs',
                 # will be an UA quirk once we set the JS UA as well
                 name='ua-googledocs',
-            ),
-
-            _Quirk(
-                'array_at',
-                predicate=versions.webengine < utils.VersionNumber(6, 3),
             ),
         ]
 
@@ -1588,30 +1582,11 @@ class WebEngineTab(browsertab.AbstractTab):
     def _on_navigation_request(self, navigation):
         super()._on_navigation_request(navigation)
 
-        # WORKAROUND for https://bugreports.qt.io/browse/QTBUG-103778
-        local_schemes = {"qute", "file"}
         qtwe_ver = version.qtwebengine_versions().webengine
-        if (
-            navigation.accepted and
-            self.url().scheme().lower() in local_schemes and
-            navigation.url.scheme().lower() not in local_schemes and
-            (navigation.navigation_type ==
-                usertypes.NavigationRequest.Type.link_clicked) and
-            navigation.is_main_frame and
-            (utils.VersionNumber(6, 2) <= qtwe_ver < utils.VersionNumber(6, 2, 5) or
-             utils.VersionNumber(6, 3) <= qtwe_ver < utils.VersionNumber(6, 3, 1))
-        ):
-            log.webview.debug(
-                "Working around blocked request from local page "
-                f"{self.url().toDisplayString()}"
-            )
-            navigation.accepted = False
-            self.load_url(navigation.url)
 
-        # WORKAROUND for QtWebEngine >= 6.2 not allowing form requests from
+        # WORKAROUND for QtWebEngine not allowing form requests from
         # qute:// to outside domains.
         if (
-            qtwe_ver >= utils.VersionNumber(6, 2) and
             self.url() == QUrl("qute://start/") and
             navigation.navigation_type == navigation.Type.form_submitted and
             navigation.url.matches(
@@ -1626,18 +1601,6 @@ class WebEngineTab(browsertab.AbstractTab):
             # with QtWebEngine 6.10: https://bugreports.qt.io/browse/QTBUG-140543
             QTimer.singleShot(0, functools.partial(self.load_url, navigation.url))
 
-        # WORKAROUND for QtWebEngine 6.2 - 6.5 blocking back/forward navigation too
-        if (
-            utils.VersionNumber(6, 6) > qtwe_ver >= utils.VersionNumber(6, 2) and
-            self.url() == QUrl("qute://bookmarks/") and
-            navigation.navigation_type == navigation.Type.back_forward
-        ):
-            log.webview.debug(
-                "Working around qute://bookmarks loading issue for "
-                f"{navigation.url.toDisplayString()}")
-            navigation.accepted = False
-            self.load_url(navigation.url)
-
         # WORKAROUND for https://bugreports.qt.io/browse/QTBUG-140515
         ua_setting = "content.headers.user_agent"
         if (
@@ -1646,7 +1609,7 @@ class WebEngineTab(browsertab.AbstractTab):
             is not usertypes.UNSET
             and navigation.navigation_type == usertypes.NavigationRequest.Type.redirect
             and navigation.is_main_frame
-            and utils.VersionNumber(6, 5) <= qtwe_ver < utils.VersionNumber(6, 10, 1)
+            and qtwe_ver < utils.VersionNumber(6, 10, 1)
         ):
             navigation.accepted = False
             # Using QTimer.singleShot as WORKAROUND for this crashing otherwise

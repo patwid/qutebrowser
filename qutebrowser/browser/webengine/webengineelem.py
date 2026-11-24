@@ -12,7 +12,7 @@ from qutebrowser.qt.core import QRect, QEventLoop
 from qutebrowser.qt.widgets import QApplication
 from qutebrowser.qt.webenginecore import QWebEngineSettings
 
-from qutebrowser.utils import log, javascript, urlutils, usertypes, utils, version
+from qutebrowser.utils import log, javascript, urlutils, usertypes, utils
 from qutebrowser.browser import webelem
 
 if TYPE_CHECKING:
@@ -211,16 +211,11 @@ class WebEngineElement(webelem.AbstractWebElement):
         if baseurl.scheme() == url.scheme():  # e.g. a qute:// link
             return False
 
-        # Qt 6.3+ needs a user interaction to allow navigations from qute:// to
+        # QtWebEngine needs a user interaction to allow navigations from qute:// to
         # outside qute:// (like e.g. on qute://bookmarks), as well as from file:// to
         # outside of file:// (e.g. users having a local bookmarks.html).
-        versions = version.qtwebengine_versions()
         for scheme in ["qute", "file"]:
-            if (
-                baseurl.scheme() == scheme and
-                url.scheme() != scheme and
-                versions.webengine >= utils.VersionNumber(6, 3)
-            ):
+            if baseurl.scheme() == scheme and url.scheme() != scheme:
                 return True
 
         return url.scheme() not in urlutils.WEBENGINE_SCHEMES

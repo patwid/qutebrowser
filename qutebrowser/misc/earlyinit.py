@@ -190,10 +190,10 @@ def check_qt_version():
     from qutebrowser.qt.core import QT_VERSION, PYQT_VERSION, PYQT_VERSION_STR
     from qutebrowser.qt.core import QVersionNumber
     qt_ver = get_qt_version()
-    recent_qt_runtime = qt_ver is not None and qt_ver >= QVersionNumber(6, 2)
+    recent_qt_runtime = qt_ver is not None and qt_ver >= QVersionNumber(6, 8)
 
-    if QT_VERSION < 0x060200 or PYQT_VERSION < 0x060202 or not recent_qt_runtime:
-        text = ("Fatal error: Qt >= 6.2.0 and PyQt >= 6.2.2 are required, "
+    if QT_VERSION < 0x060800 or PYQT_VERSION < 0x060800 or not recent_qt_runtime:
+        text = ("Fatal error: Qt >= 6.8.0 and PyQt >= 6.8.0 are required, "
                 "but Qt {} / PyQt {} is installed.".format(qt_version(),
                                                            PYQT_VERSION_STR))
         _die(text)
@@ -242,14 +242,6 @@ def check_libraries():
     for subpkg in ['QtQml', 'QtOpenGL', 'QtDBus']:
         package = f'{machinery.INFO.wrapper}.{subpkg}'
         modules[package] = _missing_str(package)
-
-    if sys.platform.startswith('darwin'):
-        from qutebrowser.qt.core import QVersionNumber
-        qt_ver = get_qt_version()
-        if qt_ver is not None and qt_ver < QVersionNumber(6, 3):
-            # Used for resizable hide_decoration windows on macOS
-            modules['objc'] = _missing_str("pyobjc-core")
-            modules['AppKit'] = _missing_str("pyobjc-framework-Cocoa")
 
     _check_modules(modules)
 

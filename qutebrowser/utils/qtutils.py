@@ -124,11 +124,6 @@ def is_single_process() -> bool:
     return '--single-process' in args
 
 
-def is_wayland() -> bool:
-    """Check if we are running on Wayland."""
-    return objects.qapp.platformName() in ["wayland", "wayland-egl"]
-
-
 def check_overflow(arg: int, ctype: str, fatal: bool = True) -> int:
     """Check if the given argument is in bounds for the given type.
 
@@ -178,15 +173,10 @@ def check_qdatastream(stream: QDataStream) -> None:
         QDataStream.Status.ReadCorruptData: "The data stream has read corrupt data.",
         QDataStream.Status.WriteFailed: ("The data stream cannot write to the "
                                   "underlying device."),
-    }
-    try:
-        status_to_str[QDataStream.Status.SizeLimitExceeded] = (
+        QDataStream.Status.SizeLimitExceeded: (
             "The data stream cannot read or write the data because its size is larger "
-            "than supported by the current platform."
-        )
-    except AttributeError:
-        # Added in Qt 6.7
-        pass
+            "than supported by the current platform."),
+    }
 
     if stream.status() != QDataStream.Status.Ok:
         raise OSError(status_to_str[stream.status()])

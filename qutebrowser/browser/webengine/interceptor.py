@@ -106,19 +106,11 @@ class RequestInterceptor(QWebEngineUrlRequestInterceptor):
                 interceptors.ResourceType.preload_main_frame,
             QWebEngineUrlRequestInfo.ResourceType.ResourceTypeNavigationPreloadSubFrame:
                 interceptors.ResourceType.preload_sub_frame,
+            QWebEngineUrlRequestInfo.ResourceType.ResourceTypeWebSocket:
+                interceptors.ResourceType.websocket,
+            QWebEngineUrlRequestInfo.ResourceType.ResourceTypeJson:
+                interceptors.ResourceType.json,
         }
-        new_types = {
-            "WebSocket": interceptors.ResourceType.websocket,  # added in Qt 6.4
-            "Json": interceptors.ResourceType.json,  # added in Qt 6.8
-        }
-        for qt_name, qb_value in new_types.items():
-            qt_value = getattr(
-                QWebEngineUrlRequestInfo.ResourceType,
-                f"ResourceType{qt_name}",
-                None,
-            )
-            if qt_value is not None:
-                self._resource_types[qt_value] = qb_value
 
     def install(self, profile):
         """Install the interceptor on the given QWebEngineProfile."""

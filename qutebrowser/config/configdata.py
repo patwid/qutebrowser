@@ -125,7 +125,7 @@ def _parse_yaml_backends_dict(
     Example:
 
     backends:
-      QtWebEngine: Qt 6.3
+      QtWebEngine: Qt 6.9
     """
     str_to_backend = {
         'QtWebEngine': usertypes.Backend.QtWebEngine,
@@ -142,8 +142,8 @@ def _parse_yaml_backends_dict(
     conditionals = {
         True: True,
         False: False,
-        'Qt 6.2': qtutils.version_check('6.2'),
-        'Qt 6.3': qtutils.version_check('6.3'),
+        'Qt 6.9': qtutils.version_check('6.9'),
+        'Qt 6.10': qtutils.version_check('6.10'),
     }
     for key in sorted(node.keys()):
         if conditionals[node[key]]:
@@ -162,7 +162,7 @@ def _parse_yaml_backends(
     - Not present -> setting is always available.
     - backend: QtWebEngine -> same as not present (QtWebEngine is the only backend).
     - backend:
-       QtWebEngine: Qt 6.3
+       QtWebEngine: Qt 6.9
       -> setting available based on the given conditional.
 
     Return:

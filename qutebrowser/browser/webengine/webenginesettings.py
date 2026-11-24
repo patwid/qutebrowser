@@ -146,20 +146,11 @@ class WebEngineSettings(websettings.AbstractSettings):
         'tabs.favicons.show':
             Attr(QWebEngineSettings.WebAttribute.AutoLoadIconsForPage,
                  converter=lambda val: val != 'never'),
+        'content.canvas_reading':
+            Attr(QWebEngineSettings.WebAttribute.ReadingFromCanvasEnabled),
+        'colors.webpage.darkmode.enabled':
+            Attr(QWebEngineSettings.WebAttribute.ForceDarkMode),
     }
-
-    try:
-        _ATTRIBUTES['content.canvas_reading'] = Attr(
-            QWebEngineSettings.WebAttribute.ReadingFromCanvasEnabled)
-    except AttributeError:
-        # Added in QtWebEngine 6.6
-        pass
-    try:
-        _ATTRIBUTES['colors.webpage.darkmode.enabled'] = Attr(
-            QWebEngineSettings.WebAttribute.ForceDarkMode)
-    except AttributeError:
-        # Added in QtWebEngine 6.7
-        pass
 
     _FONT_SIZES = {
         'fonts.web.size.minimum':
@@ -355,13 +346,9 @@ class ProfileSetter:
 
     def disable_persistent_permissions_policy(self):
         """Disable webengine's permission persistence."""
-        try:
-            # New in WebEngine 6.8.0
-            self._profile.setPersistentPermissionsPolicy(
-                QWebEngineProfile.PersistentPermissionsPolicy.AskEveryTime
-            )
-        except AttributeError:
-            pass
+        self._profile.setPersistentPermissionsPolicy(
+            QWebEngineProfile.PersistentPermissionsPolicy.AskEveryTime
+        )
 
 
 def _update_settings(option):
@@ -483,17 +470,7 @@ def _init_default_profile():
     assert not default_profile.isOffTheRecord()
 
     assert parsed_user_agent is None  # avoid earlier profile initialization
-    non_ua_version = version.qtwebengine_versions(avoid_init=True)
-
     init_user_agent()
-    ua_version = version.qtwebengine_versions()
-
-    if ua_version.webengine != non_ua_version.webengine:
-        log.init.warning(
-            "QtWebEngine version mismatch - unexpected behavior might occur, "
-            "please open a bug about this.\n"
-            f"  Early version: {non_ua_version}\n"
-            f"  Real version:  {ua_version}")
 
     _clear_webengine_permissions_json()
     default_profile.setCachePath(

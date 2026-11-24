@@ -19,8 +19,7 @@ import getpass
 import functools
 import dataclasses
 import importlib.metadata
-from typing import (ClassVar, Any,
-                    TYPE_CHECKING)
+from typing import ClassVar, Any
 from collections.abc import Mapping, Sequence
 
 from qutebrowser.qt import machinery
@@ -30,20 +29,13 @@ from qutebrowser.qt.gui import QOpenGLContext, QOffscreenSurface
 from qutebrowser.qt.opengl import QOpenGLVersionProfile
 from qutebrowser.qt.widgets import QApplication
 
-try:
-    from qutebrowser.qt.webenginecore import PYQT_WEBENGINE_VERSION_STR
-except ImportError:  # pragma: no cover
-    PYQT_WEBENGINE_VERSION_STR = None  # type: ignore[assignment]
-
 
 import qutebrowser
 from qutebrowser.utils import (log, utils, standarddir, usertypes, message, resources,
                                qtutils)
-from qutebrowser.misc import objects, earlyinit, sql, httpclient, pastebin, elf, wmname
+from qutebrowser.misc import objects, earlyinit, sql, httpclient, pastebin, wmname
 from qutebrowser.browser import pdfjs
 from qutebrowser.config import config
-if TYPE_CHECKING:
-    from qutebrowser.config import websettings
 
 _LOGO = r'''
          ______     ,,
@@ -389,7 +381,6 @@ def _create_module_info() -> dict[str, ModuleInfo]:
         ('pygments', ['__version__']),
         ('yaml', ['__version__']),
         ('adblock', ['__version__'], "0.3.2"),
-        ('objc', ['__version__']),
     ]
 
     packages += [
@@ -488,21 +479,6 @@ def _pdfjs_version() -> str:
             file_path = 'bundled'
 
         return '{} ({})'.format(pdfjs_version, file_path)
-
-
-def _get_pyqt_webengine_qt_version() -> str | None:
-    """Get the version of the PyQt6-WebEngine-Qt6 package.
-
-    The QtWebEngine binary is shipped in its own PyPI package, separately from the
-    PyQt6-WebEngine bindings. If it was installed via pip, this will give us an
-    accurate answer.
-    """
-    name = 'PyQt6-WebEngine-Qt6'
-    try:
-        return importlib.metadata.version(name)
-    except importlib.metadata.PackageNotFoundError:
-        log.misc.debug(f"{name} not found")
-        return None
 
 
 @dataclasses.dataclass
@@ -617,59 +593,6 @@ class WebEngineVersions:
         return "\n".join(lines)
 
     @classmethod
-    def from_ua(cls, ua: 'websettings.UserAgent') -> 'WebEngineVersions':
-        """Get the versions parsed from a user agent.
-
-        This is the most reliable and "default" way to get this information for
-        older Qt versions that don't provide an API for it. However, it needs a
-        fully initialized QtWebEngine, and we sometimes need this information
-        before that is available.
-        """
-        assert ua.qt_version is not None, ua
-        webengine = utils.VersionNumber.parse(ua.qt_version)
-        chromium_inferred, chromium_security = cls._infer_chromium_version(webengine)
-        if ua.upstream_browser_version != chromium_inferred:  # pragma: no cover
-            # should never happen, but let's play it safe
-            log.misc.debug(
-                f"Chromium version mismatch: {ua.upstream_browser_version} (UA) != "
-                f"{chromium_inferred} (inferred)")
-            chromium_security = None
-
-        return cls(
-            webengine=webengine,
-            chromium=ua.upstream_browser_version,
-            chromium_security=chromium_security,
-            source='UA',
-        )
-
-    @classmethod
-    def from_elf(cls, versions: elf.Versions) -> 'WebEngineVersions':
-        """Get the versions based on an ELF file.
-
-        This only works on Linux, and even there, depends on various assumption on how
-        QtWebEngine is built (e.g. that the version string is in the .rodata section).
-
-        On Windows/macOS, we instead rely on from_pyqt, but especially on Linux, people
-        sometimes mix and match Qt/QtWebEngine versions, so this is a more reliable
-        (though hackish) way to get a more accurate result.
-        """
-        webengine = utils.VersionNumber.parse(versions.webengine)
-        chromium_inferred, chromium_security = cls._infer_chromium_version(webengine)
-        if versions.chromium != chromium_inferred:  # pragma: no cover
-            # should never happen, but let's play it safe
-            log.misc.debug(
-                f"Chromium version mismatch: {versions.chromium} (ELF) != "
-                f"{chromium_inferred} (inferred)")
-            chromium_security = None
-
-        return cls(
-            webengine=webengine,
-            chromium=versions.chromium,
-            chromium_security=chromium_security,
-            source='ELF',
-        )
-
-    @classmethod
     def _infer_chromium_version(
             cls,
             pyqt_webengine_version: utils.VersionNumber,
@@ -702,8 +625,7 @@ class WebEngineVersions:
     ) -> 'WebEngineVersions':
         """Get the versions based on the exact versions.
 
-        This is called if we have proper APIs to get the versions easily
-        (Qt 6.2 with PyQt 6.3.1+).
+        This is the default way to get the versions, via Qt's API.
         """
         parsed = utils.VersionNumber.parse(qtwe_version)
         return cls(
@@ -719,11 +641,10 @@ class WebEngineVersions:
         pyqt_webengine_qt_version: str,
         source: str,
     ) -> 'WebEngineVersions':
-        """Get the versions based on the PyQtWebEngine version.
+        """Get the versions based on a QtWebEngine version only.
 
-        This is called if we don't want to fully initialize QtWebEngine (so
-        from_ua isn't possible), we're not on Linux (or ELF parsing failed), but we have
-        a PyQt6-WebEngine-Qt6 package from PyPI, so we could query its exact version.
+        The Chromium version is inferred from our table of known versions. This is
+        used for the version of a previous run stored in the state file.
         """
         parsed = utils.VersionNumber.parse(pyqt_webengine_qt_version)
         chromium, chromium_security = cls._infer_chromium_version(parsed)
@@ -736,16 +657,11 @@ class WebEngineVersions:
 
     @classmethod
     def from_pyqt(cls, pyqt_webengine_version: str, source: str = "PyQt") -> 'WebEngineVersions':
-        """Get the versions based on the PyQtWebEngine version.
+        """Get the versions based on a given version string.
 
-        This is the "last resort" if we don't want to fully initialize QtWebEngine (so
-        from_ua isn't possible), we're not on Linux (or ELF parsing failed), and
-        PyQt6-WebEngine-Qt6 isn't available from PyPI.
-
-        Here, we assume that the PyQtWebEngine version is the same as the QtWebEngine
-        version, and infer the Chromium version from that. This assumption isn't
-        generally true, but good enough for some scenarios, especially the prebuilt
-        Windows/macOS releases.
+        The Chromium version is inferred from our table of known versions. This is
+        used for the QUTE_QTWEBENGINE_VERSION_OVERRIDE environment variable (and in
+        tests).
         """
         parsed = utils.VersionNumber.parse(pyqt_webengine_version)
         chromium, chromium_security = cls._infer_chromium_version(parsed)
@@ -761,15 +677,10 @@ class WebEngineVersions:
 def qtwebengine_versions(*, avoid_init: bool = False) -> WebEngineVersions:
     """Get the QtWebEngine and Chromium version numbers.
 
-    If we have a parsed user agent, we use it here. If not, we avoid initializing
-    things at all costs (because this gets called early to find out about commandline
-    arguments). Instead, we fall back on looking at the ELF file (on Linux), or, if that
-    fails, use the PyQtWebEngine version.
+    This uses Qt's API, which doesn't need QtWebEngine to be initialized. Thus, the
+    avoid_init argument isn't needed anymore and only kept for existing callers.
 
-    This can also be checked by looking at this file with the right Qt tag:
-    https://code.qt.io/cgit/qt/qtwebengine.git/tree/tools/scripts/version_resolver.py#n41
-
-    See WebEngineVersions above for a quick reference.
+    See WebEngineVersions above for a quick reference of versions.
 
     Also see:
 
@@ -777,53 +688,25 @@ def qtwebengine_versions(*, avoid_init: bool = False) -> WebEngineVersions:
     - https://www.chromium.org/developers/calendar
     - https://chromereleases.googleblog.com/
     """
+    utils.unused(avoid_init)
+
     override = os.environ.get('QUTE_QTWEBENGINE_VERSION_OVERRIDE')
     if override is not None:
         return WebEngineVersions.from_pyqt(override, source='override')
 
-    try:
-        from qutebrowser.qt.webenginecore import (
-            qWebEngineVersion,
-            qWebEngineChromiumVersion,
-        )
-    except ImportError:
-        pass  # Needs QtWebEngine 6.2+ with PyQtWebEngine 6.3.1+
-    else:
-        try:
-            from qutebrowser.qt.webenginecore import (
-                qWebEngineChromiumSecurityPatchVersion,
-            )
-            chromium_security = qWebEngineChromiumSecurityPatchVersion()
-        except ImportError:
-            chromium_security = None  # Needs QtWebEngine 6.3+
+    from qutebrowser.qt.webenginecore import (
+        qWebEngineVersion,
+        qWebEngineChromiumVersion,
+        qWebEngineChromiumSecurityPatchVersion,
+    )
 
-        qtwe_version = qWebEngineVersion()
-        assert qtwe_version is not None
-        return WebEngineVersions.from_api(
-            qtwe_version=qtwe_version,
-            chromium_version=qWebEngineChromiumVersion(),
-            chromium_security=chromium_security,
-        )
-
-    from qutebrowser.browser.webengine import webenginesettings
-
-    if webenginesettings.parsed_user_agent is None and not avoid_init:
-        webenginesettings.init_user_agent()
-
-    if webenginesettings.parsed_user_agent is not None:
-        return WebEngineVersions.from_ua(webenginesettings.parsed_user_agent)
-
-    versions = elf.parse_webenginecore()
-    if versions is not None:
-        return WebEngineVersions.from_elf(versions)
-
-    pyqt_webengine_qt_version = _get_pyqt_webengine_qt_version()
-    if pyqt_webengine_qt_version is not None:
-        return WebEngineVersions.from_webengine(
-            pyqt_webengine_qt_version, source='importlib')
-
-    assert PYQT_WEBENGINE_VERSION_STR is not None
-    return WebEngineVersions.from_pyqt(PYQT_WEBENGINE_VERSION_STR)
+    qtwe_version = qWebEngineVersion()
+    assert qtwe_version is not None
+    return WebEngineVersions.from_api(
+        qtwe_version=qtwe_version,
+        chromium_version=qWebEngineChromiumVersion(),
+        chromium_security=qWebEngineChromiumSecurityPatchVersion(),
+    )
 
 
 def _backend() -> str:

@@ -9,7 +9,7 @@ from qutebrowser.qt.gui import QKeyEvent
 from qutebrowser.qt.widgets import QWidget
 
 from qutebrowser.config import config
-from qutebrowser.utils import log, message, usertypes, qtutils, version, utils
+from qutebrowser.utils import log, message, usertypes, qtutils
 from qutebrowser.keyinput import modeman, keyutils
 
 
@@ -48,24 +48,6 @@ class ChildEventFilter(QObject):
             # Additional sanity check, but optional
             if self._widget is not None:
                 assert obj is self._widget
-
-                # WORKAROUND for unknown Qt bug losing focus on child change
-                # Carry on keyboard focus to the new child if:
-                # - This is a child event filter on a tab (self._widget is not None)
-                # - We find an old existing child which is a QQuickWidget and is
-                #   currently focused.
-                # - We're using an affected QtWebEngine version
-                children = [
-                    c for c in self._widget.findChildren(
-                        QWidget, "", Qt.FindChildOption.FindDirectChildrenOnly)
-                    if c is not child and
-                    c.hasFocus() and
-                    c.metaObject() is not None and
-                    c.metaObject().className() == "QQuickWidget"  # Qt 6.4+
-                ]
-                if children and version.qtwebengine_versions().webengine < utils.VersionNumber(6, 6, 3):
-                    log.misc.debug("Focusing new child")
-                    child.setFocus()
 
             child.installEventFilter(self._filter)
         elif event.type() == QEvent.Type.ChildRemoved:
