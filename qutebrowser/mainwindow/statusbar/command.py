@@ -6,7 +6,6 @@
 
 from typing import cast
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.core import pyqtSignal, pyqtSlot, Qt, QSize
 from qutebrowser.qt.gui import QKeyEvent
 from qutebrowser.qt.widgets import QSizePolicy, QWidget
@@ -248,8 +247,7 @@ class Command(misc.CommandLineEdit):
             raise utils.Unreachable("setText got called with invalid text "
                                     "'{}'!".format(text))
         # FIXME:mypy PyQt6 stubs issue
-        if machinery.IS_QT6:
-            text = cast(str, text)
+        text = cast(str, text)
         super().setText(text)
 
     def keyPressEvent(self, e: QKeyEvent | None) -> None:
@@ -260,10 +258,7 @@ class Command(misc.CommandLineEdit):
         without command_accept to be called.
         """
         assert e is not None
-        if machinery.IS_QT5:  # FIXME:v4 needed for Qt 5 typing
-            shift = cast(Qt.KeyboardModifiers, Qt.KeyboardModifier.ShiftModifier)
-        else:
-            shift = Qt.KeyboardModifier.ShiftModifier
+        shift = Qt.KeyboardModifier.ShiftModifier
 
         text = self.text()
         if text in modeparsers.STARTCHARS and e.key() == Qt.Key.Key_Backspace:

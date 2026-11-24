@@ -19,11 +19,8 @@ from qutebrowser.qt import machinery
 
 # All global variables in machinery.py
 MACHINERY_VARS = {
-    "USE_PYQT5",
     "USE_PYQT6",
     "USE_PYSIDE6",
-    "IS_QT5",
-    "IS_QT6",
     "IS_PYQT",
     "IS_PYSIDE",
     "INFO",
@@ -35,7 +32,12 @@ assert set(typing.get_type_hints(machinery).keys()) == MACHINERY_VARS
 
 @pytest.fixture(autouse=True)
 def undo_init(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Pretend Qt support isn't initialized yet and Qt was never imported."""
+    """Pretend Qt support isn't initialized yet and Qt was never imported.
+
+    Also pretends PySide6 is a supported wrapper, so that we can test the selection
+    logic with more than one wrapper.
+    """
+    monkeypatch.setattr(machinery, "WRAPPERS", ["PyQt6", "PySide6"])
     monkeypatch.setattr(machinery, "_initialized", False)
     monkeypatch.delenv("QUTE_QT_WRAPPER", raising=False)
     for wrapper in machinery.WRAPPERS:
@@ -58,11 +60,11 @@ def test_importerror_exceptions(exception: Exception, base: type[Exception]):
 
 def test_selectioninfo_set_module_error():
     info = machinery.SelectionInfo()
-    info.set_module_error("PyQt5", ImportError("Python imploded"))
+    info.set_module_error("PySide6", ImportError("Python imploded"))
     assert info == machinery.SelectionInfo(
         wrapper=None,
         reason=machinery.SelectionReason.unknown,
-        outcomes={"PyQt5": "ImportError: Python imploded"},
+        outcomes={"PySide6": "ImportError: Python imploded"},
     )
 
 
@@ -81,10 +83,10 @@ def test_selectioninfo_use_wrapper():
     [
         (
             machinery.SelectionInfo(
-                wrapper="PyQt5",
+                wrapper="PySide6",
                 reason=machinery.SelectionReason.cli,
             ),
-            "Qt wrapper: PyQt5 (via --qt-wrapper)",
+            "Qt wrapper: PySide6 (via --qt-wrapper)",
         ),
         (
             machinery.SelectionInfo(
@@ -99,13 +101,13 @@ def test_selectioninfo_use_wrapper():
                 reason=machinery.SelectionReason.auto,
                 outcomes={
                     "PyQt6": "success",
-                    "PyQt5": "ImportError: Python imploded",
+                    "PySide6": "ImportError: Python imploded",
                 },
             ),
             (
                 "Qt wrapper info:\n"
                 "  PyQt6: success\n"
-                "  PyQt5: ImportError: Python imploded\n"
+                "  PySide6: ImportError: Python imploded\n"
                 "  -> selected: PyQt6 (via autoselect)"
             ),
         ),
@@ -117,7 +119,7 @@ def test_selectioninfo_str(info: machinery.SelectionInfo, expected: str):
     assert info.to_html() == html.escape(expected).replace("\n", "<br>")
 
 
-@pytest.mark.parametrize("order", [["PyQt5", "PyQt6"], ["PyQt6", "PyQt5"]])
+@pytest.mark.parametrize("order", [["PySide6", "PyQt6"], ["PyQt6", "PySide6"]])
 def test_selectioninfo_str_wrapper_precedence(order: list[str]):
     """The order of the wrappers should be the same as in machinery.WRAPPERS."""
     info = machinery.SelectionInfo(
@@ -143,14 +145,14 @@ def modules():
     [
         pytest.param(
             {
-                "PyQt5": ModuleNotFoundError("hiding somewhere"),
+                "PySide6": ModuleNotFoundError("hiding somewhere"),
                 "PyQt6": ModuleNotFoundError("hiding somewhere"),
             },
             machinery.SelectionInfo(
                 wrapper=None,
                 reason=machinery.SelectionReason.auto,
                 outcomes={
-                    "PyQt5": "ModuleNotFoundError: hiding somewhere",
+                    "PySide6": "ModuleNotFoundError: hiding somewhere",
                     "PyQt6": "ModuleNotFoundError: hiding somewhere",
                 },
             ),
@@ -158,7 +160,7 @@ def modules():
         ),
         pytest.param(
             {
-                "PyQt5": ModuleNotFoundError("hiding somewhere"),
+                "PySide6": ModuleNotFoundError("hiding somewhere"),
                 "PyQt6": True,
             },
             machinery.SelectionInfo(
@@ -170,21 +172,21 @@ def modules():
         ),
         pytest.param(
             {
-                "PyQt5": True,
+                "PySide6": True,
                 "PyQt6": ModuleNotFoundError("hiding somewhere"),
             },
             machinery.SelectionInfo(
-                wrapper="PyQt5",
+                wrapper="PySide6",
                 reason=machinery.SelectionReason.auto,
                 outcomes={
                     "PyQt6": "ModuleNotFoundError: hiding somewhere",
-                    "PyQt5": "success",
+                    "PySide6": "success",
                 },
             ),
-            id="only-pyqt5",
+            id="only-pyside6",
         ),
         pytest.param(
-            {"PyQt5": True, "PyQt6": True},
+            {"PySide6": True, "PyQt6": True},
             machinery.SelectionInfo(
                 wrapper="PyQt6",
                 reason=machinery.SelectionReason.auto,
@@ -195,7 +197,7 @@ def modules():
         pytest.param(
             {
                 "PyQt6": ImportError("Fake ImportError for PyQt6."),
-                "PyQt5": True,
+                "PySide6": True,
             },
             machinery.SelectionInfo(
                 wrapper=None,
@@ -243,18 +245,18 @@ class TestSelectWrapper:
                 ),
             ),
             SelectWrapperCase(
-                "pyqt5-arg",
-                args=argparse.Namespace(qt_wrapper="PyQt5"),
+                "pyside6-arg",
+                args=argparse.Namespace(qt_wrapper="PySide6"),
                 expected=machinery.SelectionInfo(
-                    wrapper="PyQt5", reason=machinery.SelectionReason.cli
+                    wrapper="PySide6", reason=machinery.SelectionReason.cli
                 ),
             ),
             SelectWrapperCase(
                 "pyqt6-arg-empty-env",
-                args=argparse.Namespace(qt_wrapper="PyQt5"),
+                args=argparse.Namespace(qt_wrapper="PySide6"),
                 env="",
                 expected=machinery.SelectionInfo(
-                    wrapper="PyQt5", reason=machinery.SelectionReason.cli
+                    wrapper="PySide6", reason=machinery.SelectionReason.cli
                 ),
             ),
             # Only environment variable given
@@ -266,25 +268,25 @@ class TestSelectWrapper:
                 ),
             ),
             SelectWrapperCase(
-                "pyqt5-env",
-                env="PyQt5",
+                "pyside6-env",
+                env="PySide6",
                 expected=machinery.SelectionInfo(
-                    wrapper="PyQt5", reason=machinery.SelectionReason.env
+                    wrapper="PySide6", reason=machinery.SelectionReason.env
                 ),
             ),
             # Both given
             SelectWrapperCase(
-                "pyqt5-arg-pyqt6-env",
-                args=argparse.Namespace(qt_wrapper="PyQt5"),
+                "pyside6-arg-pyqt6-env",
+                args=argparse.Namespace(qt_wrapper="PySide6"),
                 env="PyQt6",
                 expected=machinery.SelectionInfo(
-                    wrapper="PyQt5", reason=machinery.SelectionReason.cli
+                    wrapper="PySide6", reason=machinery.SelectionReason.cli
                 ),
             ),
             SelectWrapperCase(
-                "pyqt6-arg-pyqt5-env",
+                "pyqt6-arg-pyside6-env",
                 args=argparse.Namespace(qt_wrapper="PyQt6"),
-                env="PyQt5",
+                env="PySide6",
                 expected=machinery.SelectionInfo(
                     wrapper="PyQt6", reason=machinery.SelectionReason.cli
                 ),
@@ -307,18 +309,18 @@ class TestSelectWrapper:
             ),
             SelectWrapperCase(
                 "override-arg",
-                args=argparse.Namespace(qt_wrapper="PyQt5"),
+                args=argparse.Namespace(qt_wrapper="PySide6"),
                 override="PyQt6",
                 expected=machinery.SelectionInfo(
-                    wrapper="PyQt5", reason=machinery.SelectionReason.cli
+                    wrapper="PySide6", reason=machinery.SelectionReason.cli
                 ),
             ),
             SelectWrapperCase(
                 "override-env",
-                env="PyQt5",
+                env="PySide6",
                 override="PyQt6",
                 expected=machinery.SelectionInfo(
-                    wrapper="PyQt5", reason=machinery.SelectionReason.env
+                    wrapper="PySide6", reason=machinery.SelectionReason.env
                 ),
             ),
         ],
@@ -428,7 +430,7 @@ class TestInit:
             "",
             "Qt wrapper info:",
             "  PyQt6: ImportError: Fake ImportError for PyQt6.",
-            "  PyQt5: not imported",
+            "  PySide6: not imported",
             "  -> selected: None (via autoselect)",
         ]
 
@@ -460,9 +462,8 @@ class TestInit:
     @pytest.mark.parametrize(
         "selected_wrapper, true_vars",
         [
-            ("PyQt6", ["USE_PYQT6", "IS_QT6", "IS_PYQT"]),
-            ("PyQt5", ["USE_PYQT5", "IS_QT5", "IS_PYQT"]),
-            ("PySide6", ["USE_PYSIDE6", "IS_QT6", "IS_PYSIDE"]),
+            ("PyQt6", ["USE_PYQT6", "IS_PYQT"]),
+            ("PySide6", ["USE_PYSIDE6", "IS_PYSIDE"]),
         ],
     )
     @pytest.mark.parametrize("explicit", [True, False])

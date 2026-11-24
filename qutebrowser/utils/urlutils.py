@@ -11,10 +11,9 @@ import ipaddress
 import posixpath
 import urllib.parse
 import mimetypes
-from typing import TypeAlias, cast
+from typing import TypeAlias
 from collections.abc import Iterable
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.core import QUrl, QUrlQuery
 from qutebrowser.qt.network import QHostInfo, QHostAddress, QNetworkProxy
 
@@ -28,51 +27,19 @@ from qutebrowser.browser.network import pac
 # https://github.com/qutebrowser/qutebrowser/issues/108
 
 
-if machinery.IS_QT6:
-    UrlFlagsType: TypeAlias = QUrl.UrlFormattingOption | QUrl.ComponentFormattingOption
+UrlFlagsType: TypeAlias = QUrl.UrlFormattingOption | QUrl.ComponentFormattingOption
 
-    class FormatOption:
-        """Simple wrapper around Qt enums to fix typing problems on Qt 5."""
 
-        ENCODED = QUrl.ComponentFormattingOption.FullyEncoded
-        ENCODE_UNICODE = QUrl.ComponentFormattingOption.EncodeUnicode
-        DECODE_RESERVED = QUrl.ComponentFormattingOption.DecodeReserved
+class FormatOption:
+    """Simple wrapper around Qt enums."""
 
-        REMOVE_SCHEME = QUrl.UrlFormattingOption.RemoveScheme
-        REMOVE_PASSWORD = QUrl.UrlFormattingOption.RemovePassword
-        REMOVE_QUERY = QUrl.UrlFormattingOption.RemoveQuery
-else:
-    UrlFlagsType: TypeAlias = QUrl.FormattingOptions | QUrl.UrlFormattingOption | QUrl.ComponentFormattingOption | QUrl.ComponentFormattingOptions
+    ENCODED = QUrl.ComponentFormattingOption.FullyEncoded
+    ENCODE_UNICODE = QUrl.ComponentFormattingOption.EncodeUnicode
+    DECODE_RESERVED = QUrl.ComponentFormattingOption.DecodeReserved
 
-    class _QtFormattingOptions(QUrl.FormattingOptions):
-        """WORKAROUND for invalid stubs.
-
-        Teach mypy that | works for QUrl.FormattingOptions.
-        """
-
-        def __or__(self, f: UrlFlagsType) -> '_QtFormattingOptions':
-            return super() | f  # type: ignore[operator,return-value]
-
-    class FormatOption:
-        """WORKAROUND for invalid stubs.
-
-        Pretend that all ComponentFormattingOption values are also valid
-        QUrl.FormattingOptions values, i.e. can be passed to QUrl.toString().
-        """
-
-        ENCODED = cast(
-            _QtFormattingOptions, QUrl.ComponentFormattingOption.FullyEncoded)
-        ENCODE_UNICODE = cast(
-            _QtFormattingOptions, QUrl.ComponentFormattingOption.EncodeUnicode)
-        DECODE_RESERVED = cast(
-            _QtFormattingOptions, QUrl.ComponentFormattingOption.DecodeReserved)
-
-        REMOVE_SCHEME = cast(
-            _QtFormattingOptions, QUrl.UrlFormattingOption.RemoveScheme)
-        REMOVE_PASSWORD = cast(
-            _QtFormattingOptions, QUrl.UrlFormattingOption.RemovePassword)
-        REMOVE_QUERY = cast(
-            _QtFormattingOptions, QUrl.UrlFormattingOption.RemoveQuery)
+    REMOVE_SCHEME = QUrl.UrlFormattingOption.RemoveScheme
+    REMOVE_PASSWORD = QUrl.UrlFormattingOption.RemovePassword
+    REMOVE_QUERY = QUrl.UrlFormattingOption.RemoveQuery
 
 
 # URL schemes supported by QtWebEngine
@@ -503,55 +470,6 @@ def get_errstring(url: QUrl, base: str = "Invalid URL") -> str:
         return base + " - {}".format(url_error)
     else:
         return base
-
-
-def same_domain(url1: QUrl, url2: QUrl) -> bool:
-    """Check if url1 and url2 belong to the same website.
-
-    This will use a "public suffix list" to determine what a "top level domain"
-    is. All further domains are ignored.
-
-    For example example.com and www.example.com are considered the same. but
-    example.co.uk and test.co.uk are not.
-
-    If the URL's schemes or ports are different, they are always treated as not equal.
-
-    Return:
-        True if the domains are the same, False otherwise.
-    """
-    ensure_valid(url1)
-    ensure_valid(url2)
-
-    if url1.scheme() != url2.scheme():
-        return False
-    if url1.port() != url2.port():
-        return False
-
-    # QUrl.topLevelDomain() got removed in Qt 6:
-    # https://bugreports.qt.io/browse/QTBUG-80308
-    #
-    # However, we should never land here if we are on Qt 6:
-    #
-    # On QtWebEngine, we don't have a QNetworkAccessManager attached to a tab
-    # (all tab-specific downloads happen via the QtWebEngine network stack).
-    # Thus, ensure_valid(url2) above will raise InvalidUrlError, which is
-    # handled in NetworkManager.
-    #
-    # There are no other callers of same_domain, and url2 will only be ever valid when
-    # we use a NetworkManager from QtWebKit. However, QtWebKit is Qt 5 only.
-    assert machinery.IS_QT5, machinery.INFO
-
-    suffix1 = url1.topLevelDomain()  # type: ignore[attr-defined,unused-ignore]
-    suffix2 = url2.topLevelDomain()  # type: ignore[attr-defined,unused-ignore]
-    if not suffix1:
-        return url1.host() == url2.host()
-
-    if suffix1 != suffix2:
-        return False
-
-    domain1 = url1.host().removesuffix(suffix1).split('.')[-1]
-    domain2 = url2.host().removesuffix(suffix2).split('.')[-1]
-    return domain1 == domain2
 
 
 def file_url(path: str) -> str:

@@ -5,7 +5,6 @@
 """Customized QWebInspector for QtWebEngine."""
 
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.webenginewidgets import QWebEngineView
 from qutebrowser.qt.webenginecore import QWebEnginePage
 from qutebrowser.qt.widgets import QWidget
@@ -38,15 +37,10 @@ class WebEngineInspectorView(QWebEngineView):
         assert our_page is not None
         inspected_page = our_page.inspectedPage()
         assert inspected_page is not None
-        if machinery.IS_QT5:
-            view = inspected_page.view()
-            assert isinstance(view, QWebEngineView), view
-            return view.createWindow(wintype)
-        else:  # Qt 6
-            newpage = inspected_page.createWindow(wintype)
-            ret = webview.WebEngineView.forPage(newpage)
-            assert ret is not None
-            return ret
+        newpage = inspected_page.createWindow(wintype)
+        ret = webview.WebEngineView.forPage(newpage)
+        assert ret is not None
+        return ret
 
 
 class WebEngineInspector(inspector.AbstractWebInspector):

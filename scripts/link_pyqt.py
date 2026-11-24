@@ -125,7 +125,7 @@ def link_pyqt(executable, venv_path, *, version):
         venv_path: The path to the virtualenv site-packages.
         version: The PyQt version to use.
     """
-    if version not in ["5", "6"]:
+    if version != "6":
         raise ValueError(f"Invalid version {version}")
 
     pyqt_dir = os.path.dirname(get_lib_path(executable, f'PyQt{version}.QtCore'))

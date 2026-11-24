@@ -330,6 +330,7 @@ class TestForceDocumentEnd:
         script = self._get_script(namespace=namespace, name=name)
         assert script.needs_document_end_workaround() == force
 
+
 def test_required_scripts_are_included(gm_manager, download_stub, tmp_path):
     test_require_script = textwrap.dedent("""
         // ==UserScript==

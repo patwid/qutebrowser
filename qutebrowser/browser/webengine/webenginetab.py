@@ -25,7 +25,7 @@ from qutebrowser.browser.webengine import (webview, webengineelem, tabhistory,
 
 from qutebrowser.utils import (usertypes, qtutils, log, javascript, utils,
                                resources, message, jinja, debug, version, urlutils)
-from qutebrowser.qt import sip, machinery
+from qutebrowser.qt import sip
 from qutebrowser.misc import objects, miscwidgets
 
 
@@ -70,9 +70,7 @@ class WebEnginePrinting(browsertab.AbstractPrinting):
         """Called from WebEngineTab.connect_signals."""
         page = self._widget.page()
         page.pdfPrintingFinished.connect(self.pdf_printing_finished)
-        if machinery.IS_QT6:
-            self._widget.printFinished.connect(self.printing_finished)
-            # Qt 5 uses callbacks instead
+        self._widget.printFinished.connect(self.printing_finished)
 
     def check_pdf_support(self):
         pass
@@ -85,16 +83,10 @@ class WebEnginePrinting(browsertab.AbstractPrinting):
         self._widget.page().printToPdf(str(path))
 
     def to_printer(self, printer):
-        if machinery.IS_QT5:
-            self._widget.page().print(printer, self.printing_finished.emit)
-        else:  # Qt 6
-            self._widget.print(printer)
+        self._widget.print(printer)
 
 
-if machinery.IS_QT5:
-    _FindFlagType: TypeAlias = QWebEnginePage.FindFlag | QWebEnginePage.FindFlags
-else:
-    _FindFlagType: TypeAlias = QWebEnginePage.FindFlag
+_FindFlagType: TypeAlias = QWebEnginePage.FindFlag
 
 
 @dataclasses.dataclass
@@ -182,10 +174,9 @@ class WebEngineSearch(browsertab.AbstractSearch):
                                   "widget")
                 return
 
-            # bool in Qt 5, QWebEngineFindTextResult in Qt 6
-            # Once we drop Qt 5, we might also want to call callbacks with the
+            # We might also want to call callbacks with the
             # QWebEngineFindTextResult instead of the bool.
-            found = cb_arg if isinstance(cb_arg, bool) else cb_arg.numberOfMatches() > 0
+            found = cb_arg.numberOfMatches() > 0
 
             found_text = 'found' if found else "didn't find"
             if flags:
@@ -1077,13 +1068,8 @@ class _WebEngineScripts(QObject):
     def _remove_js(self, name):
         """Remove an early QWebEngineScript."""
         scripts = self._widget.page().scripts()
-        if machinery.IS_QT6:
-            for script in scripts.find(f'_qute_{name}'):
-                scripts.remove(script)
-        else:  # Qt 5
-            script = scripts.findScript(f'_qute_{name}')
-            if not script.isNull():
-                scripts.remove(script)
+        for script in scripts.find(f'_qute_{name}'):
+            scripts.remove(script)
 
     def init(self):
         """Initialize global qutebrowser JavaScript."""
@@ -1214,10 +1200,6 @@ class _WebEngineScripts(QObject):
             ),
 
             _Quirk(
-                'string_replaceall',
-                predicate=versions.webengine < utils.VersionNumber(5, 15, 3),
-            ),
-            _Quirk(
                 'array_at',
                 predicate=versions.webengine < utils.VersionNumber(6, 3),
             ),
@@ -1310,9 +1292,6 @@ class WebEngineTab(browsertab.AbstractTab):
         self._child_event_filter = None
         self._saved_zoom = None
         self._scripts.init()
-        # WORKAROUND for https://bugreports.qt.io/browse/QTBUG-65223
-        self._needs_qtbug65223_workaround = (
-            version.qtwebengine_versions().webengine < utils.VersionNumber(5, 15, 5))
 
     def _set_widget(self, widget):
         # pylint: disable=protected-access
@@ -1556,21 +1535,13 @@ class WebEngineTab(browsertab.AbstractTab):
     def _on_load_progress(self, perc: int) -> None:
         """QtWebEngine-specific loadProgress workarounds."""
         super()._on_load_progress(perc)
-        if (
-            self._needs_qtbug65223_workaround and
-            perc == 100 and
-            self.load_status() != usertypes.LoadStatus.error
-        ):
-            self._update_load_status(ok=True)
 
     @pyqtSlot(bool)
     def _on_load_finished(self, ok: bool) -> None:
         """QtWebEngine-specific loadFinished code."""
         super()._on_load_finished(ok)
 
-        if not self._needs_qtbug65223_workaround or not ok:
-            # With the workaround, this should only run with ok=False
-            self._update_load_status(ok)
+        self._update_load_status(ok)
 
         if not ok:
             self.dump_async(functools.partial(

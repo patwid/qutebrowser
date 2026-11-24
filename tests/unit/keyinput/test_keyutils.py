@@ -7,7 +7,6 @@ import operator
 import hypothesis
 from hypothesis import strategies
 import pytest
-from qutebrowser.qt import machinery
 from qutebrowser.qt.core import Qt, QEvent, pyqtSignal
 from qutebrowser.qt.gui import QKeyEvent, QKeySequence
 from qutebrowser.qt.widgets import QWidget
@@ -132,13 +131,6 @@ class TestKeyToString:
     def test_modifiers_to_string(self, qt_mod):
         expected = qt_mod.name + '+'
         assert keyutils._modifiers_to_string(qt_mod.member) == expected
-
-    @pytest.mark.skipif(machinery.IS_QT6, reason="Can't delete enum members on PyQt 6")
-    def test_missing(self, monkeypatch):
-        monkeypatch.delattr(keyutils.Qt, 'Key_AltGr')
-        # We don't want to test the key which is actually missing - we only
-        # want to know if the mapping still behaves properly.
-        assert keyutils._key_to_string(Qt.Key.Key_A) == 'A'
 
 
 @pytest.mark.parametrize('key, modifiers, expected', [
@@ -639,10 +631,8 @@ def test_is_modifier_key(key, ismodifier):
     keyutils.KeyInfo,
 ])
 def test_non_plain(func):
-    comb = Qt.Key.Key_X | Qt.KeyboardModifier.ControlModifier
-    if machinery.IS_QT6:
-        # QKeyCombination
-        comb = comb.toCombined()
+    # QKeyCombination
+    comb = (Qt.Key.Key_X | Qt.KeyboardModifier.ControlModifier).toCombined()
 
     with pytest.raises(AssertionError):
         func(comb)

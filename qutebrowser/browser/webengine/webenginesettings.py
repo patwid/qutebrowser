@@ -14,7 +14,6 @@ import operator
 import pathlib
 from typing import cast, Any, TYPE_CHECKING
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.gui import QFont
 from qutebrowser.qt.widgets import QApplication
 from qutebrowser.qt.webenginecore import QWebEngineSettings, QWebEngineProfile
@@ -149,19 +148,18 @@ class WebEngineSettings(websettings.AbstractSettings):
                  converter=lambda val: val != 'never'),
     }
 
-    if machinery.IS_QT6:
-        try:
-            _ATTRIBUTES['content.canvas_reading'] = Attr(
-                QWebEngineSettings.WebAttribute.ReadingFromCanvasEnabled)
-        except AttributeError:
-            # Added in QtWebEngine 6.6
-            pass
-        try:
-            _ATTRIBUTES['colors.webpage.darkmode.enabled'] = Attr(
-                QWebEngineSettings.WebAttribute.ForceDarkMode)
-        except AttributeError:
-            # Added in QtWebEngine 6.7
-            pass
+    try:
+        _ATTRIBUTES['content.canvas_reading'] = Attr(
+            QWebEngineSettings.WebAttribute.ReadingFromCanvasEnabled)
+    except AttributeError:
+        # Added in QtWebEngine 6.6
+        pass
+    try:
+        _ATTRIBUTES['colors.webpage.darkmode.enabled'] = Attr(
+            QWebEngineSettings.WebAttribute.ForceDarkMode)
+    except AttributeError:
+        # Added in QtWebEngine 6.7
+        pass
 
     _FONT_SIZES = {
         'fonts.web.size.minimum':
@@ -357,14 +355,13 @@ class ProfileSetter:
 
     def disable_persistent_permissions_policy(self):
         """Disable webengine's permission persistence."""
-        if machinery.IS_QT6:  # for mypy
-            try:
-                # New in WebEngine 6.8.0
-                self._profile.setPersistentPermissionsPolicy(
-                    QWebEngineProfile.PersistentPermissionsPolicy.AskEveryTime
-                )
-            except AttributeError:
-                pass
+        try:
+            # New in WebEngine 6.8.0
+            self._profile.setPersistentPermissionsPolicy(
+                QWebEngineProfile.PersistentPermissionsPolicy.AskEveryTime
+            )
+        except AttributeError:
+            pass
 
 
 def _update_settings(option):
@@ -431,29 +428,28 @@ def _maybe_disable_hangouts_extension(profile: QWebEngineProfile) -> None:
     ):
         return
 
-    if machinery.IS_QT6:  # mypy
-        try:
-            ext_manager = profile.extensionManager()
-        except AttributeError:
-            return  # added in QtWebEngine 6.10
+    try:
+        ext_manager = profile.extensionManager()
+    except AttributeError:
+        return  # added in QtWebEngine 6.10
 
-        if (
-            qtwe_versions.webengine
-            in [utils.VersionNumber(6, 10, 1), utils.VersionNumber(6, 10, 2)]
-            and profile.isOffTheRecord()
-        ):
-            # WORKAROUND for https://github.com/qutebrowser/qutebrowser/issues/8785
-            log.misc.warning(
-                "Not disabling Hangouts extension on private profile to avoid "
-                "QtWebEngine crash with Qt 6.10.1/.2")
-            return
+    if (
+        qtwe_versions.webengine
+        in [utils.VersionNumber(6, 10, 1), utils.VersionNumber(6, 10, 2)]
+        and profile.isOffTheRecord()
+    ):
+        # WORKAROUND for https://github.com/qutebrowser/qutebrowser/issues/8785
+        log.misc.warning(
+            "Not disabling Hangouts extension on private profile to avoid "
+            "QtWebEngine crash with Qt 6.10.1/.2")
+        return
 
-        assert ext_manager is not None  # mypy
-        for info in ext_manager.extensions():
-            if info.id() == pakjoy.HANGOUTS_EXT_ID:
-                log.misc.debug(f"Disabling extension: {info.name()}")
-                # setExtensionEnabled(info, False) seems to segfault
-                ext_manager.unloadExtension(info)
+    assert ext_manager is not None  # mypy
+    for info in ext_manager.extensions():
+        if info.id() == pakjoy.HANGOUTS_EXT_ID:
+            log.misc.debug(f"Disabling extension: {info.name()}")
+            # setExtensionEnabled(info, False) seems to segfault
+            ext_manager.unloadExtension(info)
 
 
 def _clear_webengine_permissions_json():
@@ -477,10 +473,7 @@ def _clear_webengine_permissions_json():
 
 def default_qt_profile() -> QWebEngineProfile:
     """Get the default profile from Qt."""
-    if machinery.IS_QT6:
-        return QWebEngineProfile("Default")
-    else:
-        return QWebEngineProfile.defaultProfile()
+    return QWebEngineProfile("Default")
 
 
 def _init_default_profile():
@@ -495,18 +488,8 @@ def _init_default_profile():
     init_user_agent()
     ua_version = version.qtwebengine_versions()
 
-    logger = log.init.warning
-    if machinery.IS_QT5:
-        # With Qt 5.15, we can't quite be sure about which QtWebEngine patch version
-        # we're getting, as ELF parsing might be broken and there's no other way.
-        # For most of the code, we don't really care about the patch version though.
-        assert (
-            non_ua_version.webengine.strip_patch() == ua_version.webengine.strip_patch()
-        ), (non_ua_version, ua_version)
-        logger = log.init.debug
-
     if ua_version.webengine != non_ua_version.webengine:
-        logger(
+        log.init.warning(
             "QtWebEngine version mismatch - unexpected behavior might occur, "
             "please open a bug about this.\n"
             f"  Early version: {non_ua_version}\n"
@@ -621,18 +604,17 @@ def _init_default_settings():
                                     pattern=urlmatch.UrlPattern(pattern),
                                     hide_userconfig=True)
 
-    if machinery.IS_QT6:
-        userscripts_settings: list[tuple[str, Any]] = [
-            ("content.local_content_can_access_remote_urls", True),
-            ("content.local_content_can_access_file_urls", False),
-        ]
-        # https://codereview.qt-project.org/c/qt/qtwebengine/+/375672
-        url = pathlib.Path(standarddir.data(), "userscripts").as_uri()
-        for setting, value in userscripts_settings:
-            config.instance.set_obj(setting,
-                                    value,
-                                    pattern=urlmatch.UrlPattern(f"{url}/*"),
-                                    hide_userconfig=True)
+    userscripts_settings: list[tuple[str, Any]] = [
+        ("content.local_content_can_access_remote_urls", True),
+        ("content.local_content_can_access_file_urls", False),
+    ]
+    # https://codereview.qt-project.org/c/qt/qtwebengine/+/375672
+    url = pathlib.Path(standarddir.data(), "userscripts").as_uri()
+    for setting, value in userscripts_settings:
+        config.instance.set_obj(setting,
+                                value,
+                                pattern=urlmatch.UrlPattern(f"{url}/*"),
+                                hide_userconfig=True)
 
 
 def init():

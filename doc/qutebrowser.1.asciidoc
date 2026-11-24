@@ -64,7 +64,7 @@ show it.
 *--backend* '{webengine}'::
     Which backend to use.
 
-*--qt-wrapper* '{PyQt6,PyQt5}'::
+*--qt-wrapper* '{PyQt6}'::
     Which Qt wrapper to use. This can also be set via the QUTE_QT_WRAPPER environment variable. If both are set, the command line argument takes precedence.
 
 *--desktop-file-name* 'DESKTOP_FILE_NAME'::

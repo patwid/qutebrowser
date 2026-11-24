@@ -7,7 +7,6 @@
 import mimetypes
 from collections.abc import Iterable
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.core import pyqtSignal, pyqtSlot, QUrl
 from qutebrowser.qt.gui import QPalette
 from qutebrowser.qt.webenginewidgets import QWebEngineView
@@ -235,9 +234,7 @@ class WebEnginePage(QWebEnginePage):
         self._theme_color = theme_color
         self._set_bg_color()
         config.instance.changed.connect(self._set_bg_color)
-        if machinery.IS_QT6:
-            self.certificateError.connect(self._handle_certificate_error)
-            # Qt 5: Overridden method instead of signal
+        self.certificateError.connect(self._handle_certificate_error)
 
     @config.change_filter('colors.webpage.bg')
     def _set_bg_color(self):
@@ -257,10 +254,6 @@ class WebEnginePage(QWebEnginePage):
         self.certificate_error.emit(error)
         # Right now, we never defer accepting, due to a PyQt bug
         return error.certificate_was_accepted()
-
-    if machinery.IS_QT5:
-        # Overridden method instead of signal
-        certificateError = _handle_certificate_error  # noqa: N815
 
     def javaScriptConfirm(self, url, js_msg):
         """Override javaScriptConfirm to use qutebrowser prompts."""

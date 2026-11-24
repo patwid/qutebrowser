@@ -13,7 +13,6 @@ packaging==26.3
 pathspec==1.1.1
 pluggy==1.7.0
 Pygments==2.21.0
-PyQt5-stubs==5.15.6.0
 tomli==2.5.0
 types-colorama==0.4.15.20260508
 types-Pygments==2.21.0.20260819

@@ -10,7 +10,6 @@
 import argparse
 import pathlib
 import sys
-import re
 import os
 import os.path
 import shutil
@@ -25,9 +24,6 @@ from scripts import utils, link_pyqt
 REPO_ROOT = pathlib.Path(__file__).parent.parent
 # for --only-binary / --no-binary
 PYQT_PACKAGES = [
-    "PyQt5",
-    "PyQtWebEngine",
-
     "PyQt6",
     "PyQt6-WebEngine",
 ]
@@ -117,11 +113,6 @@ def pyqt_versions() -> list[str]:
 
     versions = sorted(version_set, key=_version_key)
     return versions + ['auto']
-
-
-def _is_qt6_version(version: str) -> bool:
-    """Check if the given version is Qt 6."""
-    return version in ["auto", "6"] or version.startswith("6.")
 
 
 def run_venv(
@@ -224,18 +215,11 @@ def install_pyqt_binary(venv_dir: pathlib.Path, version: str) -> None:
     utils.print_col("No proprietary codec support will be available in "
                     "qutebrowser.", 'bold')
 
-    if _is_qt6_version(version):
-        supported_archs = {
-            'linux': {'x86_64', 'aarch64'},  # ARM since PyQt 6.8
-            'win32': {'AMD64', 'arm64'},  # ARM since PyQt 6.8
-            'darwin': {'x86_64', 'arm64'},
-        }
-    else:
-        supported_archs = {
-            'linux': {'x86_64'},
-            'win32': {'x86', 'AMD64'},
-            'darwin': {'x86_64'},
-        }
+    supported_archs = {
+        'linux': {'x86_64', 'aarch64'},  # ARM since PyQt 6.8
+        'win32': {'AMD64', 'arm64'},  # ARM since PyQt 6.8
+        'darwin': {'x86_64', 'arm64'},
+    }
 
     if sys.platform not in supported_archs:
         utils.print_error(f"{sys.platform} is not a supported platform by PyQt binary "
@@ -263,8 +247,7 @@ def install_pyqt_link(venv_dir: pathlib.Path, version: str) -> None:
     """Install PyQt by linking a system-wide install."""
     utils.print_title("Linking system-wide PyQt")
     lib_path = link_pyqt.get_venv_lib_path(str(venv_dir))
-    major_version: str = "6" if _is_qt6_version(version) else "5"
-    link_pyqt.link_pyqt(sys.executable, lib_path, version=major_version)
+    link_pyqt.link_pyqt(sys.executable, lib_path, version="6")
 
 
 def install_pyqt_wheels(venv_dir: pathlib.Path,
@@ -280,104 +263,6 @@ def install_pyqt_snapshot(venv_dir: pathlib.Path, packages: list[str]) -> None:
     utils.print_title("Installing PyQt snapshots")
     pip_install(venv_dir, '-U', *packages, '--no-deps', '--pre',
                 '--index-url', 'https://riverbankcomputing.com/pypi/simple/')
-
-
-def apply_xcb_util_workaround(
-        venv_dir: pathlib.Path,
-        pyqt_type: str,
-        pyqt_version: str,
-) -> None:
-    """If needed (Debian Stable), symlink libxcb-util.so.0 -> .1.
-
-    WORKAROUND for https://bugreports.qt.io/browse/QTBUG-88688
-    """
-    utils.print_title("Running xcb-util workaround")
-
-    if not sys.platform.startswith('linux'):
-        print("Workaround not needed: Not on Linux.")
-        return
-    if pyqt_type != 'binary':
-        print("Workaround not needed: Not installing from PyQt binaries.")
-        return
-    if _is_qt6_version(pyqt_version):
-        print("Workaround not needed: Not installing Qt 5.15.")
-        return
-
-    try:
-        libs = _find_libs()
-    except subprocess.CalledProcessError as e:
-        utils.print_error(
-            f'Workaround failed: ldconfig exited with status {e.returncode}')
-        return
-
-    abi_type = 'libc6,x86-64'  # the only one PyQt wheels are available for
-
-    if ('libxcb-util.so.1', abi_type) in libs:
-        print("Workaround not needed: libxcb-util.so.1 found.")
-        return
-
-    try:
-        libxcb_util_libs = libs['libxcb-util.so.0', abi_type]
-    except KeyError:
-        utils.print_error('Workaround failed: libxcb-util.so.0 not found.')
-        return
-
-    if len(libxcb_util_libs) > 1:
-        utils.print_error(
-            f'Workaround failed: Multiple matching libxcb-util found: '
-            f'{libxcb_util_libs}')
-        return
-
-    libxcb_util_path = pathlib.Path(libxcb_util_libs[0])
-
-    code = [
-        'from PyQt5.QtCore import QLibraryInfo',
-        'print(QLibraryInfo.location(QLibraryInfo.LibrariesPath))',
-    ]
-    proc = run_venv(venv_dir, 'python', '-c', '; '.join(code), capture_output=True)
-    venv_lib_path = pathlib.Path(proc.stdout.strip())
-
-    link_path = venv_lib_path / libxcb_util_path.with_suffix('.1').name
-
-    # This gives us a nicer path to print, and also conveniently makes sure we
-    # didn't accidentally end up with a path outside the venv.
-    rel_link_path = venv_dir / link_path.relative_to(venv_dir.resolve())
-    print_command('ln -s', libxcb_util_path, rel_link_path, venv=False)
-
-    link_path.symlink_to(libxcb_util_path)
-
-
-def _find_libs() -> dict[tuple[str, str], list[str]]:
-    """Find all system-wide .so libraries."""
-    all_libs: dict[tuple[str, str], list[str]] = {}
-
-    if pathlib.Path("/sbin/ldconfig").exists():
-        # /sbin might not be in PATH on e.g. Debian
-        ldconfig_bin = "/sbin/ldconfig"
-    else:
-        ldconfig_bin = "ldconfig"
-    ldconfig_proc = subprocess.run(
-        [ldconfig_bin, '-p'],
-        check=True,
-        stdout=subprocess.PIPE,
-        encoding=sys.getfilesystemencoding(),
-    )
-
-    pattern = re.compile(r'(?P<name>\S+) \((?P<abi_type>[^)]+)\) => (?P<path>.*)')
-    for line in ldconfig_proc.stdout.splitlines():
-        match = pattern.fullmatch(line.strip())
-        if match is None:
-            if 'libs found in cache' not in line and 'Cache generated by:' not in line:
-                utils.print_col(f'Failed to match ldconfig output: {line}', 'yellow')
-            continue
-
-        key = match.group('name'), match.group('abi_type')
-        path = match.group('path')
-
-        libs = all_libs.setdefault(key, [])
-        libs.append(path)
-
-    return all_libs
 
 
 def run_qt_smoke_test_single(
@@ -400,7 +285,7 @@ def run_qt_smoke_test_single(
         'print()',
     ]
     env = {
-        'QUTE_QT_WRAPPER': 'PyQt6' if _is_qt6_version(pyqt_version) else 'PyQt5',
+        'QUTE_QT_WRAPPER': 'PyQt6',
     }
     if debug:
         env['QT_DEBUG_PLUGINS'] = '1'
@@ -514,8 +399,8 @@ def run(args) -> None:
 
     if args.pyqt_version != 'auto' and args.pyqt_type == 'skip':
         raise Error('Cannot use --pyqt-version with --pyqt-type skip')
-    if args.pyqt_type == 'link' and args.pyqt_version not in ['auto', '5', '6']:
-        raise Error('Invalid --pyqt-version {args.pyqt_version}, only 5 or 6 '
+    if args.pyqt_type == 'link' and args.pyqt_version not in ['auto', '6']:
+        raise Error(f'Invalid --pyqt-version {args.pyqt_version}, only 6 '
                     'permitted with --pyqt-type=link')
 
     if args.pyqt_wheels_dir != 'wheels' and args.pyqt_type != 'wheels':
@@ -536,8 +421,6 @@ def run(args) -> None:
 
     upgrade_seed_pkgs(venv_dir)
     install_pyqt(venv_dir, args)
-
-    apply_xcb_util_workaround(venv_dir, args.pyqt_type, args.pyqt_version)
 
     install_requirements(venv_dir)
     install_qutebrowser(venv_dir)

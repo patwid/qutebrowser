@@ -9,16 +9,9 @@
 import sys
 import argparse
 
-try:
-    from PyQt6.QtCore import QUrl
-    from PyQt6.QtWidgets import QApplication
-    from PyQt6.QtWebEngineWidgets import QWebEngineView
-    print("Using PyQt6")
-except ImportError:
-    from PyQt5.QtCore import QUrl
-    from PyQt5.QtWidgets import QApplication
-    from PyQt5.QtWebEngineWidgets import QWebEngineView
-    print("Using PyQt5")
+from PyQt6.QtCore import QUrl
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWebEngineWidgets import QWebEngineView
 
 
 def parse_args():

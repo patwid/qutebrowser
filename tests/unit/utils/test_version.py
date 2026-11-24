@@ -715,7 +715,7 @@ class TestModuleVersions:
 
     @pytest.mark.parametrize('attribute, expected_modules', [
         ('VERSION', ['colorama']),
-        ('SIP_VERSION_STR', ['PyQt5.sip', 'PyQt6.sip']),
+        ('SIP_VERSION_STR', ['PyQt6.sip']),
         (None, []),
     ])
     def test_version_attribute(self, attribute, expected_modules, import_fake):
@@ -984,50 +984,37 @@ class TestWebEngineVersions:
             os_info='X11; Linux x86_64',
             webkit_version='537.36',
             upstream_browser_key='Chrome',
-            upstream_browser_version='83.0.4103.122',
+            upstream_browser_version='90.0.4430.228',
             qt_key='QtWebEngine',
-            qt_version='5.15.2',
+            qt_version='6.2.0',
         )
         expected = version.WebEngineVersions(
-            webengine=utils.VersionNumber(5, 15, 2),
-            chromium='83.0.4103.122',
-            chromium_security='86.0.4240.183',
+            webengine=utils.VersionNumber(6, 2),
+            chromium='90.0.4430.228',
+            chromium_security='93.0.4577.63',
             source='UA',
         )
         assert version.WebEngineVersions.from_ua(ua) == expected
 
     def test_from_elf(self):
-        elf_version = elf.Versions(webengine='5.15.2', chromium='83.0.4103.122')
+        elf_version = elf.Versions(webengine='6.2.0', chromium='90.0.4430.228')
         expected = version.WebEngineVersions(
-            webengine=utils.VersionNumber(5, 15, 2),
-            chromium='83.0.4103.122',
-            chromium_security='86.0.4240.183',
+            webengine=utils.VersionNumber(6, 2),
+            chromium='90.0.4430.228',
+            chromium_security='93.0.4577.63',
             source='ELF',
         )
         assert version.WebEngineVersions.from_elf(elf_version) == expected
 
     @pytest.mark.parametrize('pyqt_version, chromium_version, security_version', [
-        ('5.15.2', '83.0.4103.122', '86.0.4240.183'),
-        ('5.15.3', '87.0.4280.144', '88.0.4324.150'),
-        ('5.15.4', '87.0.4280.144', None),
-        ('5.15.5', '87.0.4280.144', None),
-        ('5.15.6', '87.0.4280.144', None),
-        ('5.15.7', '87.0.4280.144', '94.0.4606.61'),
         ('6.2.0', '90.0.4430.228', '93.0.4577.63'),
         ('6.2.99', '90.0.4430.228', None),
         ('6.3.0', '94.0.4606.126', '99.0.4844.84'),
         ('6.99.0', None, None),
     ])
-    def test_from_pyqt(self, freezer, pyqt_version, chromium_version, security_version):
-        if freezer and utils.VersionNumber(5, 15, 3) <= utils.VersionNumber.parse(pyqt_version) < utils.VersionNumber(6):
-            chromium_version = '83.0.4103.122'
-            security_version = '86.0.4240.183'
-            expected_pyqt_version = '5.15.2'
-        else:
-            expected_pyqt_version = pyqt_version
-
+    def test_from_pyqt(self, pyqt_version, chromium_version, security_version):
         expected = version.WebEngineVersions(
-            webengine=utils.VersionNumber.parse(expected_pyqt_version),
+            webengine=utils.VersionNumber.parse(pyqt_version),
             chromium=chromium_version,
             chromium_security=security_version,
             source='PyQt',
@@ -1179,13 +1166,9 @@ class TestChromiumVersion:
     @pytest.fixture
     def importlib_patcher(self, monkeypatch):
         """Patch the importlib module."""
-        def _patch(*, qt, qt5, qt6):
+        def _patch(*, qt6):
             def _fake_version(name):
-                if name == 'PyQtWebEngine-Qt':
-                    outcome = qt
-                elif name == 'PyQtWebEngine-Qt5':
-                    outcome = qt5
-                elif name == 'PyQt6-WebEngine-Qt6':
+                if name == 'PyQt6-WebEngine-Qt6':
                     outcome = qt6
                 else:
                     raise utils.Unreachable(name)
@@ -1201,7 +1184,7 @@ class TestChromiumVersion:
     @pytest.fixture
     def patch_importlib_no_package(self, importlib_patcher):
         """Simulate importlib not finding PyQtWebEngine Qt packages."""
-        importlib_patcher(qt=None, qt5=None, qt6=None)
+        importlib_patcher(qt6=None)
 
     @pytest.mark.parametrize('patches, sources', [
         (['no_api'], ['ELF', 'importlib', 'PyQt', 'Qt']),
@@ -1222,44 +1205,12 @@ class TestChromiumVersion:
         versions = version.qtwebengine_versions(avoid_init=True)
         assert versions.source in sources
 
-    @pytest.mark.parametrize('qt, qt5, qt6, expected', [
-        pytest.param(
-            None, None, '6.3.0',
-            utils.VersionNumber(6, 3),
-            marks=pytest.mark.qt6_only,
-        ),
-        pytest.param(
-            '5.15.3', '5.15.4', '6.3.0',
-            utils.VersionNumber(6, 3),
-            marks=pytest.mark.qt6_only,
-        ),
-
-        pytest.param(
-            None, '5.15.4', None,
-            utils.VersionNumber(5, 15, 4),
-            marks=pytest.mark.qt5_only,
-        ),
-        pytest.param(
-            '5.15.3', None, None,
-            utils.VersionNumber(5, 15, 3),
-            marks=pytest.mark.qt5_only,
-        ),
-        # -Qt5 takes precedence
-        pytest.param(
-            '5.15.3', '5.15.4', None,
-            utils.VersionNumber(5, 15, 4),
-            marks=pytest.mark.qt5_only,
-        ),
-    ])
-    def test_importlib(self, qt, qt5, qt6, expected, patch_elf_fail, patch_no_api, importlib_patcher):
-        """Test the importlib version logic with different Qt packages.
-
-        With PyQtWebEngine 5.15.4, PyQtWebEngine-Qt was renamed to PyQtWebEngine-Qt5.
-        """
-        importlib_patcher(qt=qt, qt5=qt5, qt6=qt6)
+    def test_importlib(self, patch_elf_fail, patch_no_api, importlib_patcher):
+        """Test the importlib version logic."""
+        importlib_patcher(qt6='6.3.0')
         versions = version.qtwebengine_versions(avoid_init=True)
         assert versions.source == 'importlib'
-        assert versions.webengine == expected
+        assert versions.webengine == utils.VersionNumber(6, 3)
 
     @pytest.mark.parametrize('override', [
         utils.VersionNumber(5, 12, 10),
@@ -1420,7 +1371,6 @@ def test_version_info(params, stubs, monkeypatch, config_stub):
         'python_path': 'EXECUTABLE PATH',
         'uptime': "1:23:45",
         'autoconfig_loaded': "yes" if params.autoconfig_loaded else "no",
-        'webextensions': "",  # overridden below on Qt 6
     }
 
     patches['qtwebengine_versions'] = (
@@ -1437,19 +1387,18 @@ def test_version_info(params, stubs, monkeypatch, config_stub):
     else:
         substitutions["config_py_loaded"] = "no config.py was loaded"
 
-    if machinery.IS_QT6:
-        monkeypatch.setattr(
-            webenginesettings,
-            "default_profile",
-            FakeExtensionProfile(FakeExtensionManager([FakeExtensionInfo("ext1")])),
-        )
-        substitutions['webextensions'] = (
-            "\n"
-            "WebExtensions:\n"
-            "  ext1 (ext1-id)\n"
-            "  [ ] enabled  [ ] loaded  [ ] installed\n"
-            "  ext1-path\n"
-        )
+    monkeypatch.setattr(
+        webenginesettings,
+        "default_profile",
+        FakeExtensionProfile(FakeExtensionManager([FakeExtensionInfo("ext1")])),
+    )
+    substitutions['webextensions'] = (
+        "\n"
+        "WebExtensions:\n"
+        "  ext1 (ext1-id)\n"
+        "  [ ] enabled  [ ] loaded  [ ] installed\n"
+        "  ext1-path\n"
+    )
     patches['objects.backend'] = usertypes.Backend.QtWebEngine
     substitutions['backend'] = 'QtWebEngine 1.2.3\n  (source: faked)'
 
@@ -1574,9 +1523,6 @@ class TestOpenGLInfo:
         assert str(info) == 'OpenGL ES'
 
 
-@pytest.mark.skipif(
-    not machinery.IS_QT6, reason="extensions are only available with Qt6"
-)
 class TestWebEngineExtensions:
 
     def test_avoid_chromium_init(self, monkeypatch: pytest.MonkeyPatch) -> None:

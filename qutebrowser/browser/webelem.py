@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, TypeAlias
 from collections.abc import Iterator
 import collections.abc
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.core import QUrl, Qt, QEvent, QTimer, QRect, QPointF
 from qutebrowser.qt.gui import QMouseEvent
 
@@ -22,10 +21,7 @@ if TYPE_CHECKING:
 
 JsValueType: TypeAlias = int | float | str | None
 
-if machinery.IS_QT6:
-    KeyboardModifierType: TypeAlias = Qt.KeyboardModifier
-else:
-    KeyboardModifierType: TypeAlias = Qt.KeyboardModifiers | Qt.KeyboardModifier
+KeyboardModifierType: TypeAlias = Qt.KeyboardModifier
 
 
 class Error(Exception):

@@ -9,7 +9,6 @@ import dataclasses
 from typing import TypeAlias, cast
 from collections.abc import Mapping, MutableMapping, Callable
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.core import pyqtSlot, pyqtSignal, Qt, QObject, QEvent
 from qutebrowser.qt.gui import QKeyEvent, QKeySequence
 
@@ -278,16 +277,10 @@ class ModeManager(QObject):
                             "{}".format(curmode, utils.qualname(parser)))
         match = parser.handle(event, dry_run=dry_run)
 
-        if machinery.IS_QT5:  # FIXME:v4 needed for Qt 5 typing
-            ignored_modifiers = [
-                cast(Qt.KeyboardModifiers, Qt.KeyboardModifier.NoModifier),
-                cast(Qt.KeyboardModifiers, Qt.KeyboardModifier.ShiftModifier),
-            ]
-        else:
-            ignored_modifiers = [
-                Qt.KeyboardModifier.NoModifier,
-                Qt.KeyboardModifier.ShiftModifier,
-            ]
+        ignored_modifiers = [
+            Qt.KeyboardModifier.NoModifier,
+            Qt.KeyboardModifier.ShiftModifier,
+        ]
         has_modifier = event.modifiers() not in ignored_modifiers
 
         is_non_alnum = has_modifier or not event.text().strip()

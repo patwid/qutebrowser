@@ -7,18 +7,11 @@
 from typing import overload, Any
 from collections.abc import MutableSequence
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.core import Qt, QModelIndex, QAbstractItemModel, QObject
 
 from qutebrowser.utils import log, qtutils, utils
 from qutebrowser.api import cmdutils
 from qutebrowser.completion.models import BaseCategory
-
-
-if machinery.IS_QT5:
-    _FlagType = Qt.ItemFlags
-else:
-    _FlagType = Qt.ItemFlag
 
 
 class CompletionModel(QAbstractItemModel):
@@ -83,7 +76,7 @@ class CompletionModel(QAbstractItemModel):
         idx = cat.index(index.row(), index.column())
         return cat.data(idx)
 
-    def flags(self, index: QModelIndex) -> _FlagType:
+    def flags(self, index: QModelIndex) -> Qt.ItemFlag:
         """Return the item flags for index.
 
         Override QAbstractItemModel::flags.
@@ -91,14 +84,14 @@ class CompletionModel(QAbstractItemModel):
         Return: The item flags, or Qt.ItemFlag.NoItemFlags on error.
         """
         if not index.isValid():
-            return qtutils.maybe_cast(_FlagType, machinery.IS_QT5, Qt.ItemFlag.NoItemFlags)
+            return Qt.ItemFlag.NoItemFlags
         if index.parent().isValid():
             # item
             return (Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable |
                     Qt.ItemFlag.ItemNeverHasChildren)
         else:
             # category
-            return qtutils.maybe_cast(_FlagType, machinery.IS_QT5, Qt.ItemFlag.NoItemFlags)
+            return Qt.ItemFlag.NoItemFlags
 
     def index(self, row: int, col: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:
         """Get an index into the model.
@@ -121,15 +114,9 @@ class CompletionModel(QAbstractItemModel):
     def parent(self, index: QModelIndex) -> QModelIndex:
         ...
 
-    if machinery.IS_QT5:
-        @overload
-        def parent(self) -> QObject:
-            ...
-
-    else:
-        @overload
-        def parent(self) -> QObject | None:
-            ...
+    @overload
+    def parent(self) -> QObject | None:
+        ...
 
     def parent(self, index=None):
         """Get an index to the parent of the given index.

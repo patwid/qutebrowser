@@ -301,16 +301,7 @@ def test_qute_settings_persistence(short_tmpdir, request, quteproc_new):
 
 @pytest.mark.parametrize('value, expected', [
     # https://chromium-review.googlesource.com/c/chromium/src/+/2545444
-    pytest.param(
-        'always',
-        'http://localhost:(port2)/headers-link/(port)',
-        marks=pytest.mark.qt5_only,
-    ),
-    pytest.param(
-        'always',
-        'http://localhost:(port2)/',
-        marks=pytest.mark.qt6_only,
-    ),
+    ('always', 'http://localhost:(port2)/'),
 
     ('never', None),
     ('same-domain', 'http://localhost:(port2)/'),
@@ -358,21 +349,10 @@ def test_preferred_colorscheme(request, quteproc_new, value):
         "auto": [dark_text, light_text],
         None: [dark_text, light_text],
     }
-    xfail = False
-    if qtutils.version_check('5.15.2', exact=True, compiled=False):
-        # Test the WORKAROUND https://bugreports.qt.io/browse/QTBUG-89753
-        # With that workaround, we should always get the light preference.
-        for key in ["auto", None]:
-            expected_values[key].remove(dark_text)
-        xfail = value in ["auto", None]
 
     quteproc_new.open_path('data/darkmode/prefers-color-scheme.html')
     content = quteproc_new.get_content()
     assert content in expected_values[value]
-
-    if xfail:
-        # Unsatisfactory result, but expected based on a Qt bug.
-        pytest.xfail("QTBUG-89753")
 
 
 def test_preferred_colorscheme_with_dark_mode(
@@ -483,7 +463,6 @@ def test_service_worker_workaround(
         assert not service_worker_dir.exists()
 
 
-@pytest.mark.qt6_only
 def test_disable_hangouts_extension_crash(
     quteproc_new: quteprocess.QuteProc,
     request: pytest.FixtureRequest,
@@ -584,7 +563,6 @@ def test_permission_prompt_across_restart(quteproc_new, request, short_tmpdir):
         'blank',
         'lightness-hsl',
         {
-            ('5.15', None): testutils.Color(0, 0, 0),
             ('6.2', None): testutils.Color(0, 0, 0),
             # Qt 6.3+ (why #121212 rather than #000000?)
             (None, None): testutils.Color(18, 18, 18),
@@ -594,7 +572,6 @@ def test_permission_prompt_across_restart(quteproc_new, request, short_tmpdir):
         'blank',
         'brightness-rgb',
         {
-            ('5.15', None): testutils.Color(0, 0, 0),
             ('6.2', None): testutils.Color(0, 0, 0),
             # Qt 6.3+ (why #121212 rather than #000000?)
             (None, None): testutils.Color(18, 18, 18),
@@ -615,8 +592,6 @@ def test_permission_prompt_across_restart(quteproc_new, request, short_tmpdir):
         {
             (None, None): testutils.Color(215, 215, 0),
             (None, 'aarch64'): testutils.Color(214, 215, 0),
-            ('5.15', None): testutils.Color(204, 204, 0),
-            ('5.15', 'aarch64'): testutils.Color(206, 207, 0),
         },
     ),
     (
@@ -625,8 +600,6 @@ def test_permission_prompt_across_restart(quteproc_new, request, short_tmpdir):
         {
             (None, None): testutils.Color(0, 0, 215),
             (None, 'aarch64'): testutils.Color(0, 0, 214),
-            ('5.15', None): testutils.Color(0, 0, 204),
-            ('5.15', 'aarch64'): testutils.Color(0, 0, 206),
         }
     ),
 ])

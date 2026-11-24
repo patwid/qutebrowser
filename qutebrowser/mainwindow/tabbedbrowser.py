@@ -22,9 +22,8 @@ from qutebrowser.config import config
 from qutebrowser.keyinput import modeman
 from qutebrowser.mainwindow import tabwidget, mainwindow
 from qutebrowser.browser import signalfilter, browsertab, history
-from qutebrowser.utils import (log, usertypes, utils, qtutils,
-                               urlutils, message, jinja, version)
-from qutebrowser.misc import quitter, objects
+from qutebrowser.utils import log, usertypes, utils, qtutils, urlutils, message, jinja
+from qutebrowser.misc import quitter
 
 
 @dataclasses.dataclass
@@ -216,14 +215,7 @@ class TabbedBrowser(QWidget):
 
         self.widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-        if (
-            objects.backend == usertypes.Backend.QtWebEngine and
-            version.qtwebengine_versions().webengine < utils.VersionNumber(5, 15, 5)
-        ):
-            # WORKAROUND for https://bugreports.qt.io/browse/QTBUG-65223
-            self.cur_load_finished.connect(self._leave_modes_on_load)
-        else:
-            self.cur_load_started.connect(self._leave_modes_on_load)
+        self.cur_load_started.connect(self._leave_modes_on_load)
 
         # handle mode_override
         self.current_tab_changed.connect(lambda tab: self._mode_override(tab.url()))
@@ -1021,28 +1013,6 @@ class TabbedBrowser(QWidget):
             msg = messages[status] + f" (status {code}: {sig.name})"
         else:
             msg = messages[status] + f" (status {code})"
-
-        # WORKAROUND for https://bugreports.qt.io/browse/QTBUG-91715
-        versions = version.qtwebengine_versions()
-        if (
-            status == browsertab.TerminationStatus.unknown and
-            code == 1002 and
-            versions.webengine == utils.VersionNumber(5, 15, 3)
-        ):
-            log.webview.error(msg)
-            log.webview.error('')
-            log.webview.error(
-                'NOTE: If you see this and "Network service crashed, restarting '
-                'service.", please see:')
-            log.webview.error('https://github.com/qutebrowser/qutebrowser/issues/6235')
-            log.webview.error(
-                'You can set the "qt.workarounds.locale" setting in qutebrowser to '
-                'work around the issue.')
-            log.webview.error(
-                'A proper fix is likely available in QtWebEngine soon (which is why '
-                'the workaround is disabled by default).')
-            log.webview.error('')
-            return
 
         def show_error_page(html):
             tab.set_html(html)

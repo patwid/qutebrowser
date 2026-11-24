@@ -9,14 +9,12 @@
 Contains selection logic and globals for Qt wrapper selection.
 
 All other files in this package are intended to be simple wrappers around Qt imports.
-Depending on what is set in this module, they import from PyQt5 or PyQt6.
+Depending on what is set in this module, they import from the selected wrapper
+(currently only PyQt6 is supported).
 
 The import wrappers are intended to be as thin as possible. They will not unify
-API-level differences between Qt 5 and Qt 6. This is best handled by the calling code,
-which has a better picture of what changed between APIs and how to best handle it.
-
-What they *will* do is handle simple 1:1 renames of classes, or moves between
-modules (where they aim to always expose the Qt 6 API). See e.g. webenginecore.py.
+API-level differences between wrappers. This is best handled by the calling code,
+which has a better picture of what differs between APIs and how to best handle it.
 """
 
 # NOTE: No qutebrowser or PyQt import should be done here (at import time),
@@ -41,7 +39,6 @@ _WRAPPER_OVERRIDE = None
 
 WRAPPERS = [
     "PyQt6",
-    "PyQt5",
     # Needs more work
     # "PySide6",
 ]
@@ -169,7 +166,7 @@ def _select_wrapper(args: argparse.Namespace | None) -> SelectionInfo:
     - If --qt-wrapper is given, use that.
     - Otherwise, if the QUTE_QT_WRAPPER environment variable is set, use that.
     - Otherwise, the hardcoded _WRAPPER_OVERRIDE, if set.
-    - Otherwise, try the wrappers in WRAPPER in order (PyQt6 -> PyQt5)
+    - Otherwise, try the wrappers in WRAPPER in order
     """
     # If any Qt wrapper has been imported before this, something strange might
     # be happening. With PyInstaller, it imports the Qt bindings early.
@@ -208,20 +205,11 @@ def _select_wrapper(args: argparse.Namespace | None) -> SelectionInfo:
 #: instead, as those are supported by type checking.
 INFO: SelectionInfo
 
-#: Whether we're using PyQt5. Consider using IS_QT5 or IS_PYQT instead.
-USE_PYQT5: bool
-
-#: Whether we're using PyQt6. Consider using IS_QT6 or IS_PYQT instead.
+#: Whether we're using PyQt6. Consider using IS_PYQT instead.
 USE_PYQT6: bool
 
-#: Whether we're using PySide6. Consider using IS_QT6 or IS_PYSIDE instead.
+#: Whether we're using PySide6. Consider using IS_PYSIDE instead.
 USE_PYSIDE6: bool
-
-#: Whether we are using any Qt 5 wrapper.
-IS_QT5: bool
-
-#: Whether we are using any Qt 6 wrapper.
-IS_QT6: bool
 
 #: Whether we are using any PyQt wrapper.
 IS_PYQT: bool
@@ -238,23 +226,19 @@ def _set_globals(info: SelectionInfo) -> None:
     Those are split into multiple global variables because that way we can teach mypy
     about them via --always-true and --always-false, see tox.ini.
     """
-    global INFO, USE_PYQT5, USE_PYQT6, USE_PYSIDE6, IS_QT5, IS_QT6, IS_PYQT, IS_PYSIDE, _initialized
+    global INFO, USE_PYQT6, USE_PYSIDE6, IS_PYQT, IS_PYSIDE, _initialized
 
     assert info.wrapper is not None, info
     assert not _initialized
 
     _initialized = True
     INFO = info
-    USE_PYQT5 = info.wrapper == "PyQt5"
     USE_PYQT6 = info.wrapper == "PyQt6"
     USE_PYSIDE6 = info.wrapper == "PySide6"
-    assert USE_PYQT5 + USE_PYQT6 + USE_PYSIDE6 == 1
+    assert USE_PYQT6 + USE_PYSIDE6 == 1
 
-    IS_QT5 = USE_PYQT5
-    IS_QT6 = USE_PYQT6 or USE_PYSIDE6
-    IS_PYQT = USE_PYQT5 or USE_PYQT6
+    IS_PYQT = USE_PYQT6
     IS_PYSIDE = USE_PYSIDE6
-    assert IS_QT5 ^ IS_QT6
     assert IS_PYQT ^ IS_PYSIDE
 
 

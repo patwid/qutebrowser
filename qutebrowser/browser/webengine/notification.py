@@ -36,7 +36,6 @@ import subprocess
 from typing import Any, Optional, TYPE_CHECKING
 from collections.abc import Iterator
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.core import (Qt, QObject, QVariant, QMetaType, QByteArray, pyqtSlot,
                           pyqtSignal, QTimer, QProcess, QUrl)
 from qutebrowser.qt.gui import QImage, QIcon, QPixmap
@@ -682,11 +681,8 @@ def _as_uint32(x: int) -> QVariant:
     """Convert the given int to an uint32 for DBus."""
     variant = QVariant(x)
 
-    if machinery.IS_QT5:
-        target = QVariant.Type.UInt
-    else:  # Qt 6
-        # FIXME:mypy PyQt6-stubs issue
-        target = QMetaType(QMetaType.Type.UInt.value)  # type: ignore[call-overload]
+    # FIXME:mypy PyQt6-stubs issue
+    target = QMetaType(QMetaType.Type.UInt.value)  # type: ignore[call-overload]
 
     successful = variant.convert(target)
     assert successful

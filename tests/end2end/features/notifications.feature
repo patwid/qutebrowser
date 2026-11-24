@@ -65,14 +65,10 @@ Feature: Notifications
         And the javascript message "notification closed" should be logged
         And the notification should be closed via web
 
-    # As a WORKAROUND for https://www.riverbankcomputing.com/pipermail/pyqt/2020-May/042918.html
-    # and other issues, those can only run with PyQtWebEngine >= 5.15.0
-    #
     # For these tests, we need to wait for the notification to be shown before
     # we try to close it, otherwise we wind up in race-condition-ish
     # situations.
 
-    @pyqtwebengine>=5.15.0
     Scenario: Replacing existing notifications
         When I run :click-element id show-replacing-button
         Then the javascript message "i=1 notification shown" should be logged
@@ -81,43 +77,18 @@ Feature: Notifications
         And 1 notification should be presented
         And the notification should have title "i=3"
 
-    @pyqtwebengine<5.15.0
-    Scenario: Replacing existing notifications (old Qt)
-        When I run :click-element id show-replacing-button
-        Then the javascript message "i=1 notification shown" should be logged
-        And "Ignoring notification tag 'counter' due to PyQt bug" should be logged
-        And the javascript message "i=2 notification shown" should be logged
-        And "Ignoring notification tag 'counter' due to PyQt bug" should be logged
-        And the javascript message "i=3 notification shown" should be logged
-        And "Ignoring notification tag 'counter' due to PyQt bug" should be logged
-        And 3 notifications should be presented
-        # last one
-        And the notification should have title "i=3"
-
-    @pyqtwebengine>=5.15.0
     Scenario: User closes presented notification
         When I run :click-element id show-button
         And I wait for the javascript message "notification shown"
         And I close the notification
         Then the javascript message "notification closed" should be logged
 
-    @pyqtwebengine<5.15.0
-    Scenario: User closes presented notification (old Qt)
-        When I run :click-element id show-button
-        And I wait for the javascript message "notification shown"
-        And I close the notification
-        Then "Ignoring close request for notification * due to PyQt bug" should be logged
-        And the javascript message "notification closed" should not be logged
-        And no crash should happen
-
-    @pyqtwebengine>=5.15.0
     Scenario: User closes some other application's notification
         When I run :click-element id show-button
         And I wait for the javascript message "notification shown"
         And I close the notification with id 1234
         Then the javascript message "notification closed" should not be logged
 
-    @pyqtwebengine>=5.15.0
     Scenario: User clicks presented notification
         When I run :click-element id show-button
         And I wait for the javascript message "notification shown"
@@ -131,23 +102,12 @@ Feature: Notifications
          - about:blank
          """
 
-    @pyqtwebengine<5.15.0
-    Scenario: User clicks presented notification (old Qt)
-        When I run :click-element id show-button
-        And I wait for the javascript message "notification shown"
-        And I click the notification
-        Then "Ignoring click request for notification * due to PyQt bug" should be logged
-        Then the javascript message "notification clicked" should not be logged
-        And no crash should happen
-
-    @pyqtwebengine>=5.15.0
     Scenario: User clicks some other application's notification
         When I run :click-element id show-button
         And I wait for the javascript message "notification shown"
         And I click the notification with id 1234
         Then the javascript message "notification clicked" should not be logged
 
-    @pyqtwebengine>=5.15.0
     Scenario: Unknown action with some other application's notification
         When I run :click-element id show-button
         And I wait for the javascript message "notification shown"

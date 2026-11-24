@@ -140,11 +140,10 @@ class _BackendProblemChecker:
         text = ("Could not initialize QtNetwork SSL support. This only "
                 "affects downloads and :adblock-update.")
 
-        if machinery.IS_QT6:
-            text += ("\nHint: If installed via mkvenv.py on a system without "
-                     "OpenSSL 3.x (e.g. Ubuntu 20.04), you can use --pyqt-version 6.4 "
-                     "to get an older Qt still compatible with OpenSSL 1.1 (at the "
-                     "expense of running an older QtWebEngine/Chromium)")
+        text += ("\nHint: If installed via mkvenv.py on a system without "
+                 "OpenSSL 3.x (e.g. Ubuntu 20.04), you can use --pyqt-version 6.4 "
+                 "to get an older Qt still compatible with OpenSSL 1.1 (at the "
+                 "expense of running an older QtWebEngine/Chromium)")
 
         log.init.warning(text)
 
@@ -254,20 +253,6 @@ class _BackendProblemChecker:
         if response != QMessageBox.StandardButton.Ok:
             sys.exit(usertypes.Exit.err_init)
 
-    def _check_webengine_version(self) -> None:
-        versions = version.qtwebengine_versions(avoid_init=True)
-        if versions.webengine < utils.VersionNumber(5, 15, 2):
-            text = (
-                "QtWebEngine >= 5.15.2 is required for qutebrowser, but "
-                f"{versions.webengine} is installed.")
-            errbox = msgbox.msgbox(parent=None,
-                                   title="QtWebEngine too old",
-                                   text=text,
-                                   icon=QMessageBox.Icon.Critical,
-                                   plain_text=False)
-            errbox.exec()
-            sys.exit(usertypes.Exit.err_init)
-
     def _check_software_rendering(self) -> None:
         """Avoid crashing software rendering settings.
 
@@ -365,7 +350,6 @@ class _BackendProblemChecker:
         """Run all checks."""
         self._assert_backend(usertypes.Backend.QtWebEngine)
         self._check_backend_modules()
-        self._check_webengine_version()
         self._handle_ssl_support()
         self._handle_serviceworker_nuking()
         self._check_software_rendering()

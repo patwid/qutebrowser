@@ -15,7 +15,7 @@ from collections.abc import Iterator, Mapping, MutableSequence
 from qutebrowser.qt.core import QObject, pyqtSignal
 from qutebrowser.qt.sql import QSqlDatabase, QSqlError, QSqlQuery
 
-from qutebrowser.qt import sip, machinery
+from qutebrowser.qt import sip
 from qutebrowser.utils import debug, log
 
 
@@ -338,15 +338,7 @@ class Query:
 
     def _validate_bound_values(self) -> None:
         """Make sure all placeholders are bound."""
-        qt_bound_values = self.query.boundValues()
-        if machinery.IS_QT5:
-            # Qt 5: Returns a dict
-            values = list(qt_bound_values.values())
-        else:
-            # Qt 6: Returns a list
-            values = qt_bound_values
-
-        if None in values:
+        if None in self.query.boundValues():
             raise BugError("Missing bound values!")
 
     def _bind_values(self, values: Mapping[str, Any]) -> dict[str, Any]:

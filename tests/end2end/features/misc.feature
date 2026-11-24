@@ -592,7 +592,6 @@ Feature: Various utility commands.
         Then no crash should happen
 
     # https://github.com/qutebrowser/qutebrowser/issues/5721
-    @qt!=5.15.1
     Scenario: WebRTC renderer process crash
         When I open data/crashers/webrtc.html in a new tab
         And I run :reload

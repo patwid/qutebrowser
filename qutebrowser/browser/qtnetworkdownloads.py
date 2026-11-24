@@ -418,11 +418,6 @@ class DownloadManager(downloads.AbstractDownloadManager):
         if not cache:
             req.setAttribute(QNetworkRequest.Attribute.CacheSaveControlAttribute, False)
 
-        # Needed for Qt 5, default on Qt 6
-        req.setAttribute(
-            QNetworkRequest.Attribute.RedirectPolicyAttribute,
-            QNetworkRequest.RedirectPolicy.NoLessSafeRedirectPolicy,
-        )
         req.setMaximumRedirectsAllowed(self._MAX_REDIRECTS)
 
         return self.get_request(req, **kwargs)

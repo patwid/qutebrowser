@@ -321,7 +321,7 @@ qt.chromium.experimental_web_platform_features:
     name: String
     valid_values:
       - always: Enable experimental web platform features.
-      - auto: Enable experimental web platform features when using Qt 5.
+      - auto: Currently the same as `never` (used to enable the features with Qt 5).
       - never: Disable experimental web platform features.
   default: auto
   backend: QtWebEngine
@@ -330,8 +330,7 @@ qt.chromium.experimental_web_platform_features:
     Enables Web Platform features that are in development.
 
     This passes the `--enable-experimental-web-platform-features` flag to
-    Chromium. By default, this is enabled with Qt 5 to maximize compatibility
-    despite an aging Chromium base.
+    Chromium.
 
 qt.highdpi:
   type: Bool
@@ -361,18 +360,7 @@ qt.workarounds.remove_service_workers:
     Service Worker data isn't persisted) and will negatively impact start-up time.
 
 qt.workarounds.locale:
-  type: Bool
-  default: false
-  backend: QtWebEngine
-  desc: >-
-    Work around locale parsing issues in QtWebEngine 5.15.3.
-
-    With some locales, QtWebEngine 5.15.3 is unusable without this workaround.
-    In affected scenarios, QtWebEngine will log "Network service crashed,
-    restarting service." and only display a blank page.
-
-    However, It is expected that distributions shipping QtWebEngine 5.15.3
-    follow up with a proper fix soon, so it is disabled by default.
+  deleted: true
 
 qt.workarounds.disable_accelerated_2d_canvas:
   type:
@@ -625,7 +613,6 @@ content.site_specific_quirks.skip:
       - ua-gnome-gitlab
       - js-whatsapp-web
       - js-discord
-      - js-string-replaceall
       - js-array-at
       - misc-krunker
       - misc-mathml-darkmode
@@ -3221,12 +3208,6 @@ colors.webpage.preferred_color_scheme:
       - dark: Force a dark theme.
   desc: >-
     Value to use for `prefers-color-scheme:` for websites.
-
-    The "light" value is only available with QtWebEngine 5.15.2+. On older versions, it
-    is the same as "auto".
-
-    The "auto" value is broken on QtWebEngine 5.15.2 due to a Qt bug. There, it will
-    fall back to "light" unconditionally.
   backend: QtWebEngine
   restart: true
 
@@ -3262,7 +3243,7 @@ colors.webpage.darkmode.algorithm:
     name: String
     valid_values:
       - lightness-cielab: Modify colors by converting them to CIELAB color
-            space and inverting the L value. Not available with Qt < 5.14.
+            space and inverting the L value.
       - lightness-hsl: Modify colors by converting them to the HSL color space
             and inverting the lightness (i.e. the "L" in HSL).
       - brightness-rgb: Modify colors by subtracting each of r, g, and b from
@@ -3294,8 +3275,7 @@ colors.webpage.darkmode.policy.images:
     valid_values:
       - always: Apply dark mode filter to all images.
       - never: Never apply dark mode filter to any images.
-      - smart: "Apply dark mode based on image content. Not available with Qt
-        5.15.0."
+      - smart: "Apply dark mode based on image content."
       - smart-simple: "On QtWebEngine 6.6, use a simpler algorithm for smart mode (based
       on numbers of colors and transparency), rather than an ML-based model.
       Same as 'smart' on older QtWebEnigne versions."
@@ -3305,19 +3285,7 @@ colors.webpage.darkmode.policy.images:
   backend: QtWebEngine
 
 colors.webpage.darkmode.policy.page:
-  default: smart
-  type:
-    name: String
-    valid_values:
-      - always: Apply dark mode filter to all frames, regardless of content.
-      - smart: Apply dark mode filter to frames based on background color.
-  desc: >-
-    Which pages to apply dark mode to.
-
-    The underlying Chromium setting has been removed in QtWebEngine 5.15.3, thus this
-    setting is ignored there. Instead, every element is now classified individually.
-  restart: true
-  backend: QtWebEngine
+  deleted: true
 
 colors.webpage.darkmode.threshold.text:
   renamed: colors.webpage.darkmode.threshold.foreground

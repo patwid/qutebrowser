@@ -185,6 +185,7 @@ class TestSave:
         sess_man.save(str(session_path), load_next_time=True)
         assert state_config['general']['session'] == str(session_path)
 
+
 class FakeWebView:
 
     """A QWebView fake which provides a "page" with a load_history method.

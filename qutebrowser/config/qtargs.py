@@ -7,15 +7,12 @@
 import os
 import sys
 import argparse
-import pathlib
 from typing import Any, TypeAlias
 from collections.abc import Iterator, Sequence, Callable
 
-from qutebrowser.qt import machinery
-from qutebrowser.qt.core import QLocale
 
 from qutebrowser.config import config
-from qutebrowser.utils import qtutils, utils, log, version
+from qutebrowser.utils import utils, log, version
 
 
 _ENABLE_FEATURES = '--enable-features='
@@ -107,10 +104,6 @@ def _qtwebengine_features(  # noqa: C901
         # However, we don't have Chromium's confirmation dialog in qutebrowser,
         # so we should only get qutebrowser's permission dialog.
         #
-        # In theory this would be supported with Qt 5.15.0 already, but
-        # QtWebEngine only started picking up PipeWire correctly with Qt
-        # 5.15.1.
-        #
         # This only should be enabled on Wayland, but it's too early to check
         # that, as we don't have a QApplication available at this point. Thus,
         # just turn it on unconditionally on Linux, which shouldn't hurt.
@@ -132,20 +125,6 @@ def _qtwebengine_features(  # noqa: C901
         if config.val.scrolling.bar == 'overlay':
             enabled_features.append('OverlayScrollbar')
 
-    if (config.val.content.headers.referer == 'same-domain' and
-            versions.chromium_major < 89):
-        # Handling of reduced-referrer-granularity in Chromium 76+
-        # https://chromium-review.googlesource.com/c/chromium/src/+/1572699
-        #
-        # Note that this is removed entirely (and apparently the default) starting with
-        # Chromium 89 (presumably arriving with Qt 6.2):
-        # https://chromium-review.googlesource.com/c/chromium/src/+/2545444
-        enabled_features.append('ReducedReferrerGranularity')
-
-    if versions.webengine == utils.VersionNumber(5, 15, 2):
-        # WORKAROUND for https://bugreports.qt.io/browse/QTBUG-89740
-        disabled_features.append('InstalledApp')
-
     if versions.webengine >= utils.VersionNumber(6, 7):
         # WORKAROUND for https://bugreports.qt.io/browse/QTBUG-132681
         # TODO adjust if fixed in Qt 6.9.2+
@@ -162,81 +141,6 @@ def _qtwebengine_features(  # noqa: C901
     return (enabled_features, disabled_features)
 
 
-def _get_locale_pak_path(locales_path: pathlib.Path, locale_name: str) -> pathlib.Path:
-    """Get the path for a locale .pak file."""
-    return locales_path / (locale_name + '.pak')
-
-
-def _get_pak_name(locale_name: str) -> str:
-    """Get the Chromium .pak name for a locale name.
-
-    Based on Chromium's behavior in l10n_util::CheckAndResolveLocale:
-    https://source.chromium.org/chromium/chromium/src/+/master:ui/base/l10n/l10n_util.cc;l=344-428;drc=43d5378f7f363dab9271ca37774c71176c9e7b69
-    """
-    if locale_name in {'en', 'en-POSIX', 'en-PH', 'en-LR'}:
-        return 'en-US'
-    elif locale_name.startswith('en-'):
-        return 'en-GB'
-    elif locale_name.startswith('es-'):
-        return 'es-419'
-    elif locale_name == 'pt':
-        return 'pt-BR'
-    elif locale_name.startswith('pt-'):  # pragma: no cover
-        return 'pt-PT'
-    elif locale_name in {'zh-HK', 'zh-MO'}:
-        return 'zh-TW'
-    elif locale_name == 'zh' or locale_name.startswith('zh-'):
-        return 'zh-CN'
-
-    return locale_name.split('-')[0]
-
-
-def _webengine_locales_path() -> pathlib.Path:
-    """Get the path of the QtWebEngine locales."""
-    if version.is_flatpak():
-        # TranslationsPath is /usr/translations on Flatpak, i.e. the path for qtbase,
-        # not QtWebEngine.
-        base = pathlib.Path('/app/translations')
-    else:
-        base = qtutils.library_path(qtutils.LibraryPath.translations)
-    return base / 'qtwebengine_locales'
-
-
-def _get_lang_override(
-        webengine_version: utils.VersionNumber,
-        locale_name: str
-) -> str | None:
-    """Get a --lang switch to override Qt's locale handling.
-
-    This is needed as a WORKAROUND for https://bugreports.qt.io/browse/QTBUG-91715
-    Fixed with QtWebEngine 5.15.4.
-    """
-    if not config.val.qt.workarounds.locale:
-        return None
-
-    if webengine_version != utils.VersionNumber(5, 15, 3) or not utils.is_linux:
-        return None
-
-    locales_path = _webengine_locales_path()
-    if not locales_path.exists():
-        log.init.debug(f"{locales_path} not found, skipping workaround!")
-        return None
-
-    pak_path = _get_locale_pak_path(locales_path, locale_name)
-    if pak_path.exists():
-        log.init.debug(f"Found {pak_path}, skipping workaround")
-        return None
-
-    pak_name = _get_pak_name(locale_name)
-    pak_path = _get_locale_pak_path(locales_path, pak_name)
-    if pak_path.exists():
-        log.init.debug(f"Found {pak_path}, applying workaround")
-        return pak_name
-
-    log.init.debug(f"Can't find pak in {locales_path} for {locale_name} or {pak_name}")
-    return 'en-US'
-
-
 def _qtwebengine_args(
         versions: version.WebEngineVersions,
         namespace: argparse.Namespace,
@@ -247,13 +151,6 @@ def _qtwebengine_args(
     # https://codereview.qt-project.org/c/qt/qtwebengine-chromium/+/265753
     if 'stack' in namespace.debug_flags:
         yield '--enable-in-process-stack-traces'
-
-    lang_override = _get_lang_override(
-        webengine_version=versions.webengine,
-        locale_name=QLocale().bcp47Name(),
-    )
-    if lang_override is not None:
-        yield f'--lang={lang_override}'
 
     if 'chromium' in namespace.debug_flags:
         yield '--enable-logging'
@@ -334,15 +231,13 @@ _WEBENGINE_SETTINGS: dict[str, dict[Any, _SettingValueType | None]] = {
     'qt.chromium.experimental_web_platform_features': {
         'always': '--enable-experimental-web-platform-features',
         'never': None,
-        'auto':
-            '--enable-experimental-web-platform-features' if machinery.IS_QT5 else None,
+        'auto': None,
     },
     'qt.workarounds.disable_accelerated_2d_canvas': {
         'always': '--disable-accelerated-2d-canvas',
         'never': None,
         'auto': lambda versions: '--disable-accelerated-2d-canvas'
-        if machinery.IS_QT6
-        and versions.webengine
+        if versions.webengine
         and versions.webengine < utils.VersionNumber(6, 8, 2)
         else None,
     },
@@ -351,8 +246,7 @@ _WEBENGINE_SETTINGS: dict[str, dict[Any, _SettingValueType | None]] = {
         'never': None,
         # WORKAROUND for https://qt-project.atlassian.net/browse/QTBUG-142320
         'auto': lambda versions: '--disable-renderer-accessibility'
-        if machinery.IS_QT6
-        and versions.webengine
+        if versions.webengine
         and versions.webengine == utils.VersionNumber(6, 10, 1)
         else None,
     },

@@ -21,13 +21,8 @@ import dataclasses
 from typing import TypeAlias, Union, overload, cast
 from collections.abc import Iterator, Iterable, Mapping
 
-from qutebrowser.qt import machinery
-from qutebrowser.qt.core import Qt, QEvent
+from qutebrowser.qt.core import Qt, QEvent, QKeyCombination
 from qutebrowser.qt.gui import QKeySequence, QKeyEvent
-if machinery.IS_QT6:
-    from qutebrowser.qt.core import QKeyCombination
-else:
-    QKeyCombination: None = None  # QKeyCombination was added in Qt 6
 
 from qutebrowser.utils import utils, qtutils, debug
 
@@ -58,12 +53,8 @@ except ValueError:
     # https://www.riverbankcomputing.com/pipermail/pyqt/2022-April/044607.html
     _NIL_KEY = 0
 
-if machinery.IS_QT6:
-    _KeyInfoType = QKeyCombination
-    _ModifierType: TypeAlias = Qt.KeyboardModifier
-else:
-    _KeyInfoType = int
-    _ModifierType: TypeAlias = Qt.KeyboardModifiers | Qt.KeyboardModifier
+_KeyInfoType = QKeyCombination
+_ModifierType: TypeAlias = Qt.KeyboardModifier
 
 
 _SPECIAL_NAMES = {
@@ -334,10 +325,7 @@ def _unset_modifier_bits(
     for a bug in Python 3.11.4 where that isn't possible with an enum.Flag...:
     https://github.com/python/cpython/issues/105497
     """
-    if machinery.IS_QT5:
-        return Qt.KeyboardModifiers(modifiers & ~mask)  # can lose type if it's 0
-    else:
-        return Qt.KeyboardModifier(modifiers.value & ~mask.value)
+    return Qt.KeyboardModifier(modifiers.value & ~mask.value)
 
 
 @dataclasses.dataclass(frozen=True, order=True)
@@ -355,15 +343,9 @@ class KeyInfo:
 
     def __post_init__(self) -> None:
         """Run some validation on the key/modifier values."""
-        # This changed with Qt 6, and e.g. to_qt() relies on this.
-        if machinery.IS_QT5:
-            modifier_classes = (Qt.KeyboardModifier, Qt.KeyboardModifiers)
-        elif machinery.IS_QT6:
-            modifier_classes = Qt.KeyboardModifier
-        else:
-            raise utils.Unreachable()
+        # e.g. to_qt() relies on this.
         assert isinstance(self.key, Qt.Key), self.key
-        assert isinstance(self.modifiers, modifier_classes), self.modifiers
+        assert isinstance(self.modifiers, Qt.KeyboardModifier), self.modifiers
 
         _assert_plain_key(self.key)
         _assert_plain_modifier(self.modifiers)
@@ -393,25 +375,16 @@ class KeyInfo:
 
     @classmethod
     def from_qt(cls, combination: _KeyInfoType) -> 'KeyInfo':
-        """Construct a KeyInfo from a Qt5-style int or Qt6-style QKeyCombination."""
-        if machinery.IS_QT5:
-            assert isinstance(combination, int)
-            key = Qt.Key(
-                int(combination) & ~Qt.KeyboardModifier.KeyboardModifierMask)
-            modifiers = Qt.KeyboardModifier(
-                int(combination) & Qt.KeyboardModifier.KeyboardModifierMask)
-            return cls(key, modifiers)
-        else:
-            # QKeyCombination is now guaranteed to be available here
-            assert isinstance(combination, QKeyCombination)
-            try:
-                key = combination.key()
-            except ValueError as e:
-                raise InvalidKeyError(str(e))
-            return cls(
-                key=key,
-                modifiers=combination.keyboardModifiers(),
-            )
+        """Construct a KeyInfo from a QKeyCombination."""
+        assert isinstance(combination, QKeyCombination)
+        try:
+            key = combination.key()
+        except ValueError as e:
+            raise InvalidKeyError(str(e))
+        return cls(
+            key=key,
+            modifiers=combination.keyboardModifiers(),
+        )
 
     def __str__(self) -> str:
         """Convert this KeyInfo to a meaningful name.
@@ -476,10 +449,7 @@ class KeyInfo:
 
     def to_qt(self) -> _KeyInfoType:
         """Get something suitable for a QKeySequence."""
-        if machinery.IS_QT5:
-            return int(self.key) | int(self.modifiers)
-        else:
-            return QKeyCombination(self.modifiers, self.key)
+        return QKeyCombination(self.modifiers, self.key)
 
     def with_stripped_modifiers(self, modifiers: Qt.KeyboardModifier) -> "KeyInfo":
         mods = _unset_modifier_bits(self.modifiers, modifiers)

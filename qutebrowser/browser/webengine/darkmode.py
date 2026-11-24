@@ -6,80 +6,15 @@
 
 Overview of blink setting names based on the Qt version:
 
-Qt 5.10 (UNSUPPORTED)
----------------------
-
-First implementation, called "high contrast mode".
-
-- highContrastMode (kOff/kSimpleInvertForTesting/kInvertBrightness/kInvertLightness)
-- highContrastGrayscale (bool)
-- highContrastContrast (float)
-- highContractImagePolicy (kFilterAll/kFilterNone)
-
-Qt 5.11, 5.12, 5.13 (UNSUPPORTED)
----------------------------------
-
-New "smart" image policy.
-
-- Mode/Grayscale/Contrast as above
-- highContractImagePolicy (kFilterAll/kFilterNone/kFilterSmart [new!])
-
-Qt 5.14 (UNSUPPORTED)
----------------------
-
-Renamed to "darkMode".
-
-- darkMode (kOff/kSimpleInvertForTesting/kInvertBrightness/kInvertLightness/
-            kInvertLightnessLAB [new!])
-- darkModeGrayscale (bool)
-- darkModeContrast (float)
-- darkModeImagePolicy (kFilterAll/kFilterNone/kFilterSmart)
-- darkModePagePolicy (kFilterAll/kFilterByBackground) [new!]
-- darkModeTextBrightnessThreshold (int) [new!]
-- darkModeBackgroundBrightnessThreshold (int) [new!]
-- darkModeImageGrayscale (float) [new!]
-
-Qt 5.15.0 and 5.15.1 (UNSUPPORTED)
-----------------------------------
-
-"darkMode" split into "darkModeEnabled" and "darkModeInversionAlgorithm".
-
-- darkModeEnabled (bool) [new!]
-- darkModeInversionAlgorithm (kSimpleInvertForTesting/kInvertBrightness/
-                                kInvertLightness/kInvertLightnessLAB)
-- Rest (except darkMode) as above.
-- NOTE: smart image policy is broken with Qt 5.15.0!
-
-Qt 5.15.2
----------
-
-Prefix changed to "forceDarkMode".
-
-- As with Qt 5.15.0 / .1, but with "forceDarkMode" as prefix.
-
-Qt 5.15.3
----------
-
-Settings split to new --dark-mode-settings switch:
-https://chromium-review.googlesource.com/c/chromium/src/+/2390588
-
-- Everything except forceDarkModeEnabled goes to the other switch.
-- Algorithm uses a different enum with kOff gone.
-- No "forceDarkMode" prefix anymore.
-
-Removed DarkModePagePolicy:
-https://chromium-review.googlesource.com/c/chromium/src/+/2323441
-
-"prefers color scheme dark" changed enum values:
-https://chromium-review.googlesource.com/c/chromium/src/+/2232922
-
-- Now needs to be 0 for dark and 1 for light
-  (before: 0 no preference / 1 dark / 2 light)
-
 Qt 6.2
 ------
 
-No significant changes over 5.15.3
+Baseline for the settings we support (same as the last Qt 5.15 releases):
+
+- "forceDarkModeEnabled" is passed via --blink-settings, all other settings via the
+  separate --dark-mode-settings switch:
+  https://chromium-review.googlesource.com/c/chromium/src/+/2390588
+- "prefers color scheme" needs to be 0 for dark and 1 for light.
 
 Qt 6.3
 ------
@@ -143,8 +78,7 @@ class Variant(enum.Enum):
 
     """A dark mode variant."""
 
-    qt_515_2 = enum.auto()
-    qt_515_3 = enum.auto()
+    qt_62 = enum.auto()
     qt_64 = enum.auto()
     qt_66 = enum.auto()
     qt_67 = enum.auto()
@@ -152,15 +86,8 @@ class Variant(enum.Enum):
 
 # Mapping from a colors.webpage.darkmode.algorithm setting value to
 # Chromium's DarkModeInversionAlgorithm enum values.
+# Based on dark_mode_settings.h
 _ALGORITHMS = {
-    # 0: kOff (not exposed)
-    # 1: kSimpleInvertForTesting (not exposed)
-    'brightness-rgb': 2,  # kInvertBrightness
-    'lightness-hsl': 3,  # kInvertLightness
-    'lightness-cielab': 4,  # kInvertLightnessLAB
-}
-# Qt >= 5.15.3, based on dark_mode_settings.h
-_ALGORITHMS_NEW = {
     # 0: kSimpleInvertForTesting (not exposed)
     'brightness-rgb': 1,  # kInvertBrightness
     'lightness-hsl': 2,  # kInvertLightness
@@ -169,7 +96,7 @@ _ALGORITHMS_NEW = {
 
 # Mapping from a colors.webpage.darkmode.policy.images setting value to
 # Chromium's DarkModeImagePolicy enum values.
-# Values line up with dark_mode_settings.h for 5.15.3+.
+# Values line up with dark_mode_settings.h.
 _IMAGE_POLICIES = {
     'always': 0,  # kFilterAll
     'never': 1,  # kFilterNone
@@ -183,13 +110,6 @@ _IMAGE_CLASSIFIERS = {
     'never': None,
     'smart': 0,  # kNumColorsWithMlFallback
     'smart-simple': 1,  # kTransparencyAndNumColors
-}
-
-# Mapping from a colors.webpage.darkmode.policy.page setting value to
-# Chromium's DarkModePagePolicy enum values.
-_PAGE_POLICIES = {
-    'always': 0,  # kFilterAll
-    'smart': 1,  # kFilterByBackground
 }
 
 _BOOLS = {
@@ -299,25 +219,10 @@ class _Definition:
 # mandatory setting.
 
 _DEFINITIONS: MutableMapping[Variant, _Definition] = {
-    Variant.qt_515_2: _Definition(
-        _Setting('enabled', 'Enabled', _BOOLS),
-        _Setting('algorithm', 'InversionAlgorithm', _ALGORITHMS),
-
-        _Setting('policy.images', 'ImagePolicy', _IMAGE_POLICIES),
-        _Setting('contrast', 'Contrast'),
-
-        _Setting('policy.page', 'PagePolicy', _PAGE_POLICIES),
-        _Setting('threshold.foreground', 'TextBrightnessThreshold'),
-        _Setting('threshold.background', 'BackgroundBrightnessThreshold'),
-
-        mandatory={'enabled', 'policy.images'},
-        prefix='forceDarkMode',
-    ),
-
-    Variant.qt_515_3: _Definition(
+    Variant.qt_62: _Definition(
         # Different switch for settings
         _Setting('enabled', 'forceDarkModeEnabled', _BOOLS),
-        _Setting('algorithm', 'InversionAlgorithm', _ALGORITHMS_NEW),
+        _Setting('algorithm', 'InversionAlgorithm', _ALGORITHMS),
 
         _Setting('policy.images', 'ImagePolicy', _IMAGE_POLICIES),
         _Setting('contrast', 'ContrastPercent'),
@@ -330,7 +235,7 @@ _DEFINITIONS: MutableMapping[Variant, _Definition] = {
         switch_names={'enabled': _BLINK_SETTINGS, None: 'dark-mode-settings'},
     ),
 }
-_DEFINITIONS[Variant.qt_64] = _DEFINITIONS[Variant.qt_515_3].copy_replace_setting(
+_DEFINITIONS[Variant.qt_64] = _DEFINITIONS[Variant.qt_62].copy_replace_setting(
     'threshold.foreground', 'ForegroundBrightnessThreshold',
 )
 _DEFINITIONS[Variant.qt_66] = _DEFINITIONS[Variant.qt_64].copy_add_setting(
@@ -341,27 +246,10 @@ _DEFINITIONS[Variant.qt_67] = _DEFINITIONS[Variant.qt_66].copy_remove_setting('e
 
 
 _SettingValType: TypeAlias = str | usertypes.Unset
-_PREFERRED_COLOR_SCHEME_DEFINITIONS: MutableMapping[Variant, Mapping[_SettingValType, str]] = {
-    Variant.qt_515_2: {
-        # 0: no-preference (not exposed)
-        "dark": "1",
-        "light": "2",
-        # WORKAROUND for https://bugreports.qt.io/browse/QTBUG-89753
-        # Fall back to "light" instead of "no preference" (which was removed from the
-        # standard)
-        "auto": "2",
-        usertypes.UNSET: "2",
-    },
-
-    Variant.qt_515_3: {
-        "dark": "0",
-        "light": "1",
-    },
+_PREFERRED_COLOR_SCHEME_DEFINITION: Mapping[_SettingValType, str] = {
+    "dark": "0",
+    "light": "1",
 }
-for darkmode_variant in Variant:
-    if darkmode_variant not in _PREFERRED_COLOR_SCHEME_DEFINITIONS:
-        _PREFERRED_COLOR_SCHEME_DEFINITIONS[darkmode_variant] = \
-            _PREFERRED_COLOR_SCHEME_DEFINITIONS[Variant.qt_515_3]
 
 
 def _variant(versions: version.WebEngineVersions) -> Variant:
@@ -384,15 +272,7 @@ def _variant(versions: version.WebEngineVersions) -> Variant:
         return Variant.qt_66
     elif versions.webengine >= utils.VersionNumber(6, 4):
         return Variant.qt_64
-    elif (versions.webengine == utils.VersionNumber(5, 15, 2) and
-            versions.chromium_major == 87):
-        # WORKAROUND for Gentoo packaging something newer as 5.15.2...
-        return Variant.qt_515_3
-    elif versions.webengine >= utils.VersionNumber(5, 15, 3):
-        return Variant.qt_515_3
-    elif versions.webengine >= utils.VersionNumber(5, 15, 2):
-        return Variant.qt_515_2
-    raise utils.Unreachable(versions.webengine)
+    return Variant.qt_62
 
 
 def settings(
@@ -424,9 +304,8 @@ def settings(
 
     preferred_color_scheme_key = config.instance.get(
         "colors.webpage.preferred_color_scheme", fallback=False)
-    preferred_color_scheme_defs = _PREFERRED_COLOR_SCHEME_DEFINITIONS[variant]
-    if preferred_color_scheme_key in preferred_color_scheme_defs:
-        value = preferred_color_scheme_defs[preferred_color_scheme_key]
+    if preferred_color_scheme_key in _PREFERRED_COLOR_SCHEME_DEFINITION:
+        value = _PREFERRED_COLOR_SCHEME_DEFINITION[preferred_color_scheme_key]
         result[_BLINK_SETTINGS].append(("preferredColorScheme", value))
 
     if not config.val.colors.webpage.darkmode.enabled:

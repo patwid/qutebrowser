@@ -20,7 +20,7 @@ from qutebrowser.qt.widgets import QApplication
 
 from qutebrowser.utils import log, utils, qtutils, objreg
 from qutebrowser.misc import objects
-from qutebrowser.qt import sip, machinery
+from qutebrowser.qt import sip
 
 
 def log_events(klass: type[QObject]) -> type[QObject]:
@@ -88,10 +88,7 @@ def log_signals(obj: QObject | type[QObject]) -> QObject | type[QObject]:
     return obj
 
 
-if machinery.IS_QT6:
-    _EnumValueType: TypeAlias = enum.Enum | int
-else:
-    _EnumValueType: TypeAlias = sip.simplewrapper | int
+_EnumValueType: TypeAlias = enum.Enum | int
 
 
 def _qenum_key_python(

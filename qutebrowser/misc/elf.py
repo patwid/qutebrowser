@@ -51,7 +51,6 @@ import mmap
 import pathlib
 from typing import IO, ClassVar, cast
 
-from qutebrowser.qt import machinery
 from qutebrowser.utils import log, version, qtutils
 from qutebrowser.misc import binparsing
 
@@ -297,8 +296,7 @@ def parse_webenginecore() -> Versions | None:
     else:
         library_path = qtutils.library_path(qtutils.LibraryPath.libraries)
 
-    suffix = "6" if machinery.IS_QT6 else "5"
-    library_name = sorted(library_path.glob(f'libQt{suffix}WebEngineCore.so*'))
+    library_name = sorted(library_path.glob('libQt6WebEngineCore.so*'))
     if not library_name:
         log.misc.debug(f"No QtWebEngine .so found in {library_path}")
         return None

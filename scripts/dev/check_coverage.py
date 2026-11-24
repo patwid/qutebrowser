@@ -316,7 +316,7 @@ def main_check():
         subprocess.run([sys.executable, '-m', 'coverage', 'report',
                         '--show-missing', '--include', filters], check=True)
         print()
-        print("To debug this, run 'tox -e py39-pyqt515-cov' "
+        print("To debug this, run 'tox -e py314-pyqt611-cov' "
               "(replace Python/Qt versions based on your system) locally and check "
               "htmlcov/index.html")
         print("or check https://codecov.io/github/qutebrowser/qutebrowser")

@@ -8,10 +8,9 @@ import binascii
 import base64
 import itertools
 import functools
-from typing import TypeAlias, cast
+from typing import TypeAlias
 from collections.abc import MutableSequence
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.core import (pyqtBoundSignal, pyqtSlot, QRect, QPoint, QTimer, Qt,
                           QCoreApplication, QEventLoop, QByteArray)
 from qutebrowser.qt.widgets import QWidget, QVBoxLayout, QSizePolicy
@@ -566,10 +565,7 @@ class MainWindow(QWidget):
 
     def _set_decoration(self, hidden):
         """Set the visibility of the window decoration via Qt."""
-        if machinery.IS_QT5:  # FIXME:v4 needed for Qt 5 typing
-            window_flags = cast(Qt.WindowFlags, Qt.WindowType.Window)
-        else:
-            window_flags = Qt.WindowType.Window
+        window_flags = Qt.WindowType.Window
 
         refresh_window = self.isVisible()
         if hidden:

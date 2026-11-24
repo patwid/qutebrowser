@@ -6,9 +6,7 @@
 
 import sys
 import functools
-from typing import cast
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.core import QObject, pyqtSignal, pyqtSlot, QUrl
 from qutebrowser.qt.network import (QNetworkProxy, QNetworkRequest, QHostInfo,
                              QNetworkReply, QNetworkAccessManager,
@@ -211,10 +209,7 @@ class PACResolver:
                     QUrl.UrlFormattingOption.RemovePath |
                     QUrl.UrlFormattingOption.RemoveQuery)
 
-                if machinery.IS_QT5:
-                    string_flags |= cast(QUrl.UrlFormattingOption, https_opts)
-                else:
-                    string_flags |= https_opts
+                string_flags |= https_opts
 
         result = self._resolver.call([query.url().toString(string_flags),
                                       query.peerHostName()])

@@ -12,7 +12,6 @@ import shutil
 
 import pytest
 
-from qutebrowser.qt import machinery
 from qutebrowser.misc import pakjoy, binparsing
 from qutebrowser.utils import utils, version, standarddir, usertypes
 
@@ -195,10 +194,9 @@ def read_patched_manifest():
 
 
 skip_if_incompatible = pytest.mark.skipif(
-    not machinery.IS_QT6
-    or version.qtwebengine_versions(avoid_init=True).webengine
+    version.qtwebengine_versions(avoid_init=True).webengine
     >= utils.VersionNumber(6, 10),
-    reason="Only needed for Qt 6; Qt 6.10+ uses gzip storage for manifest",
+    reason="Qt 6.10+ uses gzip storage for manifest",
 )
 
 

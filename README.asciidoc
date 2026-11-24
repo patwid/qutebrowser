@@ -85,16 +85,15 @@ Requirements
 The following software and libraries are required to run qutebrowser:
 
 * https://www.python.org/[Python] 3.10 or newer
-* https://www.qt.io/[Qt], either 6.2.0 or newer, or 5.15.0 or newer, with the following modules:
+* https://www.qt.io/[Qt] 6.2.0 or newer, with the following modules:
   - QtCore / qtbase
   - QtQuick (part of qtbase or qtdeclarative in some distributions)
   - QtSQL (part of qtbase in some distributions)
   - QtDBus (part of qtbase in some distributions; note that a connection to DBus at
     runtime is optional)
   - QtOpenGL
-  - QtWebEngine (if using Qt 5, 5.15.2 or newer)
+  - QtWebEngine
 * https://www.riverbankcomputing.com/software/pyqt/intro[PyQt] 6.2.2 or newer
-  (Qt 6) or 5.15.0 or newer (Qt 5)
 * https://palletsprojects.com/p/jinja/[jinja2]
 * https://github.com/yaml/pyyaml[PyYAML]
 

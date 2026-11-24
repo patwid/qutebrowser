@@ -189,12 +189,21 @@ class StateConfig(configparser.ConfigParser):
                 return
 
             try:
-                old_chromium_version = version.WebEngineVersions.from_webengine(
-                    old_qtwe_version, source='config').chromium_major
+                old_versions = version.WebEngineVersions.from_webengine(
+                    old_qtwe_version, source='config')
             except ValueError:
                 log.init.warning(
                     f"Unable to parse old QtWebEngine version {old_qtwe_version}")
                 return
+
+            old_chromium_version = old_versions.chromium_major
+            if (
+                old_chromium_version is None
+                and old_versions.webengine < utils.VersionNumber(6)
+            ):
+                # Qt 5 isn't supported anymore, so we don't know the exact Chromium
+                # version - but we know that the last Qt 5 release was based on 87.
+                old_chromium_version = 87
         else:
             try:
                 old_chromium_version = int(old_chromium_version_str)

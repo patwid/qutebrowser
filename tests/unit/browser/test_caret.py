@@ -9,7 +9,6 @@ import textwrap
 import pytest
 from qutebrowser.qt.core import QUrl
 
-from qutebrowser.qt import machinery
 from qutebrowser.utils import utils, usertypes
 from qutebrowser.browser import browsertab
 
@@ -243,7 +242,7 @@ class TestWord:
         selection.check("one")
 
     @pytest.mark.xfail(
-        machinery.IS_QT6 and utils.is_windows,
+        utils.is_windows,
         reason=(
             "move-to-end-of-word is broken with Qt 6 and Windows: "
             "https://github.com/qutebrowser/qutebrowser/issues/8146"

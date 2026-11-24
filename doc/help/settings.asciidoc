@@ -119,7 +119,6 @@
 |<<colors.webpage.darkmode.contrast,colors.webpage.darkmode.contrast>>|Contrast for dark mode.
 |<<colors.webpage.darkmode.enabled,colors.webpage.darkmode.enabled>>|Render all web contents using a dark theme.
 |<<colors.webpage.darkmode.policy.images,colors.webpage.darkmode.policy.images>>|Which images to apply dark mode to.
-|<<colors.webpage.darkmode.policy.page,colors.webpage.darkmode.policy.page>>|Which pages to apply dark mode to.
 |<<colors.webpage.darkmode.threshold.background,colors.webpage.darkmode.threshold.background>>|Threshold for inverting background elements with dark mode.
 |<<colors.webpage.darkmode.threshold.foreground,colors.webpage.darkmode.threshold.foreground>>|Threshold for inverting text with dark mode.
 |<<colors.webpage.preferred_color_scheme,colors.webpage.preferred_color_scheme>>|Value to use for `prefers-color-scheme:` for websites.
@@ -298,7 +297,6 @@
 |<<qt.workarounds.disable_accelerated_2d_canvas,qt.workarounds.disable_accelerated_2d_canvas>>|Disable accelerated 2d canvas to avoid graphical glitches.
 |<<qt.workarounds.disable_accessibility,qt.workarounds.disable_accessibility>>|Disable accessibility to avoid crashes on Qt 6.10.1.
 |<<qt.workarounds.disable_hangouts_extension,qt.workarounds.disable_hangouts_extension>>|Disable the Hangouts extension.
-|<<qt.workarounds.locale,qt.workarounds.locale>>|Work around locale parsing issues in QtWebEngine 5.15.3.
 |<<qt.workarounds.remove_service_workers,qt.workarounds.remove_service_workers>>|Delete the QtWebEngine Service Worker directory on every start.
 |<<scrolling.bar,scrolling.bar>>|When/how to show the scrollbar.
 |<<scrolling.smooth,scrolling.smooth>>|Enable smooth scrolling for web pages.
@@ -1647,7 +1645,7 @@ Type: <<types,String>>
 
 Valid values:
 
- * +lightness-cielab+: Modify colors by converting them to CIELAB color space and inverting the L value. Not available with Qt < 5.14.
+ * +lightness-cielab+: Modify colors by converting them to CIELAB color space and inverting the L value.
  * +lightness-hsl+: Modify colors by converting them to the HSL color space and inverting the lightness (i.e. the "L" in HSL).
  * +brightness-rgb+: Modify colors by subtracting each of r, g, and b from their maximum value.
 
@@ -1693,24 +1691,8 @@ Valid values:
 
  * +always+: Apply dark mode filter to all images.
  * +never+: Never apply dark mode filter to any images.
- * +smart+: Apply dark mode based on image content. Not available with Qt 5.15.0.
+ * +smart+: Apply dark mode based on image content.
  * +smart-simple+: On QtWebEngine 6.6, use a simpler algorithm for smart mode (based on numbers of colors and transparency), rather than an ML-based model. Same as 'smart' on older QtWebEnigne versions.
-
-Default: +pass:[smart]+
-
-[[colors.webpage.darkmode.policy.page]]
-=== colors.webpage.darkmode.policy.page
-Which pages to apply dark mode to.
-The underlying Chromium setting has been removed in QtWebEngine 5.15.3, thus this setting is ignored there. Instead, every element is now classified individually.
-
-This setting requires a restart.
-
-Type: <<types,String>>
-
-Valid values:
-
- * +always+: Apply dark mode filter to all frames, regardless of content.
- * +smart+: Apply dark mode filter to frames based on background color.
 
 Default: +pass:[smart]+
 
@@ -1740,8 +1722,6 @@ Default: +pass:[256]+
 [[colors.webpage.preferred_color_scheme]]
 === colors.webpage.preferred_color_scheme
 Value to use for `prefers-color-scheme:` for websites.
-The "light" value is only available with QtWebEngine 5.15.2+. On older versions, it is the same as "auto".
-The "auto" value is broken on QtWebEngine 5.15.2 due to a Qt bug. There, it will fall back to "light" unconditionally.
 
 This setting requires a restart.
 
@@ -2657,7 +2637,6 @@ Valid values:
  * +ua-gnome-gitlab+
  * +js-whatsapp-web+
  * +js-discord+
- * +js-string-replaceall+
  * +js-array-at+
  * +misc-krunker+
  * +misc-mathml-darkmode+
@@ -3691,7 +3670,7 @@ Default: empty
 [[qt.chromium.experimental_web_platform_features]]
 === qt.chromium.experimental_web_platform_features
 Enables Web Platform features that are in development.
-This passes the `--enable-experimental-web-platform-features` flag to Chromium. By default, this is enabled with Qt 5 to maximize compatibility despite an aging Chromium base.
+This passes the `--enable-experimental-web-platform-features` flag to Chromium.
 
 This setting requires a restart.
 
@@ -3700,7 +3679,7 @@ Type: <<types,String>>
 Valid values:
 
  * +always+: Enable experimental web platform features.
- * +auto+: Enable experimental web platform features when using Qt 5.
+ * +auto+: Currently the same as `never` (used to enable the features with Qt 5).
  * +never+: Disable experimental web platform features.
 
 Default: +pass:[auto]+
@@ -3871,16 +3850,6 @@ Hangouts has been replaced with Meet, which appears to work without this extensi
 Note this setting gets ignored and the Hangouts extension is always disabled to avoid crashes on Qt 6.5.0 to 6.5.3 if dark mode is enabled, as well as on Qt 6.6.0 and Qt 6.11.0.
 
 This setting requires a restart.
-
-Type: <<types,Bool>>
-
-Default: +pass:[false]+
-
-[[qt.workarounds.locale]]
-=== qt.workarounds.locale
-Work around locale parsing issues in QtWebEngine 5.15.3.
-With some locales, QtWebEngine 5.15.3 is unusable without this workaround. In affected scenarios, QtWebEngine will log "Network service crashed, restarting service." and only display a blank page.
-However, It is expected that distributions shipping QtWebEngine 5.15.3 follow up with a proper fix soon, so it is disabled by default.
 
 Type: <<types,Bool>>
 

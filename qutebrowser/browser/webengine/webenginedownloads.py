@@ -8,13 +8,11 @@ import re
 import os.path
 import functools
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.core import pyqtSlot, Qt, QUrl, QObject
 from qutebrowser.qt.webenginecore import QWebEngineDownloadRequest
 
 from qutebrowser.browser import downloads, pdfjs
-from qutebrowser.utils import (debug, usertypes, message, log, objreg, urlutils,
-                               utils, version)
+from qutebrowser.utils import debug, usertypes, message, log, objreg
 
 
 class DownloadItem(downloads.AbstractDownloadItem):
@@ -30,21 +28,18 @@ class DownloadItem(downloads.AbstractDownloadItem):
                  parent: QObject | None = None) -> None:
         super().__init__(manager=manager, parent=manager)
         self._qt_item = qt_item
-        if machinery.IS_QT5:
-            qt_item.downloadProgress.connect(self.stats.on_download_progress)
-        else:  # Qt 6
-            qt_item.receivedBytesChanged.connect(
-                lambda: self.stats.on_download_progress(
-                    qt_item.receivedBytes(),
-                    qt_item.totalBytes(),
-                )
+        qt_item.receivedBytesChanged.connect(
+            lambda: self.stats.on_download_progress(
+                qt_item.receivedBytes(),
+                qt_item.totalBytes(),
             )
-            qt_item.totalBytesChanged.connect(
-                lambda: self.stats.on_download_progress(
-                    qt_item.receivedBytes(),
-                    qt_item.totalBytes(),
-                )
+        )
+        qt_item.totalBytesChanged.connect(
+            lambda: self.stats.on_download_progress(
+                qt_item.receivedBytes(),
+                qt_item.totalBytes(),
             )
+        )
         qt_item.stateChanged.connect(
             self._on_state_changed)
 
@@ -90,11 +85,8 @@ class DownloadItem(downloads.AbstractDownloadItem):
                              "{}".format(state_name))
 
     def _do_die(self):
-        if machinery.IS_QT5:
-            self._qt_item.downloadProgress.disconnect()
-        else:  # Qt 6
-            self._qt_item.receivedBytesChanged.disconnect()
-            self._qt_item.totalBytesChanged.disconnect()
+        self._qt_item.receivedBytesChanged.disconnect()
+        self._qt_item.totalBytesChanged.disconnect()
 
         if self._qt_item.state() != QWebEngineDownloadRequest.DownloadState.DownloadInterrupted:
             self._qt_item.cancel()
@@ -255,24 +247,7 @@ class DownloadManager(downloads.AbstractDownloadManager):
         mime_type = qt_item.mimeType()
         url = qt_item.url()
 
-        # WORKAROUND for https://bugreports.qt.io/browse/QTBUG-90355
-        if version.qtwebengine_versions().webengine >= utils.VersionNumber(5, 15, 3):
-            needs_workaround = False
-        elif url.scheme().lower() == 'data':
-            if '/' in url.path().split(',')[-1]:  # e.g. a slash in base64
-                wrong_filename = url.path().split('/')[-1]
-            else:
-                wrong_filename = mime_type.split('/')[1]
-
-            needs_workaround = qt_filename == wrong_filename
-        else:
-            needs_workaround = False
-
-        if needs_workaround:
-            suggested_filename = urlutils.filename_from_url(
-                url, fallback='qutebrowser-download')
-        else:
-            suggested_filename = _strip_suffix(qt_filename)
+        suggested_filename = _strip_suffix(qt_filename)
 
         use_pdfjs = pdfjs.should_use_pdfjs(mime_type, url)
 

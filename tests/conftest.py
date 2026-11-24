@@ -24,7 +24,6 @@ from helpers import testutils
 from qutebrowser.utils import usertypes, utils, version
 from qutebrowser.misc import objects, earlyinit
 
-from qutebrowser.qt import machinery
 # To register commands
 import qutebrowser.app  # pylint: disable=unused-import
 
@@ -111,16 +110,6 @@ def _apply_platform_markers(config, item):
          pytest.mark.skipif,
          sys.getfilesystemencoding() == 'ascii',
          "Skipped because of ASCII locale"),
-        ('qt5_only',
-         pytest.mark.skipif,
-         not machinery.IS_QT5,
-         f"Only runs on Qt 5, not {machinery.INFO.wrapper}"),
-        ('qt6_only',
-         pytest.mark.skipif,
-         not machinery.IS_QT6,
-         f"Only runs on Qt 6, not {machinery.INFO.wrapper}"),
-        ('qt5_xfail', pytest.mark.xfail, machinery.IS_QT5, "Fails on Qt 5"),
-        ('qt6_xfail', pytest.mark.skipif, machinery.IS_QT6, "Fails on Qt 6"),
         (
             "qt69_ci_flaky",  # WORKAROUND: https://github.com/qutebrowser/qutebrowser/issues/8444#issuecomment-2569610110
             pytest.mark.flaky(reruns=3),

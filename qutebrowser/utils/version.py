@@ -392,19 +392,10 @@ def _create_module_info() -> dict[str, ModuleInfo]:
         ('objc', ['__version__']),
     ]
 
-    if machinery.IS_QT5:
-        packages += [
-            ('PyQt5.QtWebEngineWidgets', []),
-            ('PyQt5.QtWebEngine', ['PYQT_WEBENGINE_VERSION_STR']),
-            ('PyQt5.sip', ['SIP_VERSION_STR']),
-        ]
-    elif machinery.IS_QT6:
-        packages += [
-            ('PyQt6.QtWebEngineCore', ['PYQT_WEBENGINE_VERSION_STR']),
-            ('PyQt6.sip', ['SIP_VERSION_STR']),
-        ]
-    else:
-        raise utils.Unreachable()
+    packages += [
+        ('PyQt6.QtWebEngineCore', ['PYQT_WEBENGINE_VERSION_STR']),
+        ('PyQt6.sip', ['SIP_VERSION_STR']),
+    ]
 
     # Mypy doesn't understand this. See https://github.com/python/mypy/issues/9706
     return {
@@ -500,33 +491,18 @@ def _pdfjs_version() -> str:
 
 
 def _get_pyqt_webengine_qt_version() -> str | None:
-    """Get the version of the PyQtWebEngine-Qt package.
+    """Get the version of the PyQt6-WebEngine-Qt6 package.
 
-    With PyQtWebEngine 5.15.3, the QtWebEngine binary got split into its own
-    PyQtWebEngine-Qt PyPI package:
-
-    https://www.riverbankcomputing.com/pipermail/pyqt/2021-February/043591.html
-    https://www.riverbankcomputing.com/pipermail/pyqt/2021-February/043638.html
-
-    PyQtWebEngine 5.15.4 renamed it to PyQtWebEngine-Qt5...:
-    https://www.riverbankcomputing.com/pipermail/pyqt/2021-March/043699.html
-
-    Here, we try to use importlib.metadata to figure out that version number.
-    If PyQtWebEngine is installed via pip, this will give us an accurate answer.
+    The QtWebEngine binary is shipped in its own PyPI package, separately from the
+    PyQt6-WebEngine bindings. If it was installed via pip, this will give us an
+    accurate answer.
     """
-    names = (
-        ['PyQt6-WebEngine-Qt6']
-        if machinery.IS_QT6 else
-        ['PyQtWebEngine-Qt5', 'PyQtWebEngine-Qt']
-    )
-
-    for name in names:
-        try:
-            return importlib.metadata.version(name)
-        except importlib.metadata.PackageNotFoundError:
-            log.misc.debug(f"{name} not found")
-
-    return None
+    name = 'PyQt6-WebEngine-Qt6'
+    try:
+        return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        log.misc.debug(f"{name} not found")
+        return None
 
 
 @dataclasses.dataclass
@@ -544,8 +520,6 @@ class WebEngineVersions:
     # and/or https://chromereleases.googleblog.com/
 
     _BASES: ClassVar[dict[int, str]] = {
-        83: '83.0.4103.122',  # 2020-06-27, Qt 5.15.2
-        87: '87.0.4280.144',  # 2021-01-08, Qt 5.15
         90: '90.0.4430.228',  # 2021-06-22, Qt 6.2
         94: '94.0.4606.126',  # 2021-11-17, Qt 6.3
         102: '102.0.5005.177',  # 2022-09-01, Qt 6.4
@@ -560,47 +534,6 @@ class WebEngineVersions:
     }
 
     _CHROMIUM_VERSIONS: ClassVar[dict[utils.VersionNumber, tuple[str, str | None]]] = {
-        # ====== UNSUPPORTED =====
-
-        # Qt 5.12: Chromium 69
-        # (LTS)    69.0.3497.128 (~2018-09-11)
-        #          5.12.10: Security fixes up to 86.0.4240.75 (2020-10-06)
-
-        # Qt 5.13: Chromium 73
-        #          73.0.3683.105 (~2019-02-28)
-        #          5.13.2: Security fixes up to 77.0.3865.120 (2019-10-10)
-
-        # Qt 5.14: Chromium 77
-        #          77.0.3865.129 (~2019-10-10)
-        #          5.14.2: Security fixes up to 80.0.3987.132 (2020-03-03)
-
-        # Qt 5.15: Chromium 80
-        #          80.0.3987.163 (2020-04-02)
-        #          5.15.0: Security fixes up to 81.0.4044.138 (2020-05-05)
-        #          5.15.1: Security fixes up to 85.0.4183.83  (2020-08-25)
-
-        # ====== SUPPORTED =====
-        #                               base         security
-        ## Qt 5.15
-        utils.VersionNumber(5, 15, 2): (_BASES[83], '86.0.4240.183'),  # 2020-11-02
-        utils.VersionNumber(5, 15): (_BASES[87], None),  # >= 5.15.3
-        utils.VersionNumber(5, 15, 3): (_BASES[87], '88.0.4324.150'),  # 2021-02-04
-        # 5.15.4 to 5.15.6: unknown security fixes
-        utils.VersionNumber(5, 15, 7): (_BASES[87], '94.0.4606.61'),  # 2021-09-24
-        utils.VersionNumber(5, 15, 8): (_BASES[87], '96.0.4664.110'),  # 2021-12-13
-        utils.VersionNumber(5, 15, 9): (_BASES[87], '98.0.4758.102'),  # 2022-02-14
-        utils.VersionNumber(5, 15, 10): (_BASES[87], '98.0.4758.102'),  # (?) 2022-02-14
-        utils.VersionNumber(5, 15, 11): (_BASES[87], '98.0.4758.102'),  # (?) 2022-02-14
-        utils.VersionNumber(5, 15, 12): (_BASES[87], '98.0.4758.102'),  # (?) 2022-02-14
-        utils.VersionNumber(5, 15, 13): (_BASES[87], '108.0.5359.124'),  # 2022-12-13
-        utils.VersionNumber(5, 15, 14): (_BASES[87], '113.0.5672.64'),  # 2023-05-02
-        # 5.15.15: unknown security fixes
-        utils.VersionNumber(5, 15, 16): (_BASES[87], '119.0.6045.123'),  # 2023-11-07
-        utils.VersionNumber(5, 15, 17): (_BASES[87], '123.0.6312.58'),  # 2024-03-19
-        utils.VersionNumber(5, 15, 18): (_BASES[87], '130.0.6723.59'),  # 2024-10-14
-        utils.VersionNumber(5, 15, 19): (_BASES[87], '135.0.7049.95'),  # 2025-04-14
-
-
         ## Qt 6.2
         utils.VersionNumber(6, 2): (_BASES[90], '93.0.4577.63'),  # 2021-08-31
         utils.VersionNumber(6, 2, 1): (_BASES[90], '94.0.4606.61'),  # 2021-09-24
@@ -751,11 +684,7 @@ class WebEngineVersions:
         if chromium_version is not None:
             return chromium_version, security_version
 
-        # 5.15 patch versions change their QtWebEngine version, but no changes are
-        # expected after 5.15.3 and 5.15.[01] are unsupported.
-        assert pyqt_webengine_version != utils.VersionNumber(5, 15, 2)
-
-        # e.g. 5.15.4 -> 5.15
+        # e.g. 6.5.4 -> 6.5
         # we ignore the security version as that one will have changed from .0
         # and is thus unknown.
         minor_version = pyqt_webengine_version.strip_patch()
@@ -794,7 +723,7 @@ class WebEngineVersions:
 
         This is called if we don't want to fully initialize QtWebEngine (so
         from_ua isn't possible), we're not on Linux (or ELF parsing failed), but we have
-        a PyQtWebEngine-Qt{,5} package from PyPI, so we could query its exact version.
+        a PyQt6-WebEngine-Qt6 package from PyPI, so we could query its exact version.
         """
         parsed = utils.VersionNumber.parse(pyqt_webengine_qt_version)
         chromium, chromium_security = cls._infer_chromium_version(parsed)
@@ -811,7 +740,7 @@ class WebEngineVersions:
 
         This is the "last resort" if we don't want to fully initialize QtWebEngine (so
         from_ua isn't possible), we're not on Linux (or ELF parsing failed), and
-        PyQtWebEngine-Qt{5,} isn't available from PyPI.
+        PyQt6-WebEngine-Qt6 isn't available from PyPI.
 
         Here, we assume that the PyQtWebEngine version is the same as the QtWebEngine
         version, and infer the Chromium version from that. This assumption isn't
@@ -819,31 +748,6 @@ class WebEngineVersions:
         Windows/macOS releases.
         """
         parsed = utils.VersionNumber.parse(pyqt_webengine_version)
-        if utils.VersionNumber(5, 15, 3) <= parsed < utils.VersionNumber(6):
-            # If we land here, we're in a tricky situation where we are forced to guess:
-            #
-            # PyQt 5.15.3 and 5.15.4 from PyPI come with QtWebEngine 5.15.2 (Chromium
-            # 83), not 5.15.3 (Chromium 87). Given that there was no binary release of
-            # QtWebEngine 5.15.3, this is unlikely to change before Qt 6.
-            #
-            # However, at this point:
-            #
-            # - ELF parsing failed
-            #   (so we're likely on macOS or Windows, but not definitely)
-            #
-            # - Getting infos from a PyPI-installed PyQtWebEngine failed
-            #   (so we're either in a PyInstaller-deployed qutebrowser, or a self-built
-            #   or distribution-installed Qt)
-            #
-            # PyQt 5.15.3 and 5.15.4 come with QtWebEngine 5.15.2 (83-based), but if
-            # someone lands here with the last Qt/PyQt installed from source, they might
-            # be using QtWebEngine 5.15.3 (87-based). For now, we play it safe, and only
-            # do this kind of "downgrade" when we know we're using PyInstaller.
-            frozen = hasattr(sys, 'frozen')
-            log.misc.debug(f"PyQt5 >= 5.15.3, frozen {frozen}")
-            if frozen:
-                parsed = utils.VersionNumber(5, 15, 2)
-
         chromium, chromium_security = cls._infer_chromium_version(parsed)
 
         return cls(
@@ -877,30 +781,29 @@ def qtwebengine_versions(*, avoid_init: bool = False) -> WebEngineVersions:
     if override is not None:
         return WebEngineVersions.from_pyqt(override, source='override')
 
-    if machinery.IS_QT6:
+    try:
+        from qutebrowser.qt.webenginecore import (
+            qWebEngineVersion,
+            qWebEngineChromiumVersion,
+        )
+    except ImportError:
+        pass  # Needs QtWebEngine 6.2+ with PyQtWebEngine 6.3.1+
+    else:
         try:
             from qutebrowser.qt.webenginecore import (
-                qWebEngineVersion,
-                qWebEngineChromiumVersion,
+                qWebEngineChromiumSecurityPatchVersion,
             )
+            chromium_security = qWebEngineChromiumSecurityPatchVersion()
         except ImportError:
-            pass  # Needs QtWebEngine 6.2+ with PyQtWebEngine 6.3.1+
-        else:
-            try:
-                from qutebrowser.qt.webenginecore import (
-                    qWebEngineChromiumSecurityPatchVersion,
-                )
-                chromium_security = qWebEngineChromiumSecurityPatchVersion()
-            except ImportError:
-                chromium_security = None  # Needs QtWebEngine 6.3+
+            chromium_security = None  # Needs QtWebEngine 6.3+
 
-            qtwe_version = qWebEngineVersion()
-            assert qtwe_version is not None
-            return WebEngineVersions.from_api(
-                qtwe_version=qtwe_version,
-                chromium_version=qWebEngineChromiumVersion(),
-                chromium_security=chromium_security,
-            )
+        qtwe_version = qWebEngineVersion()
+        assert qtwe_version is not None
+        return WebEngineVersions.from_api(
+            qtwe_version=qtwe_version,
+            chromium_version=qWebEngineChromiumVersion(),
+            chromium_security=chromium_security,
+        )
 
     from qutebrowser.browser.webengine import webenginesettings
 
@@ -934,10 +837,7 @@ def _backend() -> str:
 def _webengine_extensions() -> Sequence[str]:
     """Get a list of WebExtensions enabled in QtWebEngine."""
     lines: list[str] = []
-    if (
-        objects.backend == usertypes.Backend.QtWebEngine
-        and machinery.IS_QT6  # mypy; TODO early return once Qt 5 is dropped
-    ):
+    if objects.backend == usertypes.Backend.QtWebEngine:
         from qutebrowser.browser.webengine import webenginesettings
         lines.append("WebExtensions:")
 
@@ -1172,12 +1072,8 @@ def opengl_info() -> OpenGLInfo | None:  # pragma: no cover
         vp.setVersion(2, 0)
 
         try:
-            if machinery.IS_QT5:
-                vf = ctx.versionFunctions(vp)
-            else:
-                # Qt 6
-                from qutebrowser.qt.opengl import QOpenGLVersionFunctionsFactory
-                vf: Any = QOpenGLVersionFunctionsFactory.get(vp, ctx)
+            from qutebrowser.qt.opengl import QOpenGLVersionFunctionsFactory
+            vf: Any = QOpenGLVersionFunctionsFactory.get(vp, ctx)
         except ImportError as e:
             log.init.debug("Importing version functions failed: {}".format(e))
             return None

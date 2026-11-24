@@ -6,7 +6,6 @@
 
 from typing import Any
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.core import QUrl
 from qutebrowser.qt.webenginecore import QWebEngineCertificateError
 
@@ -17,7 +16,7 @@ class CertificateErrorWrapper(usertypes.AbstractCertificateErrorWrapper):
 
     """A wrapper over a QWebEngineCertificateError.
 
-    Support both Qt 5 and 6.
+    Wraps the Qt 6 API.
     """
 
     def __init__(self, error: QWebEngineCertificateError) -> None:
@@ -26,16 +25,10 @@ class CertificateErrorWrapper(usertypes.AbstractCertificateErrorWrapper):
         self.ignore = False
 
     def __str__(self) -> str:
-        if machinery.IS_QT5:
-            return self._error.errorDescription()
-        else:
-            return self._error.description()
+        return self._error.description()
 
-    def _type(self) -> Any:  # QWebEngineCertificateError.Type or .Error
-        if machinery.IS_QT5:
-            return self._error.error()
-        else:
-            return self._error.type()
+    def _type(self) -> Any:  # QWebEngineCertificateError.Type
+        return self._error.type()
 
     def reject_certificate(self) -> None:
         super().reject_certificate()
@@ -43,10 +36,7 @@ class CertificateErrorWrapper(usertypes.AbstractCertificateErrorWrapper):
 
     def accept_certificate(self) -> None:
         super().accept_certificate()
-        if machinery.IS_QT5:
-            self._error.ignoreCertificateError()
-        else:
-            self._error.acceptCertificate()
+        self._error.acceptCertificate()
 
     def __repr__(self) -> str:
         return utils.get_repr(

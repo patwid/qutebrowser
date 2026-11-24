@@ -149,18 +149,17 @@ class TestQFlagsKey:
 
     @pytest.mark.parametrize('base, value, klass, expected', [
         (Qt, Qt.AlignmentFlag.AlignTop, None, 'AlignTop'),
-        pytest.param(Qt, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, None,
-                     'AlignLeft|AlignTop', marks=pytest.mark.qt5_xfail(raises=AssertionError)),
+        (Qt, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, None,
+         'AlignLeft|AlignTop'),
         (Qt, Qt.AlignmentFlag.AlignCenter, None, 'AlignHCenter|AlignVCenter'),
-        pytest.param(Qt, 0x0021, Qt.AlignmentFlag, 'AlignLeft|AlignTop',
-                     marks=pytest.mark.qt5_xfail(raises=AssertionError)),
+        (Qt, 0x0021, Qt.AlignmentFlag, 'AlignLeft|AlignTop'),
         (Qt, 0x1100, Qt.AlignmentFlag, 'AlignBaseline|0x1000'),
         (Qt, Qt.DockWidgetArea(0), Qt.DockWidgetArea, 'NoDockWidgetArea'),
         (Qt, Qt.DockWidgetArea(0), None, 'NoDockWidgetArea'),
         (Qt, Qt.KeyboardModifier.ShiftModifier, Qt.KeyboardModifier, 'ShiftModifier'),
         (Qt, Qt.KeyboardModifier.ShiftModifier, None, 'ShiftModifier'),
         (Qt, Qt.KeyboardModifier.ShiftModifier | Qt.KeyboardModifier.ControlModifier, Qt.KeyboardModifier, 'ShiftModifier|ControlModifier'),
-        pytest.param(Qt, Qt.KeyboardModifier.ShiftModifier | Qt.KeyboardModifier.ControlModifier, None, 'ShiftModifier|ControlModifier', marks=pytest.mark.qt5_xfail(raises=AssertionError)),
+        (Qt, Qt.KeyboardModifier.ShiftModifier | Qt.KeyboardModifier.ControlModifier, None, 'ShiftModifier|ControlModifier'),
     ])
     def test_qflags_key(self, base, value, klass, expected):
         flags = debug.qflags_key(base, value, klass=klass)

@@ -223,12 +223,6 @@ class NetworkManager(QNetworkAccessManager):
 
     def shutdown(self):
         """Abort all running requests."""
-        try:
-            self.setNetworkAccessible(  # type: ignore[attr-defined,unused-ignore]
-                QNetworkAccessManager.NetworkAccessibility.NotAccessible)  # type: ignore[attr-defined,unused-ignore]
-        except AttributeError:
-            # Qt 5 only, deprecated seemingly without replacement.
-            pass
         self.shutting_down.emit()
 
     # No @pyqtSlot here, see
@@ -361,24 +355,14 @@ class NetworkManager(QNetworkAccessManager):
         download.destroyed.connect(self.on_adopted_download_destroyed)
         download.adopt_download.connect(self.adopt_download)
 
-    def set_referer(self, req, current_url):
+    def set_referer(self, req):
         """Set the referer header."""
-        referer_header_conf = config.val.content.headers.referer
-
-        try:
-            if referer_header_conf == 'never':
-                # Note: using ''.encode('ascii') sends a header with no value,
-                # instead of no header at all
-                req.setRawHeader(b'Referer', QByteArray())
-            elif (referer_header_conf == 'same-domain' and
-                  not urlutils.same_domain(req.url(), current_url)):
-                req.setRawHeader(b'Referer', QByteArray())
-            # If refer_header_conf is set to 'always', we leave the header
-            # alone.
-        except urlutils.InvalidUrlError:
-            # req.url() or current_url can be invalid - this happens on
-            # https://www.playstation.com/ for example.
-            pass
+        if config.val.content.headers.referer == 'never':
+            # Note: using ''.encode('ascii') sends a header with no value,
+            # instead of no header at all
+            req.setRawHeader(b'Referer', QByteArray())
+        # Otherwise, we leave the header alone: We don't have a tab (and thus no
+        # current URL) associated with requests done via QtNetwork.
 
     def createRequest(self, op, req, outgoing_data):  # type: ignore[override]
         """Return a new QNetworkReply object.
@@ -440,5 +424,5 @@ class NetworkManager(QNetworkAccessManager):
                 result.setParent(self)
                 return result
 
-        self.set_referer(req, current_url)
+        self.set_referer(req)
         return super().createRequest(op, req, outgoing_data)

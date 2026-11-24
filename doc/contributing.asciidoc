@@ -112,8 +112,8 @@ Currently, the following tox environments are available:
 
 * Tests using https://www.pytest.org[pytest]:
   - `py310`, `py311`, ...: Run pytest for python 3.10/3.11/... with the system-wide PyQt.
-  - `py310-pyqt515`, ..., `py310-pyqt65`: Run pytest with the given PyQt version (`py311-*` etc. also works).
-  - `py310-pyqt515-cov`: Run with coverage support (other Python/PyQt versions work too).
+  - `py310-pyqt62`, ..., `py314-pyqt611`: Run pytest with the given PyQt version (`py311-*` etc. also works).
+  - `py314-pyqt611-cov`: Run with coverage support (other Python/PyQt versions work too).
 * `flake8`: Run various linting checks via https://pypi.python.org/pypi/flake8[flake8].
 * `vulture`: Run https://pypi.python.org/pypi/vulture[vulture] to find
   unused code portions.
@@ -127,7 +127,6 @@ Currently, the following tox environments are available:
     - VCS conflict markers
     - common spelling mistakes
 * http://mypy-lang.org/[mypy] for static type checking:
-  - `mypy-pyqt5` run mypy with PyQt5 installed
   - `mypy-pyqt6` run mypy with PyQt6 installed
 
 The default test suite is run with `tox`; the list of default
@@ -593,9 +592,7 @@ The hierarchy of widgets when QtWebEngine is involved looks like this:
 - The `WebEngineTab` has a `_widget` attribute, which is the https://doc.qt.io/qt-6/qwebengineview.html[QWebEngineView]
 - That view has a https://doc.qt.io/qt-6/qwebenginepage.html[QWebEnginePage] for everything which doesn't require rendering.
 - The view also has a layout with exactly one element (which also is its `focusProxy()`).
-    - Qt 5: That element is the https://code.qt.io/cgit/qt/qtwebengine.git/tree/src/webenginewidgets/render_widget_host_view_qt_delegate_widget.cpp?h=5.15[RenderWidgetHostViewQtDelegateWidget] (it inherits https://doc.qt.io/qt-6/qquickwidget.html[QQuickWidget]) - also often referred to as RWHV or RWHVQDW.
-      It can be obtained via `sip.cast(tab._widget.focusProxy(), QQuickWidget)`.
-    - Qt 6: That element is the https://code.qt.io/cgit/qt/qtwebengine.git/tree/src/webenginewidgets/api/qwebengineview.cpp[WebEngineQuickWidget] (it inherits https://doc.qt.io/qt-6/qquickwidget.html[QQuickWidget]).
+    - That element is the https://code.qt.io/cgit/qt/qtwebengine.git/tree/src/webenginewidgets/api/qwebengineview.cpp[WebEngineQuickWidget] (it inherits https://doc.qt.io/qt-6/qquickwidget.html[QQuickWidget]).
       It can be obtained via `tab._widget.focusProxy()`.
 - Calling `rootObject()` on that gives us the https://doc.qt.io/qt-6/qquickitem.html[QQuickItem] where Chromium renders into (?). With it, we can do things like `.setRotation(20)`.
 
@@ -683,26 +680,11 @@ Return:
     parties is always correct. Mypy will raise a new issue if it spots an
     "ignore" statement which is no longer needed because the underlying
     issue has been resolved.
-  - One area where we have to take particular care is in code that deals
-    with differences between PyQt5 and PyQt6. We try to write most code in a
-    way that will work with either backend but when you need to deal with
-    differences you should use a pattern like:
-+
-[source,python]
-----
-if machinery.IS_QT5:
-    ... # do PyQt5 specific implementation
-else:
-    # PyQt6
-    ... # do PyQt6 specific implementation
-----
-+
-then you have to https://mypy.readthedocs.io/en/latest/command_line.html#cmdoption-mypy-always-true[tell]
-  mypy to treat `machinery.IS_QT5` as a constant value then run mypy twice to
-  cover both branches. There are a handful of variables in
-  `qutebrowser/qt/machinery.py` that mypy needs to know about. There are tox
-  jobs (`mypy-pyqt5` and `mypy-pyqt6`) that take care of telling mypy to use
-  them as constants.
+  - There are a handful of variables in `qutebrowser/qt/machinery.py` (such as
+    `machinery.USE_PYQT6`) describing the Qt wrapper in use. Mypy needs to be
+    https://mypy.readthedocs.io/en/latest/command_line.html#cmdoption-mypy-always-true[told]
+    to treat those as constant values, which the `mypy-pyqt6` tox job takes care
+    of.
 
 Checklists
 ----------

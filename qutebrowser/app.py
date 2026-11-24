@@ -31,10 +31,9 @@ import datetime
 import argparse
 from collections.abc import Iterable
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.widgets import QApplication, QWidget
 from qutebrowser.qt.gui import QDesktopServices, QPixmap, QIcon
-from qutebrowser.qt.core import pyqtSlot, QUrl, QObject, QEvent, pyqtSignal, Qt
+from qutebrowser.qt.core import pyqtSlot, QUrl, QObject, QEvent, pyqtSignal
 
 import qutebrowser
 from qutebrowser.commands import runners
@@ -343,13 +342,6 @@ def _open_special_pages(args):
          True,
          'qute://warning/sessions'),
 
-        ('qt5-warning-shown',
-         (
-             machinery.IS_QT5 and
-             machinery.INFO.reason == machinery.SelectionReason.auto
-         ),
-         'qute://warning/qt5'),
-
         ('birthday-2023-shown',
          datetime.date.today() == datetime.date(2023, 12, 14),
          'https://qutebrowser.org/birthday.html'),
@@ -546,10 +538,6 @@ class Application(QApplication):
 
         self.launch_time = datetime.datetime.now()
         self.focusObjectChanged.connect(self.on_focus_object_changed)
-
-        if machinery.IS_QT5:
-            # default and removed in Qt 6
-            self.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
 
         self.new_window.connect(self._on_new_window)
 

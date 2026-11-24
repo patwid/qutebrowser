@@ -18,11 +18,11 @@ import enum
 import pathlib
 import operator
 import contextlib
-from typing import (Any, TYPE_CHECKING, BinaryIO, IO, Literal,
-                    TypeAlias, Union, Protocol, cast, overload, TypeVar)
+from typing import (TYPE_CHECKING, BinaryIO, IO, Literal, TypeAlias, Union, Protocol,
+                    cast, overload, TypeVar)
 from collections.abc import Iterator
 
-from qutebrowser.qt import machinery, sip
+from qutebrowser.qt import sip
 from qutebrowser.qt.core import (qVersion, QEventLoop, QDataStream, QByteArray,
                           QIODevice, QFileDevice, QSaveFile, QT_VERSION_STR,
                           PYQT_VERSION_STR, QObject, QUrl, QLibraryInfo)
@@ -179,15 +179,14 @@ def check_qdatastream(stream: QDataStream) -> None:
         QDataStream.Status.WriteFailed: ("The data stream cannot write to the "
                                   "underlying device."),
     }
-    if machinery.IS_QT6:
-        try:
-            status_to_str[QDataStream.Status.SizeLimitExceeded] = (
-                "The data stream cannot read or write the data because its size is larger "
-                "than supported by the current platform."
-            )
-        except AttributeError:
-            # Added in Qt 6.7
-            pass
+    try:
+        status_to_str[QDataStream.Status.SizeLimitExceeded] = (
+            "The data stream cannot read or write the data because its size is larger "
+            "than supported by the current platform."
+        )
+    except AttributeError:
+        # Added in Qt 6.7
+        pass
 
     if stream.status() != QDataStream.Status.Ok:
         raise OSError(status_to_str[stream.status()])
@@ -480,10 +479,7 @@ class QtValueError(ValueError):
         super().__init__(err)
 
 
-if machinery.IS_QT6:
-    _ProcessEventFlagType: TypeAlias = QEventLoop.ProcessEventsFlag
-else:
-    _ProcessEventFlagType: TypeAlias = QEventLoop.ProcessEventsFlag | QEventLoop.ProcessEventsFlags
+_ProcessEventFlagType: TypeAlias = QEventLoop.ProcessEventsFlag
 
 
 class EventLoop(QEventLoop):
@@ -505,8 +501,6 @@ class EventLoop(QEventLoop):
         if self._executing:
             raise AssertionError("Eventloop is already running!")
         self._executing = True
-        if machinery.IS_QT5:
-            flags = cast(QEventLoop.ProcessEventsFlags, flags)
         status = super().exec(flags)
         self._executing = False
         return status
@@ -648,14 +642,9 @@ class LibraryPath(enum.Enum):
 
 
 def library_path(which: LibraryPath) -> pathlib.Path:
-    """Wrapper around QLibraryInfo.path / .location."""
-    if machinery.IS_QT6:
-        val = getattr(QLibraryInfo.LibraryPath, which.value)
-        ret = QLibraryInfo.path(val)
-    else:
-        # Qt 5
-        val = getattr(QLibraryInfo.LibraryLocation, which.value)
-        ret = QLibraryInfo.location(val)
+    """Wrapper around QLibraryInfo.path."""
+    val = getattr(QLibraryInfo.LibraryPath, which.value)
+    ret = QLibraryInfo.path(val)
     assert ret
     return pathlib.Path(ret)
 
@@ -709,37 +698,16 @@ def qobj_repr(obj: QObject | None) -> str:
 _T = TypeVar("_T")
 
 
-if machinery.IS_QT5:
-    # On Qt 5, add/remove Optional where type annotations don't have it.
-    # Also we have a special QT_NONE, which (being Any) we can pass to functions
-    # where PyQt type hints claim that it's not allowed.
+# Those used to add/remove Optional where Qt 5 type annotations didn't have it. With
+# Qt 6, all those things are handled correctly by type annotations, so we have no-ops
+# below.
 
-    def remove_optional(obj: _T | None) -> _T:
-        return cast(_T, obj)
-
-    def add_optional(obj: _T) -> _T | None:
-        return cast(_T | None, obj)
-
-    QT_NONE: Any = None
-else:
-    # On Qt 6, all those things are handled correctly by type annotations, so we
-    # have a no-op below.
-
-    def remove_optional(obj: _T | None) -> _T | None:
-        return obj
-
-    def add_optional(obj: _T | None) -> _T | None:
-        return obj
-
-    QT_NONE: None = None
+def remove_optional(obj: _T | None) -> _T | None:
+    return obj
 
 
-def maybe_cast(to_type: type[_T], do_cast: bool, value: Any) -> _T:
-    """Cast `value` to `to_type` only if `do_cast` is true."""
-    if do_cast:
-        return cast(
-            to_type,  # type: ignore[valid-type]
-            value,
-        )
+def add_optional(obj: _T | None) -> _T | None:
+    return obj
 
-    return value
+
+QT_NONE: None = None

@@ -4,7 +4,6 @@
 
 """Event handling for a browser tab."""
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.core import QObject, QEvent, Qt, QTimer
 from qutebrowser.qt.gui import QKeyEvent
 from qutebrowser.qt.widgets import QWidget
@@ -122,10 +121,8 @@ class TabEventFilter(QObject):
                              e.buttons() == Qt.MouseButton.LeftButton | Qt.MouseButton.RightButton)
 
         if e.button() in [Qt.MouseButton.XButton1, Qt.MouseButton.XButton2] or is_rocker_gesture:
-            if not machinery.IS_QT6:
-                self._mousepress_backforward(e)
-            # FIXME:qt6 For some reason, this doesn't filter the action on
-            # Qt 6...
+            # FIXME:qt6 Qt handles back/forward itself. For some reason, this
+            # doesn't filter the action on Qt 6...
             return True
 
         self._ignore_wheel_event = True
@@ -237,33 +234,6 @@ class TabEventFilter(QObject):
                                   'click-delayed', maybe=True)
 
         self._tab.elements.find_focused(mouserelease_insertmode_cb)
-
-    def _mousepress_backforward(self, e):
-        """Handle back/forward mouse button presses.
-
-        Args:
-            e: The QMouseEvent.
-
-        Return:
-            True if the event should be filtered, False otherwise.
-        """
-        if (not config.val.input.mouse.back_forward_buttons and
-                e.button() in [Qt.MouseButton.XButton1, Qt.MouseButton.XButton2]):
-            # Back and forward on mice are disabled
-            return
-
-        if e.button() in [Qt.MouseButton.XButton1, Qt.MouseButton.LeftButton]:
-            # Back button on mice which have it, or rocker gesture
-            if self._tab.history.can_go_back():
-                self._tab.history.back()
-            else:
-                message.error("At beginning of history.")
-        elif e.button() in [Qt.MouseButton.XButton2, Qt.MouseButton.RightButton]:
-            # Forward button on mice which have it, or rocker gesture
-            if self._tab.history.can_go_forward():
-                self._tab.history.forward()
-            else:
-                message.error("At end of history.")
 
     def eventFilter(self, obj, event):
         """Filter events going to a QWeb(Engine)View.

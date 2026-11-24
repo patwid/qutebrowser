@@ -32,6 +32,18 @@ Removed
     `hints.find_implementation` and `zoom.text_only` were removed.
   * The QtWebKit-only `:debug-clear-ssl-errors` command and the
     `qute://warning/webkit` page were removed.
+- Support for Qt 5 (PyQt5) was removed, Qt 6.2 / PyQt 6.2.2 or newer is now
+  required. As a consequence:
+  * `PyQt5` is not accepted as `--qt-wrapper` / `QUTE_QT_WRAPPER` value anymore.
+  * The Qt 5.15-only settings `qt.workarounds.locale` and
+    `colors.webpage.darkmode.policy.page` were removed.
+  * The `js-string-replaceall` value for `content.site_specific_quirks.skip`
+    was removed (the quirk was only needed with QtWebEngine 5.15.2).
+  * `qt.chromium.experimental_web_platform_features` set to `auto` (the
+    default) now never enables the features, as that was only done with Qt 5.
+  * The `qute://warning/qt5` page was removed.
+  * The `qt_515_2` and `qt_515_3` values for the `QUTE_DARKMODE_VARIANT`
+    debugging environment variable were removed (`qt_62` replaces the latter).
 
 Fixed
 ~~~~~

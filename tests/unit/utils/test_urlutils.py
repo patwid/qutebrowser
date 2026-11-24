@@ -610,38 +610,6 @@ class TestInvalidUrlError:
             assert str(excinfo.value) == expected_text
 
 
-@pytest.mark.parametrize('are_same, url1, url2', [
-    (True, 'http://example.com', 'http://www.example.com'),
-    (True, 'http://bbc.co.uk', 'http://www.bbc.co.uk'),
-    (True, 'http://many.levels.of.domains.example.com', 'http://www.example.com'),
-    (True, 'http://idn.иком.museum', 'http://idn2.иком.museum'),
-    (True, 'http://one.not_a_valid_tld', 'http://one.not_a_valid_tld'),
-
-    (False, 'http://bbc.co.uk', 'http://example.co.uk'),
-    (False, 'https://example.kids.museum', 'http://example.kunst.museum'),
-    (False, 'http://idn.иком.museum', 'http://idn.ירושלים.museum'),
-    (False, 'http://one.not_a_valid_tld', 'http://two.not_a_valid_tld'),
-
-    (False, 'http://example.org', 'https://example.org'),  # different scheme
-    (False, 'http://example.org:80', 'http://example.org:8080'),  # different port
-])
-@pytest.mark.qt5_only  # https://bugreports.qt.io/browse/QTBUG-80308
-def test_same_domain(are_same, url1, url2):
-    """Test same_domain."""
-    assert urlutils.same_domain(QUrl(url1), QUrl(url2)) == are_same
-    assert urlutils.same_domain(QUrl(url2), QUrl(url1)) == are_same
-
-
-@pytest.mark.parametrize('url1, url2', [
-    ('http://example.com', ''),
-    ('', 'http://example.com'),
-])
-def test_same_domain_invalid_url(url1, url2):
-    """Test same_domain with invalid URLs."""
-    with pytest.raises(urlutils.InvalidUrlError):
-        urlutils.same_domain(QUrl(url1), QUrl(url2))
-
-
 def test_file_url():
     assert urlutils.file_url('/foo/bar') == 'file:///foo/bar'
 
