@@ -7,7 +7,6 @@
 import os
 import pathlib
 import sys
-import ssl
 
 import pytest
 import hypothesis
@@ -122,16 +121,11 @@ def _apply_platform_markers(config, item):
          f"Only runs on Qt 6, not {machinery.INFO.wrapper}"),
         ('qt5_xfail', pytest.mark.xfail, machinery.IS_QT5, "Fails on Qt 5"),
         ('qt6_xfail', pytest.mark.skipif, machinery.IS_QT6, "Fails on Qt 6"),
-        ('qtwebkit_openssl3_skip',
-         pytest.mark.skipif,
-         not config.webengine and ssl.OPENSSL_VERSION_INFO[0] == 3,
-         "Failing due to cheroot: https://github.com/cherrypy/cheroot/issues/346"),
         (
             "qt69_ci_flaky",  # WORKAROUND: https://github.com/qutebrowser/qutebrowser/issues/8444#issuecomment-2569610110
             pytest.mark.flaky(reruns=3),
             (
-                config.webengine
-                and version.qtwebengine_versions(avoid_init=True).webengine
+                version.qtwebengine_versions(avoid_init=True).webengine
                 > utils.VersionNumber(6, 9)
                 and testutils.ON_CI
             ),
@@ -141,8 +135,7 @@ def _apply_platform_markers(config, item):
             "qt69_ci_skip",  # WORKAROUND: https://github.com/qutebrowser/qutebrowser/issues/8444#issuecomment-2569610110
             pytest.mark.skipif,
             (
-                config.webengine
-                and version.qtwebengine_versions(avoid_init=True).webengine
+                version.qtwebengine_versions(avoid_init=True).webengine
                 > utils.VersionNumber(6, 9)
                 and testutils.ON_CI
             ),
@@ -260,73 +253,17 @@ def pytest_addoption(parser):
                      default=False, help="Run cProfile for subprocesses.")
     parser.addoption('--qute-strace-subprocs', action='store_true',
                      default=False, help="Run strace for subprocesses.")
-    parser.addoption('--qute-backend', action='store',
-                     choices=['webkit', 'webengine'], help='Set backend for BDD tests')
 
 
 def pytest_configure(config):
-    backend = _select_backend(config)
-    config.webengine = backend == 'webengine'
+    # Fail early if QtWebEngine is not available
+    import qutebrowser.qt.webenginewidgets  # pylint: disable=unused-import
 
     earlyinit.configure_pyqt()
 
 
-def _select_backend(config):
-    """Select the backend for running tests.
-
-    The backend is auto-selected in the following manner:
-    1. Use QtWebKit if available
-    2. Otherwise use QtWebEngine as a fallback
-
-    Auto-selection is overridden by either passing a backend via
-    `--qute-backend=<backend>` or setting the environment variable
-    `QUTE_TESTS_BACKEND=<backend>`.
-
-    Args:
-        config: pytest config
-
-    Raises:
-        ImportError if the selected backend is not available.
-
-    Returns:
-        The selected backend as a string (e.g. 'webkit').
-    """
-    backend_arg = config.getoption('--qute-backend')
-    backend_env = os.environ.get('QUTE_TESTS_BACKEND')
-
-    backend = backend_arg or backend_env or _auto_select_backend()
-
-    # Fail early if selected backend is not available
-    # pylint: disable=unused-import
-    if backend == 'webkit':
-        import qutebrowser.qt.webkitwidgets
-    elif backend == 'webengine':
-        import qutebrowser.qt.webenginewidgets
-    else:
-        raise utils.Unreachable(backend)
-
-    return backend
-
-
-def _auto_select_backend():
-    # pylint: disable=unused-import
-    try:
-        # Try to use QtWebKit as the default backend
-        import qutebrowser.qt.webkitwidgets
-        return 'webkit'
-    except ImportError:
-        # Try to use QtWebEngine as a fallback and fail early
-        # if that's also not available
-        import qutebrowser.qt.webenginewidgets
-        return 'webengine'
-
-
 def pytest_report_header(config):
-    if config.webengine:
-        backend_version = version.qtwebengine_versions(avoid_init=True)
-    else:
-        backend_version = version.qWebKitVersion()
-
+    backend_version = version.qtwebengine_versions(avoid_init=True)
     return f'backend: {backend_version}'
 
 
@@ -348,11 +285,7 @@ def pytest_xvfb_disable() -> bool:
 @pytest.fixture(autouse=True)
 def set_backend(monkeypatch, request):
     """Make sure the backend global is set."""
-    if not request.config.webengine and version.qWebKitVersion:
-        backend = usertypes.Backend.QtWebKit
-    else:
-        backend = usertypes.Backend.QtWebEngine
-    monkeypatch.setattr(objects, 'backend', backend)
+    monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebEngine)
 
 
 @pytest.fixture(autouse=True)
@@ -404,10 +337,9 @@ def init_qtwe_dict_path(
     QtWebEngine stores the dictionary path in a static variable, so we can't do
     this per-test. Hence the session-scope on this fixture.
     """
-    if request.config.webengine:  # type: ignore[att-defined]
-        # Set an empty directory path, this is enough for QtWebEngine to not complain.
-        dictionary_dir = tmp_path_factory.mktemp("qtwebengine_dictionaries")
-        os.environ["QTWEBENGINE_DICTIONARIES_PATH"] = str(dictionary_dir)
+    # Set an empty directory path, this is enough for QtWebEngine to not complain.
+    dictionary_dir = tmp_path_factory.mktemp("qtwebengine_dictionaries")
+    os.environ["QTWEBENGINE_DICTIONARIES_PATH"] = str(dictionary_dir)
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)

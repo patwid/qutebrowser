@@ -554,15 +554,6 @@ def same_domain(url1: QUrl, url2: QUrl) -> bool:
     return domain1 == domain2
 
 
-def encoded_url(url: QUrl) -> str:
-    """Return the fully encoded url as string.
-
-    Args:
-        url: The url to encode as QUrl.
-    """
-    return url.toEncoded().data().decode('ascii')
-
-
 def file_url(path: str) -> str:
     """Return a file:// url (as string) to the given local path.
 

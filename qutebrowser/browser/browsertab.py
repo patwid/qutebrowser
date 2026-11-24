@@ -9,10 +9,9 @@ import pathlib
 import itertools
 import functools
 import dataclasses
-from typing import (cast, TYPE_CHECKING, Any, Optional, TypeAlias, Union)
+from typing import (cast, TYPE_CHECKING, Any, Optional, TypeAlias)
 from collections.abc import Iterable, Sequence, Callable
 
-from qutebrowser.qt import machinery
 from qutebrowser.qt.core import (pyqtSignal, pyqtSlot, QUrl, QObject, QSizeF, Qt,
                           QEvent, QPoint, QRect, QTimer)
 from qutebrowser.qt.gui import QKeyEvent, QIcon, QPixmap
@@ -21,8 +20,6 @@ from qutebrowser.qt.printsupport import QPrintDialog, QPrinter
 from qutebrowser.qt.network import QNetworkAccessManager
 
 if TYPE_CHECKING:
-    from qutebrowser.qt.webkit import QWebHistory, QWebHistoryItem
-    from qutebrowser.qt.webkitwidgets import QWebPage
     from qutebrowser.qt.webenginecore import (
         QWebEngineHistory, QWebEngineHistoryItem, QWebEnginePage)
 
@@ -38,17 +35,16 @@ if TYPE_CHECKING:
     from qutebrowser.browser import webelem
     from qutebrowser.browser.inspector import AbstractWebInspector
     from qutebrowser.browser.webengine.webview import WebEngineView
-    from qutebrowser.browser.webkit.webview import WebView
 
 
 tab_id_gen = itertools.count(0)
-_WidgetType: TypeAlias = Union["WebView", "WebEngineView"]
+_WidgetType: TypeAlias = "WebEngineView"
 
 
 def create(win_id: int,
            private: bool,
            parent: QWidget | None = None) -> 'AbstractTab':
-    """Get a QtWebKit/QtWebEngine tab object.
+    """Get a QtWebEngine tab object.
 
     Args:
         win_id: The window ID where the tab will be shown.
@@ -61,9 +57,6 @@ def create(win_id: int,
     if objects.backend == usertypes.Backend.QtWebEngine:
         from qutebrowser.browser.webengine import webenginetab
         tab_class: type[AbstractTab] = webenginetab.WebEngineTab
-    elif objects.backend == usertypes.Backend.QtWebKit:
-        from qutebrowser.browser.webkit import webkittab
-        tab_class = webkittab.WebKitTab
     else:
         raise utils.Unreachable(objects.backend)
     return tab_class(win_id=win_id, mode_manager=mode_manager, private=private,
@@ -110,10 +103,6 @@ class TabData:
         inspector: The QWebInspector used for this webview.
         viewing_source: Set if we're currently showing a source view.
                         Only used when sources are shown via pygments.
-        open_target: Where to open the next link.
-                     Only used for QtWebKit.
-        override_target: Override for open_target for fake clicks (like hints).
-                         Only used for QtWebKit.
         pinned: Flag to pin the tab.
         fullscreen: Whether the tab has a video shown fullscreen currently.
         netrc_used: Whether netrc authentication was performed.
@@ -124,8 +113,6 @@ class TabData:
     keep_icon: bool = False
     viewing_source: bool = False
     inspector: Optional['AbstractWebInspector'] = None
-    open_target: usertypes.ClickTarget = usertypes.ClickTarget.normal
-    override_target: usertypes.ClickTarget | None = None
     pinned: bool = False
     fullscreen: bool = False
     netrc_used: bool = False
@@ -142,7 +129,7 @@ class AbstractAction:
 
     """Attribute ``action`` of AbstractTab for Qt WebActions."""
 
-    action_base: type[Union['QWebPage.WebAction', 'QWebEnginePage.WebAction']]
+    action_base: type['QWebEnginePage.WebAction']
 
     def __init__(self, tab: 'AbstractTab') -> None:
         self._widget = cast(_WidgetType, None)
@@ -692,7 +679,7 @@ class AbstractHistoryPrivate:
 
     """Private API related to the history."""
 
-    _history: Union["QWebHistory", "QWebEngineHistory"]
+    _history: "QWebEngineHistory"
 
     def serialize(self) -> bytes:
         """Serialize into an opaque format understood by self.deserialize."""
@@ -713,13 +700,13 @@ class AbstractHistory:
 
     def __init__(self, tab: 'AbstractTab') -> None:
         self._tab = tab
-        self._history = cast(Union['QWebHistory', 'QWebEngineHistory'], None)
+        self._history = cast('QWebEngineHistory', None)
         self.private_api = AbstractHistoryPrivate()
 
     def __len__(self) -> int:
         raise NotImplementedError
 
-    def __iter__(self) -> Iterable[Union['QWebHistoryItem', 'QWebEngineHistoryItem']]:
+    def __iter__(self) -> Iterable['QWebEngineHistoryItem']:
         raise NotImplementedError
 
     def _check_count(self, count: int) -> None:
@@ -730,7 +717,7 @@ class AbstractHistory:
     def current_idx(self) -> int:
         raise NotImplementedError
 
-    def current_item(self) -> Union['QWebHistoryItem', 'QWebEngineHistoryItem']:
+    def current_item(self) -> 'QWebEngineHistoryItem':
         raise NotImplementedError
 
     def back(self, count: int = 1) -> None:
@@ -910,27 +897,14 @@ class AbstractTabPrivate:
         QTimer.singleShot(
             65, lambda: self._tab.elements.find_focused(_auto_insert_mode_cb))
 
-    def clear_ssl_errors(self) -> None:
-        raise NotImplementedError
-
     def networkaccessmanager(self) -> QNetworkAccessManager | None:
         """Get the QNetworkAccessManager for this tab.
 
-        This is only implemented for QtWebKit.
         For QtWebEngine, always returns None.
         """
         raise NotImplementedError
 
     def shutdown(self) -> None:
-        raise NotImplementedError
-
-    def run_js_sync(self, code: str) -> Any:
-        """Run javascript sync.
-
-        Result will be returned when running JS is complete.
-        This is only implemented for QtWebKit.
-        For QtWebEngine, always raises UnsupportedOperationError.
-        """
         raise NotImplementedError
 
     def _recreate_inspector(self) -> None:
@@ -959,7 +933,7 @@ class AbstractTabPrivate:
     def _init_inspector(self, splitter: 'miscwidgets.InspectorSplitter',
            win_id: int,
            parent: QWidget | None = None) -> 'AbstractWebInspector':
-        """Get a WebKitInspector/WebEngineInspector.
+        """Get a WebEngineInspector.
 
         Args:
             splitter: InspectorSplitter where the inspector can be placed.
@@ -1068,10 +1042,9 @@ class AbstractTab(QWidget):
     def _set_widget(self, widget: _WidgetType) -> None:
         # pylint: disable=protected-access
         self._widget = widget
-        # FIXME:v4 ignore needed for QtWebKit
         self.data.splitter = miscwidgets.InspectorSplitter(
             win_id=self.win_id,
-            main_webview=widget,  # type: ignore[arg-type,unused-ignore]
+            main_webview=widget,
         )
         self._layout.wrap(self, self.data.splitter)
         self.history._history = widget.history()
@@ -1169,7 +1142,6 @@ class AbstractTab(QWidget):
                 msg = urlutils.get_errstring(navigation.url,
                                              "Invalid link clicked")
                 message.error(msg)
-                self.data.open_target = usertypes.ClickTarget.normal
 
             log.webview.debug("Ignoring invalid URL {} in "
                               "acceptNavigationRequest: {}".format(
@@ -1315,15 +1287,10 @@ class AbstractTab(QWidget):
             pic = self._widget.grab()
         else:
             qtutils.ensure_valid(rect)
-            # FIXME:v4 ignore needed for QtWebKit
-            pic = self._widget.grab(rect)  # type: ignore[arg-type,unused-ignore]
+            pic = self._widget.grab(rect)
 
         if pic.isNull():
             return None
-
-        if machinery.IS_QT6:
-            # FIXME:v4 cast needed for QtWebKit
-            pic = cast(QPixmap, pic)
 
         return pic
 
@@ -1340,9 +1307,4 @@ class AbstractTab(QWidget):
     def is_deleted(self) -> bool:
         """Check if the tab has been deleted."""
         assert self._widget is not None
-        # FIXME:v4 cast needed for QtWebKit
-        if machinery.IS_QT6:
-            widget = cast(QWidget, self._widget)
-        else:
-            widget = self._widget
-        return sip.isdeleted(widget)
+        return sip.isdeleted(self._widget)

@@ -451,6 +451,3 @@ def test_options(configdata_init):
         if opt.backends:
             # On older Qt versions, this is an empty list.
             assert opt.backends == [usertypes.Backend.QtWebEngine], name
-
-        if opt.raw_backends is not None:
-            assert not opt.raw_backends['QtWebKit'], name

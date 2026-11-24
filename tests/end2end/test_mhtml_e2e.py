@@ -5,8 +5,6 @@
 """Test mhtml downloads based on sample files."""
 
 import pathlib
-import re
-import collections
 
 import pytest
 
@@ -16,26 +14,6 @@ def collect_tests():
     datadir = basedir / 'data' / 'downloads' / 'mhtml'
     files = [x.name for x in datadir.iterdir()]
     return files
-
-
-def normalize_line(line):
-    line = line.rstrip('\n')
-    line = re.sub('boundary="---=_qute-[0-9a-f-]+"',
-                  'boundary="---=_qute-UUID"', line)
-    line = re.sub('^-----+=_qute-[0-9a-f-]+$',
-                  '-----=_qute-UUID', line)
-    line = re.sub(r'localhost:\d{1,5}', 'localhost:(port)', line)
-
-    # Depending on Python's mimetypes module/the system's mime files, .js
-    # files could be either identified as x-javascript or just javascript
-    line = line.replace('Content-Type: application/x-javascript',
-                        'Content-Type: application/javascript')
-
-    # With QtWebKit and newer Werkzeug versions, we also get an encoding
-    # specified.
-    line = line.replace('javascript; charset=utf-8', 'javascript')
-
-    return line
 
 
 class DownloadDir:
@@ -55,40 +33,14 @@ class DownloadDir:
     def sanity_check_mhtml(self):
         assert 'Content-Type: multipart/related' in '\n'.join(self.read_file())
 
-    def compare_mhtml(self, filename):
-        with open(filename, 'r', encoding='utf-8') as f:
-            expected_data = '\n'.join(normalize_line(line)
-                                      for line in f
-                                      if normalize_line(line) is not None)
-        actual_data = '\n'.join(normalize_line(line)
-                                for line in self.read_file())
-        assert actual_data == expected_data
-
 
 @pytest.fixture
 def download_dir(tmp_path, pytestconfig):
     return DownloadDir(tmp_path, pytestconfig)
 
 
-def _test_mhtml_requests(test_dir, test_path, server):
-    with (test_dir / 'requests').open(encoding='utf-8') as f:
-        expected_requests = []
-        for line in f:
-            if line.startswith('#'):
-                continue
-            path = '/{}/{}'.format(test_path, line.strip())
-            expected_requests.append(server.ExpectedRequest('GET', path))
-
-    actual_requests = server.get_requests()
-    # Requests are not hashable, we need to convert to ExpectedRequests
-    actual_requests = [server.ExpectedRequest.from_request(req)
-                       for req in actual_requests]
-    assert (collections.Counter(actual_requests) ==
-            collections.Counter(expected_requests))
-
-
 @pytest.mark.parametrize('test_name', collect_tests())
-def test_mhtml(request, test_name, download_dir, quteproc, server):
+def test_mhtml(test_name, download_dir, quteproc, server):
     quteproc.set_setting('downloads.location.directory', download_dir.location)
     quteproc.set_setting('downloads.location.prompt', 'false')
 
@@ -112,12 +64,4 @@ def test_mhtml(request, test_name, download_dir, quteproc, server):
     quteproc.wait_for(category='downloads',
                       message='File successfully written.')
 
-    if request.config.webengine:
-        download_dir.sanity_check_mhtml()
-        return
-
-    filename = test_name + '.mht'
-    expected_file = test_dir / filename
-
-    download_dir.compare_mhtml(expected_file)
-    _test_mhtml_requests(test_dir, test_path, server)
+    download_dir.sanity_check_mhtml()

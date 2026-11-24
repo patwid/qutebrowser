@@ -31,9 +31,9 @@ import qutebrowser
 from qutebrowser.config import (config, configdata, configtypes, configexc,
                                 configfiles, configcache, stylesheet)
 from qutebrowser.api import config as configapi
-from qutebrowser.utils import objreg, standarddir, utils, usertypes, version
+from qutebrowser.utils import objreg, standarddir, usertypes, version
 from qutebrowser.browser import greasemonkey, history, qutescheme
-from qutebrowser.browser.webkit import cookies, cache
+from qutebrowser.browser.network import cookies, cache
 from qutebrowser.misc import savemanager, sql, objects, sessions
 from qutebrowser.keyinput import modeman
 from qutebrowser.qt import sip
@@ -186,7 +186,7 @@ def testdata_scheme(qapp):
 def web_tab_setup(qtbot, tab_registry, session_manager_stub,
                   greasemonkey_manager, fake_args, config_stub,
                   testdata_scheme):
-    """Shared setup for webkit_tab/webengine_tab."""
+    """Shared setup for webengine_tab."""
     # Make sure error logging via JS fails tests
     config_stub.val.content.javascript.log = {
         'info': 'info',
@@ -194,24 +194,6 @@ def web_tab_setup(qtbot, tab_registry, session_manager_stub,
         'unknown': 'error',
         'warning': 'error',
     }
-
-
-@pytest.fixture
-def webkit_tab(web_tab_setup, qtbot, cookiejar_and_cache, mode_manager,
-               widget_container, download_stub, webpage, monkeypatch):
-    webkittab = pytest.importorskip('qutebrowser.browser.webkit.webkittab')
-
-    monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebKit)
-
-    tab = webkittab.WebKitTab(win_id=0, mode_manager=mode_manager,
-                              private=False)
-    tab.backend = usertypes.Backend.QtWebKit
-    widget_container.set_widget(tab)
-
-    yield tab
-
-    # Make sure the tab shuts itself down properly
-    tab.private_api.shutdown()
 
 
 @pytest.fixture
@@ -247,17 +229,10 @@ def webengine_tab(web_tab_setup, qtbot, redirect_webengine_data,
     sip.delete(tab._widget)
 
 
-@pytest.fixture(params=['webkit', 'webengine'])
-def web_tab(request):
-    """A WebKitTab/WebEngineTab."""
-    if request.param == 'webkit':
-        pytest.importorskip('qutebrowser.browser.webkit.webkittab')
-        return request.getfixturevalue('webkit_tab')
-    elif request.param == 'webengine':
-        pytest.importorskip('qutebrowser.browser.webengine.webenginetab')
-        return request.getfixturevalue('webengine_tab')
-    else:
-        raise utils.Unreachable
+@pytest.fixture
+def web_tab(webengine_tab):
+    """A WebEngineTab."""
+    return webengine_tab
 
 
 def _generate_cmdline_tests():
@@ -414,19 +389,6 @@ def unicode_encode_err():
                               'fake exception')  # reason
 
 
-@pytest.fixture(scope='session')
-def qnam(qapp):
-    """Session-wide QNetworkAccessManager."""
-    from qutebrowser.qt.network import QNetworkAccessManager
-    nam = QNetworkAccessManager()
-    try:
-        nam.setNetworkAccessible(QNetworkAccessManager.NetworkAccessibility.NotAccessible)
-    except AttributeError:
-        # Qt 5 only, deprecated seemingly without replacement.
-        pass
-    return nam
-
-
 @pytest.fixture
 def webengineview(qtbot, monkeypatch, web_tab_setup):
     """Get a QWebEngineView if QtWebEngine is available."""
@@ -435,52 +397,6 @@ def webengineview(qtbot, monkeypatch, web_tab_setup):
     view = QtWebEngineWidgets.QWebEngineView()
     qtbot.add_widget(view)
     return view
-
-
-@pytest.fixture
-def webpage(qnam, monkeypatch):
-    """Get a new QWebPage object."""
-    QtWebKitWidgets = pytest.importorskip('qutebrowser.qt.webkitwidgets')
-    monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebKit)
-
-    class WebPageStub(QtWebKitWidgets.QWebPage):
-
-        """QWebPage with default error pages disabled."""
-
-        def supportsExtension(self, _ext):
-            """No extensions needed."""
-            return False
-
-    page = WebPageStub()
-
-    page.networkAccessManager().deleteLater()
-    page.setNetworkAccessManager(qnam)
-
-    from qutebrowser.browser.webkit import webkitsettings
-    webkitsettings._init_user_agent()
-
-    return page
-
-
-@pytest.fixture
-def webview(qtbot, webpage):
-    """Get a new QWebView object."""
-    QtWebKitWidgets = pytest.importorskip('qutebrowser.qt.webkitwidgets')
-
-    view = QtWebKitWidgets.QWebView()
-    qtbot.add_widget(view)
-
-    view.page().deleteLater()
-    view.setPage(webpage)
-
-    view.resize(640, 480)
-    return view
-
-
-@pytest.fixture
-def webframe(webpage):
-    """Convenience fixture to get a mainFrame of a QWebPage."""
-    return webpage.mainFrame()
 
 
 @pytest.fixture
@@ -521,7 +437,7 @@ def fake_save_manager():
 @pytest.fixture
 def fake_args(request, monkeypatch):
     ns = types.SimpleNamespace()
-    ns.backend = 'webengine' if request.config.webengine else 'webkit'
+    ns.backend = 'webengine'
     ns.debug_flags = []
 
     monkeypatch.setattr(objects, 'args', ns)

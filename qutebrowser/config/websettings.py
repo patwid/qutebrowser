@@ -198,13 +198,9 @@ class AbstractSettings:
 @debugcachestats.register(name='user agent cache')
 @functools.lru_cache
 def _format_user_agent(template: str, backend: usertypes.Backend) -> str:
-    if backend == usertypes.Backend.QtWebEngine:
-        from qutebrowser.browser.webengine import webenginesettings
-        parsed = webenginesettings.parsed_user_agent
-    else:
-        from qutebrowser.browser.webkit import webkitsettings
-        parsed = webkitsettings.parsed_user_agent
-
+    assert backend == usertypes.Backend.QtWebEngine, backend
+    from qutebrowser.browser.webengine import webenginesettings
+    parsed = webenginesettings.parsed_user_agent
     assert parsed is not None
 
     return template.format(
@@ -234,9 +230,6 @@ def init(args: argparse.Namespace) -> None:
     if objects.backend == usertypes.Backend.QtWebEngine:
         from qutebrowser.browser.webengine import webenginesettings
         webenginesettings.init()
-    elif objects.backend == usertypes.Backend.QtWebKit:
-        from qutebrowser.browser.webkit import webkitsettings
-        webkitsettings.init()
     else:
         raise utils.Unreachable(objects.backend)
 
@@ -252,10 +245,6 @@ def clear_private_data() -> None:
     if objects.backend == usertypes.Backend.QtWebEngine:
         from qutebrowser.browser.webengine import webenginesettings
         webenginesettings.init_private_profile()
-    elif objects.backend == usertypes.Backend.QtWebKit:
-        from qutebrowser.browser.webkit import cookies
-        assert cookies.ram_cookie_jar is not None
-        cookies.ram_cookie_jar.setAllCookies([])
     else:
         raise utils.Unreachable(objects.backend)
 
@@ -266,8 +255,5 @@ def shutdown() -> None:
     if objects.backend == usertypes.Backend.QtWebEngine:
         from qutebrowser.browser.webengine import webenginesettings
         webenginesettings.shutdown()
-    elif objects.backend == usertypes.Backend.QtWebKit:
-        from qutebrowser.browser.webkit import webkitsettings
-        webkitsettings.shutdown()
     else:
         raise utils.Unreachable(objects.backend)

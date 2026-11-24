@@ -92,14 +92,7 @@ The following software and libraries are required to run qutebrowser:
   - QtDBus (part of qtbase in some distributions; note that a connection to DBus at
     runtime is optional)
   - QtOpenGL
-  - QtWebEngine (if using Qt 5, 5.15.2 or newer), or
-  - alternatively QtWebKit (5.212) - **This is not recommended** due to known security
-    issues in QtWebKit, you most likely want to use qutebrowser with the
-    default QtWebEngine backend (based on Chromium) instead. Quoting the
-    https://github.com/qtwebkit/qtwebkit/releases[QtWebKit releases page]:
-    _[The latest QtWebKit] release is based on [an] old WebKit revision with known
-unpatched vulnerabilities. Please use it carefully and avoid visiting untrusted
-websites and using it for transmission of sensitive data._
+  - QtWebEngine (if using Qt 5, 5.15.2 or newer)
 * https://www.riverbankcomputing.com/software/pyqt/intro[PyQt] 6.2.2 or newer
   (Qt 6) or 5.15.0 or newer (Qt 5)
 * https://palletsprojects.com/p/jinja/[jinja2]
@@ -112,9 +105,8 @@ On macOS, the following libraries are also required:
 The following libraries are optional:
 
 * https://pypi.org/project/adblock/[adblock] (for improved adblocking using ABP syntax)
-* https://pygments.org/[pygments] for syntax highlighting with `:view-source`
-  on QtWebKit, or when using `:view-source --pygments` with the (default)
-  QtWebEngine backend.
+* https://pygments.org/[pygments] for syntax highlighting when using
+  `:view-source --pygments`.
 * On Windows, https://pypi.python.org/pypi/colorama/[colorama] for colored log
   output.
 * https://asciidoc.org/[asciidoc] to generate the documentation for the `:help`

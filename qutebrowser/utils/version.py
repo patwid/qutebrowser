@@ -31,13 +31,8 @@ from qutebrowser.qt.opengl import QOpenGLVersionProfile
 from qutebrowser.qt.widgets import QApplication
 
 try:
-    from qutebrowser.qt.webkit import qWebKitVersion
-except ImportError:  # pragma: no cover
-    qWebKitVersion = None  # type: ignore[assignment]  # noqa: N816
-try:
     from qutebrowser.qt.webenginecore import PYQT_WEBENGINE_VERSION_STR
 except ImportError:  # pragma: no cover
-    # QtWebKit
     PYQT_WEBENGINE_VERSION_STR = None  # type: ignore[assignment]
 
 
@@ -401,7 +396,6 @@ def _create_module_info() -> dict[str, ModuleInfo]:
         packages += [
             ('PyQt5.QtWebEngineWidgets', []),
             ('PyQt5.QtWebEngine', ['PYQT_WEBENGINE_VERSION_STR']),
-            ('PyQt5.QtWebKitWidgets', []),
             ('PyQt5.sip', ['SIP_VERSION_STR']),
         ]
     elif machinery.IS_QT6:
@@ -931,9 +925,7 @@ def qtwebengine_versions(*, avoid_init: bool = False) -> WebEngineVersions:
 
 def _backend() -> str:
     """Get the backend line with relevant information."""
-    if objects.backend == usertypes.Backend.QtWebKit:
-        return 'new QtWebKit (WebKit {})'.format(qWebKitVersion())
-    elif objects.backend == usertypes.Backend.QtWebEngine:
+    if objects.backend == usertypes.Backend.QtWebEngine:
         return str(qtwebengine_versions(
             avoid_init='avoid-chromium-init' in objects.debug_flags))
     raise utils.Unreachable(objects.backend)

@@ -847,7 +847,7 @@ Evaluate a JavaScript string.
 
 * +*-u*+, +*--url*+: Interpret js-code as a `javascript:...` URL.
 * +*-q*+, +*--quiet*+: Don't show resulting JS object.
-* +*-w*+, +*--world*+: Ignored on QtWebKit. On QtWebEngine, a world ID or name to run the snippet in. Predefined world names are:
+* +*-w*+, +*--world*+: A world ID or name to run the snippet in. Predefined world names are:
  
 
  - `main` (same world as the web page's JavaScript and
@@ -1609,8 +1609,7 @@ Show the source of the current page in a new tab.
 
 ==== optional arguments
 * +*-e*+, +*--edit*+: Edit the source in the editor instead of opening a tab.
-* +*-p*+, +*--pygments*+: Use pygments to generate the view. This is always the case for QtWebKit. For QtWebEngine it may display
- slightly different source.
+* +*-p*+, +*--pygments*+: Use pygments to generate the view. It may display slightly different source.
  Some JavaScript processing may be applied.
  Needs the optional Pygments dependency for highlighting.
 
@@ -2072,7 +2071,6 @@ These commands are mainly intended for debugging. They are hidden if qutebrowser
 |Command|Description
 |<<debug-all-objects,debug-all-objects>>|Print a list of  all objects to the debug log.
 |<<debug-cache-stats,debug-cache-stats>>|Print LRU cache stats.
-|<<debug-clear-ssl-errors,debug-clear-ssl-errors>>|Clear remembered SSL error answers.
 |<<debug-console,debug-console>>|Show the debugging console.
 |<<debug-crash,debug-crash>>|Crash for debugging purposes.
 |<<debug-dump-history,debug-dump-history>>|Dump the history to a file in the old pre-SQL format.
@@ -2092,10 +2090,6 @@ Print a list of  all objects to the debug log.
 [[debug-cache-stats]]
 === debug-cache-stats
 Print LRU cache stats.
-
-[[debug-clear-ssl-errors]]
-=== debug-clear-ssl-errors
-Clear remembered SSL error answers.
 
 [[debug-console]]
 === debug-console

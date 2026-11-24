@@ -9,8 +9,6 @@ import email.errors
 import dataclasses
 import os.path
 
-from qutebrowser.qt.network import QNetworkRequest
-
 from qutebrowser.utils import log, utils
 
 
@@ -160,27 +158,3 @@ def parse_content_disposition(reply):
     if not filename:
         filename = 'qutebrowser-download'
     return is_inline, os.path.basename(filename)
-
-
-def parse_content_type(reply):
-    """Parse a Content-Type header.
-
-    The parsing done here is very cheap, as we really only want to get the
-    Mimetype. Parameters aren't parsed specially.
-
-    Args:
-        reply: The QNetworkReply to handle.
-
-    Return:
-        A [mimetype, rest] list, or [None, None] if unset.
-        Rest can be None.
-    """
-    content_type = reply.header(QNetworkRequest.KnownHeaders.ContentTypeHeader)
-    if content_type is None:
-        return [None, None]
-    if ';' in content_type:
-        ret = content_type.split(';', maxsplit=1)
-    else:
-        ret = [content_type, None]
-    ret[0] = ret[0].strip()
-    return ret

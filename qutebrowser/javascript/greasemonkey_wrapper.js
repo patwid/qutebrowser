@@ -166,7 +166,6 @@
     };
 
     const unsafeWindow = window;
-    {% if use_proxy %}
     /*
      * Try to give userscripts an environment that they expect. Which seems
      * to be that the global window object should look the same as the page's
@@ -215,9 +214,4 @@
 {{ scriptSource }}
         // ====== End User Script ====== //
     };
-    {% else %}
-        // ====== The actual user script source ====== //
-{{ scriptSource }}
-        // ====== End User Script ====== //
-    {% endif %}
 })();

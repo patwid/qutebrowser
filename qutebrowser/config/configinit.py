@@ -103,7 +103,6 @@ def _update_font_defaults(setting: str) -> None:
 def get_backend(args: argparse.Namespace) -> usertypes.Backend:
     """Find out what backend to use based on available libraries."""
     str_to_backend = {
-        'webkit': usertypes.Backend.QtWebKit,
         'webengine': usertypes.Backend.QtWebEngine,
     }
 

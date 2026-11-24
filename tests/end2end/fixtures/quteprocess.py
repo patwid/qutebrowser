@@ -465,10 +465,9 @@ class QuteProc(testprocess.Process):
         return executable, args
 
     def _default_args(self):
-        backend = 'webengine' if self.request.config.webengine else 'webkit'
         args = ['--debug', '--no-err-windows', '--temp-basedir',
                 '--json-logging', '--loglevel', 'vdebug',
-                '--backend', backend,
+                '--backend', 'webengine',
                 '--debug-flag', 'no-sql-history',
                 '--debug-flag', 'werror',
                 '--debug-flag', 'test-notification-service',
@@ -476,11 +475,10 @@ class QuteProc(testprocess.Process):
                 '--qt-flag', 'disable-features=PaintHoldingCrossOrigin',
                 '--qt-arg', 'geometry', '800x600+0+0']
 
-        if self.request.config.webengine:
-            if testutils.disable_seccomp_bpf_sandbox():
-                args += testutils.DISABLE_SECCOMP_BPF_ARGS
-            if testutils.use_software_rendering():
-                args += testutils.SOFTWARE_RENDERING_ARGS
+        if testutils.disable_seccomp_bpf_sandbox():
+            args += testutils.DISABLE_SECCOMP_BPF_ARGS
+        if testutils.use_software_rendering():
+            args += testutils.SOFTWARE_RENDERING_ARGS
 
         args.append('about:blank')
         return args

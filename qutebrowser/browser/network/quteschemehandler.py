@@ -2,13 +2,13 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""QtWebKit specific qute://* handlers and glue code."""
+"""QtNetwork specific qute://* handlers and glue code."""
 
 from qutebrowser.qt.core import QUrl
 from qutebrowser.qt.network import QNetworkReply, QNetworkAccessManager
 
 from qutebrowser.browser import qutescheme
-from qutebrowser.browser.webkit.network import networkreply
+from qutebrowser.browser.network import networkreply
 from qutebrowser.utils import log, qtutils
 
 

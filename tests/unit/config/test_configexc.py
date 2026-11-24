@@ -57,17 +57,17 @@ def test_no_autoconfig_error():
 
 @pytest.mark.parametrize('raw_backends', [
     None,
-    {'QtWebEngine': 'Qt 5.15', 'QtWebKit': False}
+    {'QtWebEngine': False}
 ])
 def test_backend_error(raw_backends):
-    e = configexc.BackendError('foo', usertypes.Backend.QtWebKit, raw_backends)
-    expected = "The foo setting is not available with the QtWebKit backend!"
+    e = configexc.BackendError('foo', usertypes.Backend.QtWebEngine, raw_backends)
+    expected = "The foo setting is not available with the QtWebEngine backend!"
     assert str(e) == expected
 
 
 def test_backend_error_condition():
     e = configexc.BackendError('foo', usertypes.Backend.QtWebEngine,
-                               {'QtWebEngine': 'Qt 6.11', 'QtWebKit': True})
+                               {'QtWebEngine': 'Qt 6.11'})
     expected = "The foo setting needs Qt 6.11 with the QtWebEngine backend!"
     assert str(e) == expected
 

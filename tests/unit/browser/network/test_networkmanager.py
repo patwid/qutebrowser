@@ -4,8 +4,8 @@
 
 import pytest
 
-from qutebrowser.browser.webkit.network import networkmanager
-from qutebrowser.browser.webkit import cookies
+from qutebrowser.browser.network import networkmanager
+from qutebrowser.browser.network import cookies
 
 
 pytestmark = pytest.mark.usefixtures('cookiejar_and_cache')

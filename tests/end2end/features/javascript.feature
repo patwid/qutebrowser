@@ -39,19 +39,7 @@ Feature: Javascript stuff
 
     # https://github.com/qutebrowser/qutebrowser/issues/906
 
-    @qtwebengine_skip
-    Scenario: Closing a JS window twice (issue 906) - qtwebkit
-        When I open about:blank
-        And I run :tab-only
-        And I open data/javascript/window_open.html in a new tab
-        And I run :click-element id open-normal
-        And I wait for "Changing title for idx 2 to 'about:blank'" in the log
-        And I run :tab-focus 2
-        And I run :click-element id close-twice
-        And I wait for "[*] window closed" in the log
-        Then "Requested to close * which does not exist!" should be logged
-
-    @qtwebkit_skip @flaky
+    @flaky
     Scenario: Closing a JS window twice (issue 906) - qtwebengine
         When I open about:blank
         And I run :tab-only
@@ -163,7 +151,6 @@ Feature: Javascript stuff
         And I open data/javascript/enabled.html
         Then the page should contain the plaintext "JavaScript is disabled"
 
-    @qtwebkit_skip
     Scenario: Error pages without JS enabled
         When I set content.javascript.enabled to false
         And I open 500 without waiting

@@ -69,19 +69,12 @@ def no_prompt_shown(quteproc):
 
 @bdd.then("a SSL error page should be shown")
 def ssl_error_page(request, quteproc):
-    if request.config.webengine:
-        quteproc.wait_for(message="Certificate error: *")
+    quteproc.wait_for(message="Certificate error: *")
 
-        msg = quteproc.wait_for(message="Load error: *")
-        msg.expected = True
+    msg = quteproc.wait_for(message="Load error: *")
+    msg.expected = True
 
-        assert msg.message == 'Load error: ERR_CERT_AUTHORITY_INVALID'
-    else:
-        line = quteproc.wait_for(message='Error while loading *: SSL handshake failed')
-        line.expected = True
-        quteproc.wait_for(message="Changing title for idx * to 'Error loading page: *'")
-        content = quteproc.get_content().strip()
-        assert "Unable to load page" in content
+    assert msg.message == 'Load error: ERR_CERT_AUTHORITY_INVALID'
 
 
 def test_certificate_error_load_status(request, quteproc, ssl_server):
@@ -91,7 +84,7 @@ def test_certificate_error_load_status(request, quteproc, ssl_server):
     for i in range(2):
         quteproc.open_path('/', port=ssl_server.port, https=True, wait=False,
                            new_tab=True)
-        if i == 0 or not request.config.webengine:
+        if i == 0:
             # Error is only logged on the first error with QtWebEngine
             quteproc.mark_expected(category='message',
                                    loglevel=logging.ERROR,

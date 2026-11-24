@@ -9,12 +9,9 @@ import logging
 import pytest
 import yaml
 from qutebrowser.qt.core import QUrl, QPoint, QByteArray, QObject
-QWebView = pytest.importorskip('qutebrowser.qt.webkitwidgets').QWebView
 
 from qutebrowser.misc import sessions
-from qutebrowser.misc.sessions import TabHistoryItem as Item
-from qutebrowser.utils import objreg, qtutils
-from qutebrowser.browser.webkit import tabhistory
+from qutebrowser.utils import objreg
 
 
 pytestmark = pytest.mark.qt_log_ignore('QIODevice::read.*: device not open')
@@ -92,22 +89,6 @@ class TestExists:
         assert not man.exists(name)
 
 
-@webengine_refactoring_xfail
-class TestSaveTab:
-
-    @pytest.mark.parametrize('is_active', [True, False])
-    def test_active(self, sess_man, webview, is_active):
-        data = sess_man._save_tab(webview, is_active)
-        if is_active:
-            assert data['active']
-        else:
-            assert 'active' not in data
-
-    def test_no_history(self, sess_man, webview):
-        data = sess_man._save_tab(webview, active=False)
-        assert not data['history']
-
-
 class FakeMainWindow(QObject):
 
     """Helper class for the fake_main_window fixture.
@@ -166,28 +147,6 @@ def test_get_session_name(config_stub, sess_man, arg, config, current,
 
 class TestSave:
 
-    @pytest.fixture
-    def fake_history(self, stubs, tabbed_browser_stubs, monkeypatch, webview):
-        """Fixture which provides a window with a fake history."""
-        win = FakeMainWindow(b'fake-geometry-0', win_id=0)
-        objreg.register('main-window', win, scope='window', window=0)
-
-        browser = tabbed_browser_stubs[0]
-        qapp = stubs.FakeQApplication(active_window=win)
-        monkeypatch.setattr(sessions, 'QApplication', qapp)
-
-        def set_data(items):
-            history = browser.widgets()[0].page().history()
-            stream, _data, user_data = tabhistory.serialize(items)
-            qtutils.deserialize_stream(stream, history)
-            for i, data in enumerate(user_data):
-                history.itemAt(i).setUserData(data)
-
-        yield set_data
-
-        objreg.delete('main-window', scope='window', window=0)
-        objreg.delete('tabbed-browser', scope='window', window=0)
-
     def test_no_state_config(self, sess_man, tmp_path, state_config):
         session_path = tmp_path / 'foo.yml'
         sess_man.save(str(session_path))
@@ -225,31 +184,6 @@ class TestSave:
         session_path = tmp_path / 'foo.yml'
         sess_man.save(str(session_path), load_next_time=True)
         assert state_config['general']['session'] == str(session_path)
-
-    @webengine_refactoring_xfail
-    def test_utf_8_invalid(self, tmp_path, sess_man, fake_history):
-        """Make sure data containing invalid UTF8 raises SessionError."""
-        session_path = tmp_path / 'foo.yml'
-        fake_history([Item(QUrl('http://www.qutebrowser.org/'), '\ud800',
-                           active=True)])
-
-        try:
-            sess_man.save(str(session_path))
-        except sessions.SessionError:
-            # This seems to happen on some systems only?!
-            pass
-        else:
-            data = session_path.read_text('utf-8')
-            assert r'title: "\uD800"' in data
-
-    def _set_data(self, browser, tab_id, items):
-        """Helper function for test_long_output."""
-        history = browser.widgets()[tab_id].page().history()
-        stream, _data, user_data = tabhistory.serialize(items)
-        qtutils.deserialize_stream(stream, history)
-        for i, data in enumerate(user_data):
-            history.itemAt(i).setUserData(data)
-
 
 class FakeWebView:
 

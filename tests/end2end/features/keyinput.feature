@@ -37,16 +37,6 @@ Feature: Keyboard input
         Then the javascript message "key press: 88" should be logged
         And the javascript message "key release: 88" should be logged
 
-    @no_xvfb @posix @qtwebengine_skip
-    Scenario: :fake-key sending key to the website with other window focused
-        When I open data/keyinput/log.html
-        And I run :devtools
-        And I wait for "Focus object changed: <Py*.QtWebKitWidgets.QWebView object at *>" in the log
-        And I run :fake-key x
-        And I run :devtools
-        And I wait for "Focus object changed: <qutebrowser.browser.webkit.webview.WebView *>" in the log
-        Then the error "No focused webview!" should be shown
-
     Scenario: :fake-key sending special key to the website
         When I open data/keyinput/log.html
         And I wait 0.01s

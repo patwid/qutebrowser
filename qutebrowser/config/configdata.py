@@ -125,11 +125,9 @@ def _parse_yaml_backends_dict(
     Example:
 
     backends:
-      QtWebKit: true
-      QtWebEngine: Qt 5.15
+      QtWebEngine: Qt 6.3
     """
     str_to_backend = {
-        'QtWebKit': usertypes.Backend.QtWebKit,
         'QtWebEngine': usertypes.Backend.QtWebEngine,
     }
 
@@ -161,23 +159,17 @@ def _parse_yaml_backends(
 ) -> Sequence[usertypes.Backend]:
     """Parse a backend node in the yaml.
 
-    It can have one of those four forms:
-    - Not present -> setting applies to both backends.
-    - backend: QtWebKit -> setting only available with QtWebKit
-    - backend: QtWebEngine -> setting only available with QtWebEngine
+    It can have one of those three forms:
+    - Not present -> setting is always available.
+    - backend: QtWebEngine -> same as not present (QtWebEngine is the only backend).
     - backend:
-       QtWebKit: true
-       QtWebEngine: Qt 5.15
-      -> setting available based on the given conditionals.
+       QtWebEngine: Qt 6.3
+      -> setting available based on the given conditional.
 
     Return:
         A list of backends.
     """
-    if node is None:
-        return [usertypes.Backend.QtWebKit, usertypes.Backend.QtWebEngine]
-    elif node == 'QtWebKit':
-        return [usertypes.Backend.QtWebKit]
-    elif node == 'QtWebEngine':
+    if node is None or node == 'QtWebEngine':
         return [usertypes.Backend.QtWebEngine]
     elif isinstance(node, dict):
         return _parse_yaml_backends_dict(name, node)

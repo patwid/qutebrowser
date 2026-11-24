@@ -20,10 +20,6 @@ import qutebrowser.app  # pylint: disable=unused-import
 from qutebrowser.extensions import loader
 from qutebrowser.misc import objects, sql, nativeeventfilter
 from qutebrowser.utils import utils, version, qtutils
-# To run the decorators from there
-# pylint: disable=unused-import
-from qutebrowser.browser.webkit.network import webkitqutescheme
-# pylint: enable=unused-import
 from qutebrowser.browser import qutescheme
 from qutebrowser.config import configtypes
 
@@ -51,10 +47,6 @@ def whitelist_generator():  # noqa: C901
     yield 'qutebrowser.misc.guiprocess.GUIProcess.stderr'
 
     # Qt attributes
-    yield 'PyQt5.QtWebKit.QWebPage.ErrorPageExtensionReturn().baseUrl'
-    yield 'PyQt5.QtWebKit.QWebPage.ErrorPageExtensionReturn().content'
-    yield 'PyQt5.QtWebKit.QWebPage.ErrorPageExtensionReturn().encoding'
-    yield 'PyQt5.QtWebKit.QWebPage.ErrorPageExtensionReturn().fileNames'
     yield 'PyQt5.QtWidgets.QStyleOptionViewItem.backgroundColor'
 
     ## qute://... handlers
@@ -109,7 +101,8 @@ def whitelist_generator():  # noqa: C901
         yield f'qutebrowser.misc.nativeeventfilter.XcbInputOpcodes.{opcode.name}'
 
     # attrs
-    yield 'qutebrowser.browser.webkit.network.networkmanager.ProxyId.hostname'
+    yield 'qutebrowser.browser.greasemonkey.MatchingScripts.idle'
+    yield 'qutebrowser.browser.network.networkmanager.ProxyId.hostname'
     yield 'qutebrowser.command.command.ArgInfo._validate_exclusive'
     yield 'scripts.get_coredumpctl_traces.Line.uid'
     yield 'scripts.get_coredumpctl_traces.Line.gid'

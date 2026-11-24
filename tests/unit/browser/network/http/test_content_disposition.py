@@ -6,7 +6,7 @@ import logging
 
 import pytest
 
-from qutebrowser.browser.webkit import httpheaders
+from qutebrowser.browser.network import httpheaders
 
 
 DEFAULT_NAME = 'qutebrowser-download'

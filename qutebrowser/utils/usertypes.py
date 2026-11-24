@@ -290,7 +290,6 @@ class Backend(enum.Enum):
     """The backend being used (usertypes.backend)."""
 
     # pylint: disable=invalid-name
-    QtWebKit = enum.auto()
     QtWebEngine = enum.auto()
 
 
@@ -565,8 +564,6 @@ class NavigationRequest:
         typed = 2
         #: Navigation submits a form.
         form_submitted = 3
-        #: An HTML form was submitted a second time (QtWebKit only).
-        form_resubmitted = 4
         #: Navigation initiated by a history action.
         back_forward = 5
         #: Navigation initiated by refreshing the page.

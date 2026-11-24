@@ -10,7 +10,7 @@ import pytest
 from qutebrowser.qt.core import QUrl
 
 from qutebrowser.browser import history
-from qutebrowser.utils import urlutils, usertypes
+from qutebrowser.utils import usertypes
 from qutebrowser.api import cmdutils
 from qutebrowser.misc import sql, objects
 
@@ -256,29 +256,6 @@ class TestAdd:
         assert list(web_history) == hist
 
 
-class TestHistoryInterface:
-
-    @pytest.fixture
-    def hist_interface(self, web_history):
-        # pylint: disable=invalid-name
-        QtWebKit = pytest.importorskip('qutebrowser.qt.webkit')
-        from qutebrowser.browser.webkit import webkithistory
-        QWebHistoryInterface = QtWebKit.QWebHistoryInterface
-        # pylint: enable=invalid-name
-        web_history.add_url(url=QUrl('http://www.example.com/'),
-                            title='example')
-        interface = webkithistory.WebHistoryInterface(web_history)
-        QWebHistoryInterface.setDefaultInterface(interface)
-        yield
-        QWebHistoryInterface.setDefaultInterface(None)
-
-    def test_history_interface(self, qtbot, webview, hist_interface):
-        html = b"<a href='about:blank'>foo</a>"
-        url = urlutils.data_url('text/html', html)
-        with qtbot.wait_signal(webview.loadFinished):
-            webview.load(url)
-
-
 class TestInit:
 
     @pytest.fixture
@@ -288,42 +265,12 @@ class TestInit:
         if history.web_history is not None:
             history.web_history.setParent(None)
             history.web_history = None
-        try:
-            from qutebrowser.qt.webkit import QWebHistoryInterface
-            QWebHistoryInterface.setDefaultInterface(None)
-        except ImportError:
-            pass
 
-    @pytest.mark.parametrize('backend', [usertypes.Backend.QtWebEngine,
-                                         usertypes.Backend.QtWebKit])
-    def test_init(self, backend, qapp, tmpdir, data_tmpdir, monkeypatch, cleanup_init):
-        if backend == usertypes.Backend.QtWebKit:
-            pytest.importorskip('qutebrowser.qt.webkitwidgets')
-        else:
-            assert backend == usertypes.Backend.QtWebEngine
-
-        monkeypatch.setattr(history.objects, 'backend', backend)
-        history.init(data_tmpdir / f'test_init_{backend}', qapp)
+    def test_init(self, qapp, tmpdir, data_tmpdir, monkeypatch, cleanup_init):
+        monkeypatch.setattr(history.objects, 'backend',
+                            usertypes.Backend.QtWebEngine)
+        history.init(data_tmpdir / 'test_init', qapp)
         assert history.web_history.parent() is qapp
-
-        try:
-            from qutebrowser.qt.webkit import QWebHistoryInterface
-        except ImportError:
-            QWebHistoryInterface = None
-
-        if backend == usertypes.Backend.QtWebKit:
-            default_interface = QWebHistoryInterface.defaultInterface()
-            assert default_interface._history is history.web_history
-        else:
-            assert backend == usertypes.Backend.QtWebEngine
-            if QWebHistoryInterface is None:
-                default_interface = None
-            else:
-                default_interface = QWebHistoryInterface.defaultInterface()
-            # For this to work, nothing can ever have called
-            # setDefaultInterface before (so we need to test webengine before
-            # webkit)
-            assert default_interface is None
 
 
 class TestDump:

@@ -91,14 +91,6 @@ Feature: Various utility commands.
         When I run :jseval --url javascript:console.log("hello world?")
         Then the javascript message "hello world?" should be logged
 
-    @qtwebengine_skip
-    Scenario: :jseval with --world on QtWebKit
-        When I run :jseval --world=1 console.log("Hello from JS!");
-        And I wait for the javascript message "Hello from JS!"
-        Then "Ignoring world ID 1" should be logged
-        And "No output or error" should be logged
-
-    @qtwebkit_skip
     Scenario: :jseval uses separate world without --world
         When I open data/misc/jseval.html
         And I run :jseval do_log()
@@ -106,26 +98,22 @@ Feature: Various utility commands.
         And the javascript message "Uncaught ReferenceError: do_log is not defined" should be logged
         And "No output or error" should be logged
 
-    @qtwebkit_skip
     Scenario: :jseval using the main world
         When I open data/misc/jseval.html
         And I run :jseval --world 0 do_log()
         Then the javascript message "Hello from the page!" should be logged
         And "No output or error" should be logged
 
-    @qtwebkit_skip
     Scenario: :jseval using the main world as name
         When I open data/misc/jseval.html
         And I run :jseval --world main do_log()
         Then the javascript message "Hello from the page!" should be logged
         And "No output or error" should be logged
 
-    @qtwebkit_skip
     Scenario: :jseval using too high of a world
         When I run :jseval --world=257 console.log("Hello from JS!");
         Then the error "World ID should be between 0 and *" should be shown
 
-    @qtwebkit_skip
     Scenario: :jseval using a negative world id
         When I run :jseval --world=-1 console.log("Hello from JS!");
         Then the error "World ID should be between 0 and *" should be shown
@@ -141,12 +129,10 @@ Feature: Various utility commands.
         Then the error "[Errno 2] *: '*nonexistentfile'" should be shown
         And "No output or error" should not be logged
 
-    @qtwebkit_skip
     Scenario: CSP errors in qutebrowser stylesheet script
         When I open restrictive-csp
         Then the javascript message "Refused to apply inline style because it violates the following Content Security Policy directive: *" should be logged
 
-    @qtwebkit_skip
     Scenario: Third-party iframes in qutebrowser stylesheet script
         When I load a third-party iframe
         # rerun set_css in stylesheet.js
@@ -180,25 +166,6 @@ Feature: Various utility commands.
         When I open data/hello.txt
         And I run :debug-webaction PermissionUnknown
         Then the error "PermissionUnknown is not a valid web action!" should be shown
-
-    # :inspect
-
-    @no_xvfb @posix @qtwebengine_skip
-    Scenario: Inspector smoke test
-        When I run :devtools
-        And I wait for "Focus object changed: <Py*.QtWebKitWidgets.QWebView object at *>" in the log
-        And I run :devtools
-        And I wait for "Focus object changed: *" in the log
-        Then no crash should happen
-
-    # Different code path as an inspector got created now
-    @no_xvfb @posix @qtwebengine_skip
-    Scenario: Inspector smoke test 2
-        When I run :devtools
-        And I wait for "Focus object changed: <Py*.QtWebKitWidgets.QWebView object at *>" in the log
-        And I run :devtools
-        And I wait for "Focus object changed: *" in the log
-        Then no crash should happen
 
     # :stop/:reload
 
@@ -374,7 +341,6 @@ Feature: Various utility commands.
 
     # This still doesn't set window.navigator.language
     # See https://bugreports.qt.io/browse/QTBUG-61949
-    @qtwebkit_skip
     Scenario: Accept-Language header (JS)
         When I set content.headers.accept_language to it,fr
         And I run :jseval console.log(window.navigator.languages)
@@ -399,7 +365,6 @@ Feature: Various utility commands.
         And I run :jseval console.log(window.navigator.userAgent)
         Then the javascript message "toaster" should be logged
 
-    @qtwebkit_skip
     Scenario: Custom headers via XHR
         When I set content.headers.custom to {"Accept": "config-value", "X-Qute-Test": "config-value"}
         When I set content.headers.accept_language to "config-value"
@@ -609,14 +574,14 @@ Feature: Various utility commands.
         Then "Renderer process crashed (status *)" should be logged
         And "* 'Error loading chrome://crash/'" should be logged
 
-    @qtwebkit_skip @no_invalid_lines @flaky
+    @no_invalid_lines @flaky
     Scenario: Renderer kill
         When I run :open -t chrome://kill
         Then "Renderer process was killed (status *)" should be logged
         And "* 'Error loading chrome://kill/'" should be logged
 
     # https://github.com/qutebrowser/qutebrowser/issues/2290
-    @qtwebkit_skip @no_invalid_lines @flaky
+    @no_invalid_lines @flaky
     Scenario: Navigating to URL after renderer process is gone
         When I run :tab-only
         And I open data/numbers/1.txt
@@ -627,7 +592,7 @@ Feature: Various utility commands.
         Then no crash should happen
 
     # https://github.com/qutebrowser/qutebrowser/issues/5721
-    @qtwebkit_skip @qt!=5.15.1
+    @qt!=5.15.1
     Scenario: WebRTC renderer process crash
         When I open data/crashers/webrtc.html in a new tab
         And I run :reload
@@ -654,7 +619,6 @@ Feature: Various utility commands.
         And I run :fake-key "<Space>"
         Then the page should be scrolled vertically
 
-    @qtwebkit_skip
     Scenario: Using DocumentPictureInPicture API
         When I set content.javascript.can_open_tabs_automatically to true
         And I open data/crashers/document_picture_in_picture.html

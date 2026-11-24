@@ -413,7 +413,7 @@ def generate_commands(filename):
 
 def _generate_setting_backend_info(f, opt):
     """Generate backend information for the given option."""
-    all_backends = [usertypes.Backend.QtWebKit, usertypes.Backend.QtWebEngine]
+    all_backends = [usertypes.Backend.QtWebEngine]
     if opt.raw_backends is not None:
         for name, conditional in sorted(opt.raw_backends.items()):
             if conditional is True:
@@ -425,12 +425,6 @@ def _generate_setting_backend_info(f, opt):
                         .format(name, conditional))
     elif opt.backends == all_backends:
         pass
-    elif opt.backends == [usertypes.Backend.QtWebKit]:
-        f.write("\nThis setting is only available with the QtWebKit "
-                "backend.\n")
-    elif opt.backends == [usertypes.Backend.QtWebEngine]:
-        f.write("\nThis setting is only available with the QtWebEngine "
-                "backend.\n")
     else:
         raise ValueError("Invalid value {!r} for opt.backends"
                          .format(opt.backends))

@@ -10,7 +10,7 @@ from qutebrowser.qt.core import QUrl, pyqtSlot
 from qutebrowser.qt.network import QNetworkProxy, QNetworkProxyFactory, QNetworkProxyQuery
 
 from qutebrowser.config import config, configtypes
-from qutebrowser.utils import message, usertypes, urlutils, utils, qtutils
+from qutebrowser.utils import message, usertypes, urlutils, qtutils
 from qutebrowser.misc import objects
 from qutebrowser.browser.network import pac
 
@@ -63,12 +63,9 @@ class ProxyFactory(QNetworkProxyFactory):
         if proxy.type() == QNetworkProxy.ProxyType.NoProxy:
             return
 
+        # Send DNS requests over the proxy
         capabilities = proxy.capabilities()
-        lookup_cap = QNetworkProxy.Capability.HostNameLookupCapability
-        if config.val.content.proxy_dns_requests:
-            capabilities |= lookup_cap
-        else:
-            capabilities &= ~lookup_cap
+        capabilities |= QNetworkProxy.Capability.HostNameLookupCapability
         proxy.setCapabilities(capabilities)
 
     def queryProxy(self, query: QNetworkProxyQuery = QNetworkProxyQuery()) -> list[QNetworkProxy]:
@@ -87,15 +84,10 @@ class ProxyFactory(QNetworkProxyFactory):
             # ref. https://doc.qt.io/qt-6/qnetworkproxyfactory.html#systemProxyForQuery
             proxies = QNetworkProxyFactory.systemProxyForQuery(query)
         elif isinstance(proxy, pac.PACFetcher):
-            if objects.backend == usertypes.Backend.QtWebEngine:
-                # Looks like query.url() is always invalid on QtWebEngine...
-                proxy = urlutils.proxy_from_url(QUrl('direct://'))
-                assert not isinstance(proxy, pac.PACFetcher)
-                proxies = [proxy]
-            elif objects.backend == usertypes.Backend.QtWebKit:
-                proxies = proxy.resolve(query)
-            else:
-                raise utils.Unreachable(objects.backend)
+            # Looks like query.url() is always invalid on QtWebEngine...
+            proxy = urlutils.proxy_from_url(QUrl('direct://'))
+            assert not isinstance(proxy, pac.PACFetcher)
+            proxies = [proxy]
         else:
             proxies = [proxy]
         for proxy in proxies:

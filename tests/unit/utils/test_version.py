@@ -1052,12 +1052,8 @@ class TestWebEngineVersions:
             if '.dev' in PYQT_VERSION_STR:
                 pytest.skip("dev version of PyQt")
 
-            try:
-                from qutebrowser.qt.webenginecore import (
-                    PYQT_WEBENGINE_VERSION_STR, PYQT_WEBENGINE_VERSION)
-            except ImportError as e:
-                # QtWebKit
-                pytest.skip(str(e))
+            from qutebrowser.qt.webenginecore import (
+                PYQT_WEBENGINE_VERSION_STR, PYQT_WEBENGINE_VERSION)
 
             if 0x060000 > PYQT_WEBENGINE_VERSION >= 0x050F02:
                 # Starting with Qt 5.15.2, we can only do bad guessing anyways...
@@ -1146,7 +1142,6 @@ class TestChromiumVersion:
     def clear_parsed_ua(self, monkeypatch):
         pytest.importorskip('qutebrowser.qt.webenginewidgets')
         if webenginesettings is not None:
-            # Not available with QtWebKit
             monkeypatch.setattr(webenginesettings, 'parsed_user_agent', None)
 
     def test_fake_ua(self, monkeypatch, caplog, patch_no_api):
@@ -1342,7 +1337,6 @@ class VersionParams:
     git_commit: bool = True
     frozen: bool = False
     qapp: bool = True
-    with_webkit: bool = True
     known_distribution: bool = True
     ssl_support: bool = True
     autoconfig_loaded: bool = True
@@ -1354,7 +1348,6 @@ class VersionParams:
     VersionParams('no-git-commit', git_commit=False),
     VersionParams('frozen', frozen=True),
     VersionParams('no-qapp', qapp=False),
-    VersionParams('no-webkit', with_webkit=False),
     VersionParams('unknown-dist', known_distribution=False),
     VersionParams('no-ssl', ssl_support=False),
     VersionParams('no-autoconfig-loaded', autoconfig_loaded=False),
@@ -1427,7 +1420,7 @@ def test_version_info(params, stubs, monkeypatch, config_stub):
         'python_path': 'EXECUTABLE PATH',
         'uptime': "1:23:45",
         'autoconfig_loaded': "yes" if params.autoconfig_loaded else "no",
-        'webextensions': "",  # overridden below if QtWebEngine is used
+        'webextensions': "",  # overridden below on Qt 6
     }
 
     patches['qtwebengine_versions'] = (
@@ -1444,27 +1437,21 @@ def test_version_info(params, stubs, monkeypatch, config_stub):
     else:
         substitutions["config_py_loaded"] = "no config.py was loaded"
 
-    if params.with_webkit:
-        patches['qWebKitVersion'] = lambda: 'WEBKIT VERSION'
-        patches['objects.backend'] = usertypes.Backend.QtWebKit
-        substitutions['backend'] = 'new QtWebKit (WebKit WEBKIT VERSION)'
-    else:
-        monkeypatch.delattr(version, 'qtutils.qWebKitVersion', raising=False)
-        if machinery.IS_QT6:
-            monkeypatch.setattr(
-                webenginesettings,
-                "default_profile",
-                FakeExtensionProfile(FakeExtensionManager([FakeExtensionInfo("ext1")])),
-            )
-            substitutions['webextensions'] = (
-                "\n"
-                "WebExtensions:\n"
-                "  ext1 (ext1-id)\n"
-                "  [ ] enabled  [ ] loaded  [ ] installed\n"
-                "  ext1-path\n"
-            )
-        patches['objects.backend'] = usertypes.Backend.QtWebEngine
-        substitutions['backend'] = 'QtWebEngine 1.2.3\n  (source: faked)'
+    if machinery.IS_QT6:
+        monkeypatch.setattr(
+            webenginesettings,
+            "default_profile",
+            FakeExtensionProfile(FakeExtensionManager([FakeExtensionInfo("ext1")])),
+        )
+        substitutions['webextensions'] = (
+            "\n"
+            "WebExtensions:\n"
+            "  ext1 (ext1-id)\n"
+            "  [ ] enabled  [ ] loaded  [ ] installed\n"
+            "  ext1-path\n"
+        )
+    patches['objects.backend'] = usertypes.Backend.QtWebEngine
+    substitutions['backend'] = 'QtWebEngine 1.2.3\n  (source: faked)'
 
     if params.known_distribution:
         patches['distribution'] = lambda: version.DistributionInfo(
@@ -1591,12 +1578,6 @@ class TestOpenGLInfo:
     not machinery.IS_QT6, reason="extensions are only available with Qt6"
 )
 class TestWebEngineExtensions:
-
-    def test_qtwebkit(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        assert webenginesettings.default_profile is None  # -> default_qt_profile() used
-        monkeypatch.setattr(version.objects, "backend", usertypes.Backend.QtWebKit)
-        monkeypatch.setattr(webenginesettings, "default_qt_profile", lambda: 1 / 0)
-        assert not version._webengine_extensions()
 
     def test_avoid_chromium_init(self, monkeypatch: pytest.MonkeyPatch) -> None:
         assert webenginesettings.default_profile is None  # -> default_qt_profile() used

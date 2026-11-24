@@ -5,7 +5,6 @@
 
 """Tests for qutebrowser.config.configinit."""
 
-import builtins
 import logging
 import unittest.mock
 
@@ -404,22 +403,13 @@ class TestLateInit:
 
 
 @pytest.mark.parametrize('arg, confval, used', [
-    # overridden by commandline arg
-    ('webkit', 'webengine', usertypes.Backend.QtWebKit),
-    # set in  config
-    (None, 'webkit', usertypes.Backend.QtWebKit),
+    # given via commandline arg
+    ('webengine', 'webengine', usertypes.Backend.QtWebEngine),
+    # set in config
+    (None, 'webengine', usertypes.Backend.QtWebEngine),
 ])
-def test_get_backend(monkeypatch, args, config_stub,
-                     arg, confval, used):
-    real_import = __import__
-
-    def fake_import(name, *args, **kwargs):
-        if name != 'qutebrowser.qt.webkit':
-            return real_import(name, *args, **kwargs)
-        raise ImportError
-
+def test_get_backend(args, config_stub, arg, confval, used):
     args.backend = arg
     config_stub.val.backend = confval
-    monkeypatch.setattr(builtins, '__import__', fake_import)
 
     assert configinit.get_backend(args) == used

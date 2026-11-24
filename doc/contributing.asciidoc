@@ -181,37 +181,6 @@ tox -e py310 -- tests/end2end/features/test_tabs_bdd.py -k undo
 tox -e py310-cov -- tests/unit/browser/test_webelem.py
 ----
 
-Specifying the backend for tests
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Tests automatically pick the backend based on what they manage to import. If
-you have both backends available and you would like the tests to be run with a
-specific one you can set either of a) the environment variable QUTE_TESTS_BACKEND
-, or b) the command line argument --qute-backend, to the desired backend
-(webkit/webengine).
-
-If you need an environment with webkit installed to do testing while we still
-support it (see #4039) you can re-use the docker container used for the CI
-test runs which has PyQt5Webkit installed from the archlinux package archives.
-Examples:
-
-----
-# Get a bash shell in the docker container with
-# a) the current directory mounted at /work in the container
-# b) the container using the X11 display :27 (for example, a Xephyr instance) from the host
-# c) the tox and hypothesis dirs set to somewhere in the container that it can write to
-# d) the system site packages available in the tox venv so you can use PyQt
-#    from the OS without having to run the link_pyqt script
-docker run -it -v $PWD:/work:ro -w /work -e QUTE_TESTS_BACKEND=webkit -e DISPLAY=:27 -v /tmp/.X11-unix:/tmp/.X11-unix -e TOX_WORK_DIR="/home/user/.tox" -e HYPOTHESIS_EXAMPLES_DIR="/home/user/.hypothesis/examples" -e VIRTUALENV_SYSTEM_SITE_PACKAGES=True qutebrowser/ci:archlinux-webkit bash
-
-# Start a qutebrowser temporary basedir in the appropriate tox environment to
-# play with
-tox exec -e py-qt5 -- python3 -m qutebrowser -T --backend webkit
-
-# Run tests, passing positional args through to pytest.
-tox -e py-qt5 -- tests/unit
-----
-
 Profiling
 ~~~~~~~~~
 
@@ -549,31 +518,6 @@ displaying it to the user.
 `QUrl` and take appropriate action if not. Note the URL of the current page
 always could be an invalid QUrl (if nothing is loaded yet).
 
-Running valgrind on QtWebKit
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If you want to run qutebrowser (and thus QtWebKit) with
-https://valgrind.org/[valgrind], you'll need to pass `--smc-check=all` to it or
-recompile QtWebKit with the Javascript JIT disabled.
-
-This is needed so valgrind handles self-modifying code correctly:
-
-[quote]
-____
-This option controls Valgrind's detection of self-modifying code. If no
-checking is done and a program executes some code, overwrites it with new
-code, and then executes the new code, Valgrind will continue to execute the
-translations it made for the old code. This will likely lead to incorrect
-behavior and/or crashes.
-
-...
-
-Note that the default option will catch the vast majority of cases. The main
-case it will not catch is programs such as JIT compilers that dynamically
-generate code and subsequently overwrite part or all of it. Running with all
-will slow Valgrind down noticeably.
-____
-
 Setting up a Windows Development Environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -645,7 +589,7 @@ This is mostly useful for qutebrowser maintainers to work around issues in Qt - 
 
 The hierarchy of widgets when QtWebEngine is involved looks like this:
 
-- qutebrowser has a `WebEngineTab` object, which is its abstraction over QtWebKit/QtWebEngine.
+- qutebrowser has a `WebEngineTab` object, which is its abstraction over QtWebEngine.
 - The `WebEngineTab` has a `_widget` attribute, which is the https://doc.qt.io/qt-6/qwebengineview.html[QWebEngineView]
 - That view has a https://doc.qt.io/qt-6/qwebenginepage.html[QWebEnginePage] for everything which doesn't require rendering.
 - The view also has a layout with exactly one element (which also is its `focusProxy()`).

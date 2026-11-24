@@ -1253,9 +1253,6 @@ class WebEngineTabPrivate(browsertab.AbstractTabPrivate):
     def user_agent(self):
         return None
 
-    def clear_ssl_errors(self):
-        raise browsertab.UnsupportedOperationError
-
     def event_target(self):
         return self._widget.render_widget()
 
@@ -1263,9 +1260,6 @@ class WebEngineTabPrivate(browsertab.AbstractTabPrivate):
         self._tab.shutting_down.emit()
         self._tab.action.exit_fullscreen()
         self._widget.shutdown()
-
-    def run_js_sync(self, code):
-        raise browsertab.UnsupportedOperationError
 
     def _init_inspector(self, splitter, win_id, parent=None):
         return webengineinspector.WebEngineInspector(splitter, win_id, parent)
@@ -1292,7 +1286,7 @@ class WebEngineTab(browsertab.AbstractTab):
                          mode_manager=mode_manager,
                          private=private,
                          parent=parent)
-        widget = webview.WebEngineView(tabdata=self.data, win_id=win_id,
+        widget = webview.WebEngineView(win_id=win_id,
                                        private=private)
         self.history = WebEngineHistory(tab=self)
         self.scroller = WebEngineScroller(tab=self, parent=self)

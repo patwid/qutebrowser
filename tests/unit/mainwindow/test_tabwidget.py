@@ -24,7 +24,7 @@ class TestTabWidget:
         w = tabwidget.TabWidget(0)
         qtbot.add_widget(w)
         monkeypatch.setattr(tabwidget.objects, 'backend',
-                            usertypes.Backend.QtWebKit)
+                            usertypes.Backend.QtWebEngine)
         w.show()
         return w
 

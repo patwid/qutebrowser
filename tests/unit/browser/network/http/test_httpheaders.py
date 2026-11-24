@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""Tests for qutebrowser.browser.webkit.httpheaders."""
+"""Tests for qutebrowser.browser.network.httpheaders."""
 
 import logging
 
@@ -11,7 +11,7 @@ import hypothesis
 from hypothesis import strategies
 from qutebrowser.qt.core import QUrl
 
-from qutebrowser.browser.webkit import httpheaders
+from qutebrowser.browser.network import httpheaders
 
 
 @pytest.mark.parametrize('url, expected', [
@@ -36,8 +36,6 @@ def test_no_content_disposition(stubs, url, expected):
     b'"',
     # https://github.com/python/cpython/issues/93010
     b'attachment; 0*00="foo"',
-    # FIXME: Should probably have more tests if this is still relevant after
-    # dropping QtWebKit.
 ])
 def test_parse_content_disposition_invalid(value):
     with pytest.raises(httpheaders.ContentDispositionError):
@@ -69,26 +67,3 @@ def test_content_disposition_directly_hypothesis(s):
         cd.filename()
     except httpheaders.ContentDispositionError:
         pass
-
-
-@pytest.mark.parametrize('content_type, expected_mimetype, expected_rest', [
-    (None, None, None),
-    ('image/example', 'image/example', None),
-    ('', '', None),
-    ('image/example; encoding=UTF-8', 'image/example', ' encoding=UTF-8'),
-])
-def test_parse_content_type(stubs, content_type, expected_mimetype,
-                            expected_rest):
-    if content_type is None:
-        reply = stubs.FakeNetworkReply()
-    else:
-        reply = stubs.FakeNetworkReply(headers={'Content-Type': content_type})
-    mimetype, rest = httpheaders.parse_content_type(reply)
-    assert mimetype == expected_mimetype
-    assert rest == expected_rest
-
-
-@hypothesis.given(strategies.text())
-def test_parse_content_type_hypothesis(stubs, s):
-    reply = stubs.FakeNetworkReply(headers={'Content-Type': s})
-    httpheaders.parse_content_type(reply)

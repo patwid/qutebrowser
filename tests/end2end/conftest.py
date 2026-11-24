@@ -12,7 +12,7 @@ import pstats
 import operator
 
 import pytest
-from qutebrowser.qt.core import PYQT_VERSION, QCoreApplication
+from qutebrowser.qt.core import PYQT_VERSION
 
 pytest.register_assert_rewrite('end2end.fixtures')
 
@@ -108,13 +108,8 @@ def _get_version_tag(tag):
             reason='Needs ' + tag,
         )
     elif package == 'pyqtwebengine':
-        try:
-            from qutebrowser.qt.webenginecore import PYQT_WEBENGINE_VERSION
-        except ImportError:
-            # QtWebKit
-            running_version = PYQT_VERSION
-        else:
-            running_version = PYQT_WEBENGINE_VERSION
+        from qutebrowser.qt.webenginecore import PYQT_WEBENGINE_VERSION
+        running_version = PYQT_WEBENGINE_VERSION
         return pytest.mark.skipif(
             not _check_version(
                 op_str=match.group('operator'),
@@ -153,24 +148,12 @@ if not getattr(sys, 'frozen', False):
 
 def pytest_collection_modifyitems(config, items):
     """Apply @qtwebengine_* markers."""
-    lib_path = pathlib.Path(QCoreApplication.libraryPaths()[0])
-    qpdf_image_plugin = lib_path / 'imageformats' / 'libqpdf.so'
-
     markers = [
-        ('qtwebengine_todo', 'QtWebEngine TODO', pytest.mark.xfail,
-         config.webengine),
-        ('qtwebengine_skip', 'Skipped with QtWebEngine', pytest.mark.skipif,
-         config.webengine),
-        ('qtwebkit_skip', 'Skipped with QtWebKit', pytest.mark.skipif,
-         not config.webengine),
-        ('qtwebengine_flaky', 'Flaky with QtWebEngine', pytest.mark.skipif,
-         config.webengine),
+        ('qtwebengine_todo', 'QtWebEngine TODO', pytest.mark.xfail, True),
+        ('qtwebengine_skip', 'Skipped with QtWebEngine', pytest.mark.skipif, True),
+        ('qtwebengine_flaky', 'Flaky with QtWebEngine', pytest.mark.skipif, True),
         ('qtwebengine_mac_xfail', 'Fails on macOS with QtWebEngine',
-         pytest.mark.xfail, config.webengine and utils.is_mac),
-        ('qtwebkit_pdf_imageformat_skip',
-         'Skipped with QtWebKit if PDF image plugin is available',
-         pytest.mark.skipif,
-         not config.webengine and qpdf_image_plugin.exists()),
+         pytest.mark.xfail, utils.is_mac),
         ('windows_skip',
          'Skipped on Windows',
          pytest.mark.skipif,

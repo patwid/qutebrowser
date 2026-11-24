@@ -16,11 +16,10 @@ from qutebrowser.qt.widgets import QApplication
 from qutebrowser.qt.network import QNetworkRequest, QNetworkReply, QNetworkAccessManager
 
 from qutebrowser.config import config, websettings
-from qutebrowser.utils import message, usertypes, log, urlutils, utils, debug, objreg, qtlog
+from qutebrowser.utils import message, usertypes, log, urlutils, debug, objreg, qtlog
 from qutebrowser.misc import quitter
 from qutebrowser.browser import downloads
-from qutebrowser.browser.webkit import httpheaders
-from qutebrowser.browser.webkit.network import networkmanager
+from qutebrowser.browser.network import httpheaders, networkmanager
 
 
 @dataclasses.dataclass
@@ -420,7 +419,6 @@ class DownloadManager(downloads.AbstractDownloadManager):
             req.setAttribute(QNetworkRequest.Attribute.CacheSaveControlAttribute, False)
 
         # Needed for Qt 5, default on Qt 6
-        # We don't set this on the QNAM because QtWebKit handles redirects manually.
         req.setAttribute(
             QNetworkRequest.Attribute.RedirectPolicyAttribute,
             QNetworkRequest.RedirectPolicy.NoLessSafeRedirectPolicy,
@@ -428,28 +426,6 @@ class DownloadManager(downloads.AbstractDownloadManager):
         req.setMaximumRedirectsAllowed(self._MAX_REDIRECTS)
 
         return self.get_request(req, **kwargs)
-
-    def get_mhtml(self, tab, target):
-        """Download the given tab as mhtml to the given DownloadTarget."""
-        assert tab.backend == usertypes.Backend.QtWebKit
-        from qutebrowser.browser.webkit import mhtml
-
-        if target is not None:
-            mhtml.start_download_checked(target, tab=tab)
-            return
-
-        suggested_fn = utils.sanitize_filename(tab.title() + ".mhtml")
-
-        filename = downloads.immediate_download_path()
-        if filename is not None:
-            target = downloads.FileDownloadTarget(filename)
-            mhtml.start_download_checked(target, tab=tab)
-        else:
-            question = downloads.get_filename_question(
-                suggested_filename=suggested_fn, url=tab.url(), parent=tab)
-            question.answered.connect(functools.partial(
-                mhtml.start_download_checked, tab=tab))
-            message.global_bridge.ask(question, blocking=False)
 
     def _get_suggested_filename(self, request):
         """Get the suggested filename for the given request."""

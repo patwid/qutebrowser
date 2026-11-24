@@ -484,8 +484,4 @@ def init(db_path: pathlib.Path, parent: QObject | None = None) -> None:
     database = sql.Database(str(db_path))
     web_history = WebHistory(database=database, progress=progress, parent=parent)
 
-    if objects.backend == usertypes.Backend.QtWebKit:  # pragma: no cover
-        from qutebrowser.browser.webkit import webkithistory
-        webkithistory.init(web_history)
-        return
     assert objects.backend == usertypes.Backend.QtWebEngine, objects.backend

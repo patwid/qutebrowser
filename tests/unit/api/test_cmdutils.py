@@ -462,47 +462,11 @@ class TestRun:
     @pytest.fixture(autouse=True)
     def patch_backend(self, mode_manager, monkeypatch):
         monkeypatch.setattr(command.objects, 'backend',
-                            usertypes.Backend.QtWebKit)
-
-    @pytest.mark.parametrize('backend, used, ok', [
-        (usertypes.Backend.QtWebEngine, usertypes.Backend.QtWebEngine, True),
-        (usertypes.Backend.QtWebEngine, usertypes.Backend.QtWebKit, False),
-        (usertypes.Backend.QtWebKit, usertypes.Backend.QtWebEngine, False),
-        (usertypes.Backend.QtWebKit, usertypes.Backend.QtWebKit, True),
-        (None, usertypes.Backend.QtWebEngine, True),
-        (None, usertypes.Backend.QtWebKit, True),
-    ])
-    def test_backend(self, monkeypatch, backend, used, ok):
-        monkeypatch.setattr(command.objects, 'backend', used)
-        cmd = _get_cmd(backend=backend)
-        if ok:
-            cmd.run(win_id=0)
-        else:
-            with pytest.raises(cmdexc.PrerequisitesError,
-                               match=r'.* backend\.'):
-                cmd.run(win_id=0)
+                            usertypes.Backend.QtWebEngine)
 
     def test_no_args(self):
         cmd = _get_cmd()
         cmd.run(win_id=0)
-
-    def test_instance_unavailable_with_backend(self, monkeypatch):
-        """Test what happens when a backend doesn't have an objreg object.
-
-        For example, QtWebEngine doesn't have 'hintmanager' registered. We make
-        sure the backend checking happens before resolving the instance, so we
-        display an error instead of crashing.
-        """
-        @cmdutils.register(instance='doesnotexist',
-                           backend=usertypes.Backend.QtWebEngine)
-        def fun(self):
-            """Blah."""
-
-        monkeypatch.setattr(command.objects, 'backend',
-                            usertypes.Backend.QtWebKit)
-        cmd = objects.commands['fun']
-        with pytest.raises(cmdexc.PrerequisitesError, match=r'.* backend\.'):
-            cmd.run(win_id=0)
 
     def test_deprecated(self, caplog, message_mock):
         cmd = _get_cmd(deprecated='use something else')

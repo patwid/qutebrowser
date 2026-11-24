@@ -92,7 +92,7 @@ class CookieJar(RAMCookieJar):
         now = QDateTime.currentDateTime()
         cookies = [c for c in self.allCookies()
                    if c.isSessionCookie() or
-                   c.expirationDate() >= now]  # type: ignore[operator]
+                   c.expirationDate() >= now]  # type: ignore[operator,unused-ignore]
         self.setAllCookies(cookies)
 
     def save(self):

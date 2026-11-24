@@ -391,11 +391,8 @@ def javascript_message_when(quteproc, message):
 
 @bdd.when("I clear SSL errors")
 def clear_ssl_errors(request, quteproc):
-    if request.config.webengine:
-        quteproc.terminate()
-        quteproc.start()
-    else:
-        quteproc.send_cmd(':debug-clear-ssl-errors')
+    quteproc.terminate()
+    quteproc.start()
 
 
 @bdd.when("the documentation is up to date")

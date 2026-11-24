@@ -18,10 +18,9 @@ from collections.abc import Sequence
 from qutebrowser.qt.core import pyqtSignal, QObject, QUrl
 
 from qutebrowser.utils import (log, standarddir, jinja, objreg, utils,
-                               javascript, urlmatch, version, usertypes, message)
+                               javascript, urlmatch, message)
 from qutebrowser.api import cmdutils
 from qutebrowser.browser import downloads
-from qutebrowser.misc import objects
 
 
 gm_manager = cast('GreasemonkeyManager', None)
@@ -140,11 +139,6 @@ class GreasemonkeyScript:
         However, some scripts do DOM access with "@run-at document-start". Fix
         those by forcing them to use document-end instead.
         """
-        if objects.backend == usertypes.Backend.QtWebKit:
-            return False
-
-        assert objects.backend == usertypes.Backend.QtWebEngine, objects.backend
-
         broken_scripts = [
             ('http://userstyles.org', None),
             ('https://github.com/ParticleCore', 'Iridium'),
@@ -170,18 +164,13 @@ class GreasemonkeyScript:
         browser's debugger/inspector will not match up to the line
         numbers in the source script directly.
         """
-        # Don't use Proxy on this webkit version, the support isn't there.
-        use_proxy = not (
-            objects.backend == usertypes.Backend.QtWebKit and
-            version.qWebKitVersion() == '602.1')
         template = jinja.js_environment.get_template('greasemonkey_wrapper.js')
         return template.render(
             scriptName=javascript.string_escape(
                 "/".join([self.namespace or '', self.name])),
             scriptInfo=self._meta_json(),
             scriptMeta=javascript.string_escape(self.script_meta or ''),
-            scriptSource=self._code,
-            use_proxy=use_proxy)
+            scriptSource=self._code)
 
     def _meta_json(self):
         return json.dumps({

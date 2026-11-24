@@ -27,12 +27,7 @@ from qutebrowser.qt.core import (qVersion, QEventLoop, QDataStream, QByteArray,
                           QIODevice, QFileDevice, QSaveFile, QT_VERSION_STR,
                           PYQT_VERSION_STR, QObject, QUrl, QLibraryInfo)
 from qutebrowser.qt.gui import QColor
-try:
-    from qutebrowser.qt.webkit import qWebKitVersion
-except ImportError:  # pragma: no cover
-    qWebKitVersion = None  # type: ignore[assignment]  # noqa: N816
 if TYPE_CHECKING:
-    from qutebrowser.qt.webkit import QWebHistory
     from qutebrowser.qt.webenginecore import QWebEngineHistory
 
 from qutebrowser.misc import objects
@@ -122,17 +117,8 @@ def version_check(version: str,
 MAX_WORLD_ID = 256
 
 
-def is_new_qtwebkit() -> bool:
-    """Check if the given version is a new QtWebKit."""
-    assert qWebKitVersion is not None
-    return (utils.VersionNumber.parse(qWebKitVersion()) >
-            utils.VersionNumber.parse('538.1'))
-
-
 def is_single_process() -> bool:
     """Check whether QtWebEngine is running in single-process mode."""
-    if objects.backend == usertypes.Backend.QtWebKit:
-        return False
     assert objects.backend == usertypes.Backend.QtWebEngine, objects.backend
     args = objects.qapp.arguments()
     return '--single-process' in args
@@ -212,7 +198,6 @@ _QtSerializableType: TypeAlias = Union[
     QByteArray,
     QUrl,
     'QWebEngineHistory',
-    'QWebHistory'
 ]
 
 

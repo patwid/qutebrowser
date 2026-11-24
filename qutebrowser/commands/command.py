@@ -49,8 +49,6 @@ class Command:
         parser: The ArgumentParser to use to parse this command.
         flags_with_args: A list of flags which take an argument.
         no_cmd_split: If true, ';;' to split sub-commands is ignored.
-        backend: Which backend the command works with (or None if it works with
-                 both)
         no_replace_variables: Don't replace variables like {url}
         modes: The modes the command can be executed in.
         _qute_args: The saved data from @cmdutils.argument
@@ -67,7 +65,7 @@ class Command:
         self, *, handler, name, instance=None, maxsplit=None,
         modes=None, not_modes=None, debug=False, deprecated=False,
         no_cmd_split=False, star_args_optional=False, scope='global',
-        backend=None, no_replace_variables=False,
+        no_replace_variables=False,
     ):  # pylint: disable=too-many-arguments
         if modes is not None and not_modes is not None:
             raise ValueError("Only modes or not_modes can be given!")
@@ -96,7 +94,6 @@ class Command:
         self.debug = debug
         self.handler = handler
         self.no_cmd_split = no_cmd_split
-        self.backend = backend
         self.no_replace_variables = no_replace_variables
 
         self.docparser = docutils.DocstringParser(handler)
@@ -132,11 +129,6 @@ class Command:
         from qutebrowser.keyinput import modeman
         mode_manager = modeman.instance(win_id)
         self.validate_mode(mode_manager.mode)
-
-        if self.backend is not None and objects.backend != self.backend:
-            raise cmdexc.PrerequisitesError(
-                "{}: Only available with {} "
-                "backend.".format(self.name, self.backend.name))
 
         if self.deprecated:
             message.warning(f'{self.name} is deprecated - {self.deprecated}')

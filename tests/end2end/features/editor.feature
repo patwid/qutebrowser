@@ -272,7 +272,6 @@ Feature: Opening external editors
 
     ## Select file when expecting folder
 
-    @qtwebkit_skip
     Scenario: Select file for folder
         When I set fileselect.handler to external
         When I setup a fake folder fileselector selecting "tests/end2end/data/numbers/1.txt" and writes to a temporary file
@@ -283,7 +282,6 @@ Feature: Opening external editors
 
     ## Select folder
 
-    @qtwebkit_skip
     Scenario: Select one folder with folder command
         When I set fileselect.handler to external
         And I setup a fake folder fileselector selecting "tests/end2end/data/backforward/" and writes to a temporary file

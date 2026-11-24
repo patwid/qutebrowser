@@ -134,8 +134,7 @@ class HintLabel(QLabel):
             log.hints.debug("Frame for {!r} vanished!".format(self))
             self.hide()
             return
-        no_js = config.cache['hints.find_implementation'] != 'javascript'
-        rect = self.elem.rect_on_view(no_js=no_js)
+        rect = self.elem.rect_on_view()
         self.move(rect.x(), rect.y())
 
     def cleanup(self) -> None:

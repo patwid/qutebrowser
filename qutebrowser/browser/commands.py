@@ -1394,15 +1394,12 @@ class CommandDispatcher:
             download_manager.get(url, target=target)
         elif mhtml_:
             tab = self._current_widget()
-            if tab.backend == usertypes.Backend.QtWebEngine:
-                webengine_download_manager = objreg.get(
-                    'webengine-download-manager')
-                try:
-                    webengine_download_manager.get_mhtml(tab, target)
-                except browsertab.UnsupportedOperationError as e:
-                    raise cmdutils.CommandError(e)
-            else:
-                download_manager.get_mhtml(tab, target)
+            webengine_download_manager = objreg.get(
+                'webengine-download-manager')
+            try:
+                webengine_download_manager.get_mhtml(tab, target)
+            except browsertab.UnsupportedOperationError as e:
+                raise cmdutils.CommandError(e)
         else:
             qnam = tab.private_api.networkaccessmanager()
 
@@ -1423,8 +1420,7 @@ class CommandDispatcher:
 
         Args:
             edit: Edit the source in the editor instead of opening a tab.
-            pygments: Use pygments to generate the view. This is always
-                      the case for QtWebKit. For QtWebEngine it may display
+            pygments: Use pygments to generate the view. It may display
                       slightly different source.
                       Some JavaScript processing may be applied.
                       Needs the optional Pygments dependency for highlighting.
@@ -1728,7 +1724,7 @@ class CommandDispatcher:
                   `~/.local/share/qutebrowser/js`.
             url: Interpret js-code as a `javascript:...` URL.
             quiet: Don't show resulting JS object.
-            world: Ignored on QtWebKit. On QtWebEngine, a world ID or name to
+            world: A world ID or name to
                    run the snippet in. Predefined world names are:
 
                       - `main` (same world as the web page's JavaScript and
@@ -1798,12 +1794,6 @@ class CommandDispatcher:
                 tab = self._current_widget()
                 tab.send_event(press_event)
                 tab.send_event(release_event)
-
-    @cmdutils.register(instance='command-dispatcher', scope='window',
-                       debug=True, backend=usertypes.Backend.QtWebKit)
-    def debug_clear_ssl_errors(self):
-        """Clear remembered SSL error answers."""
-        self._current_widget().private_api.clear_ssl_errors()
 
     @cmdutils.register(instance='command-dispatcher', scope='window')
     def edit_url(self, url=None, bg=False, tab=False, window=False,

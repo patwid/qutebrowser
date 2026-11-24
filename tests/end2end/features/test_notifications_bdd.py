@@ -9,10 +9,7 @@ import pytest_bdd as bdd
 bdd.scenarios('notifications.feature')
 
 
-pytestmark = [
-    pytest.mark.usefixtures('notification_server'),
-    pytest.mark.qtwebkit_skip,
-]
+pytestmark = pytest.mark.usefixtures('notification_server')
 
 
 @bdd.given("the notification server supports body markup")

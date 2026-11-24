@@ -234,8 +234,8 @@ def test_qtwe_version_changed(state_writer, qtwe_version_patcher,
     ("chromium_version", "chromium_version_changed", configfiles.VersionChange.unknown),
 ])
 @pytest.mark.parametrize("value", ["no", None])
-def test_version_changed_webkit(stubs, monkeypatch, state_writer,
-                                key, value, attribute, expected):
+def test_version_changed_no_webengine(stubs, monkeypatch, state_writer,
+                                      key, value, attribute, expected):
     fake = stubs.ImportFake({'qutebrowser.qt.webenginewidgets': False}, monkeypatch)
     fake.patch()
 
@@ -325,18 +325,8 @@ def test_chromium_version_changed_inferring(
 
 @pytest.mark.parametrize("key, msg, attribute", [
     ("version", "old version", "qutebrowser_version_changed"),
-    pytest.param(
-        "qtwe_version",
-        "old QtWebEngine version",
-        "chromium_version_changed",
-        marks=pytest.mark.qtwebkit_skip,
-    ),
-    pytest.param(
-        "chromium_version",
-        "old Chromium version",
-        "chromium_version_changed",
-        marks=pytest.mark.qtwebkit_skip,
-    ),
+    ("qtwe_version", "old QtWebEngine version", "chromium_version_changed"),
+    ("chromium_version", "old Chromium version", "chromium_version_changed"),
 ])
 def test_version_unparsable(state_writer, caplog, key, msg, attribute):
     state_writer(key, 'blabla')

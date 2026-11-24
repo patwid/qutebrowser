@@ -6,6 +6,7 @@
 """Tests for qutebrowser.config.config."""
 
 import types
+import dataclasses
 import unittest.mock
 import functools
 
@@ -674,10 +675,12 @@ class TestConfig:
     def test_set_wrong_backend(self, conf, qtbot, monkeypatch, method):
         monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebEngine)
         meth = getattr(conf, method)
+        opt = dataclasses.replace(configdata.DATA['hints.uppercase'], backends=[])
+        monkeypatch.setitem(configdata.DATA, 'hints.uppercase', opt)
         with pytest.raises(configexc.BackendError):
             with qtbot.assert_not_emitted(conf.changed):
-                meth('hints.find_implementation', 'javascript')
-        assert not conf._values['hints.find_implementation']
+                meth('hints.uppercase', True if method == 'set_obj' else 'true')
+        assert not conf._values['hints.uppercase']
 
     @pytest.mark.parametrize('method, value', [
         ('set_obj', {}),

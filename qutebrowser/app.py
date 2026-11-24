@@ -42,9 +42,7 @@ from qutebrowser.config import (config, websettings, configfiles, configinit,
                                 qtargs)
 from qutebrowser.browser import (urlmarks, history, browsertab,
                                  qtnetworkdownloads, downloads, greasemonkey)
-from qutebrowser.browser.network import proxy
-from qutebrowser.browser.webkit import cookies, cache
-from qutebrowser.browser.webkit.network import networkmanager
+from qutebrowser.browser.network import proxy, cookies, cache, networkmanager
 from qutebrowser.extensions import loader
 from qutebrowser.keyinput import macros, eventfilter
 from qutebrowser.mainwindow import mainwindow, prompt, windowundo
@@ -341,10 +339,6 @@ def _open_special_pages(args):
                                      'qutebrowser.conf')),
          'qute://help/configuring.html'),
 
-        ('webkit-warning-shown',
-         objects.backend == usertypes.Backend.QtWebKit,
-         'qute://warning/webkit'),
-
         ('session-warning-shown',
          True,
          'qute://warning/sessions'),
@@ -352,8 +346,7 @@ def _open_special_pages(args):
         ('qt5-warning-shown',
          (
              machinery.IS_QT5 and
-             machinery.INFO.reason == machinery.SelectionReason.auto and
-             objects.backend != usertypes.Backend.QtWebKit
+             machinery.INFO.reason == machinery.SelectionReason.auto
          ),
          'qute://warning/qt5'),
 

@@ -20,9 +20,8 @@ from qutebrowser.utils import (message, log, usertypes, utils, objreg,
 from qutebrowser.browser import shared
 from qutebrowser.browser.network import proxy as proxymod
 from qutebrowser.extensions import interceptors
-from qutebrowser.browser.webkit import certificateerror, cookies, cache
-from qutebrowser.browser.webkit.network import (webkitqutescheme, networkreply,
-                                                filescheme)
+from qutebrowser.browser.network import (certificateerror, cookies, cache,
+                                         quteschemehandler, networkreply)
 from qutebrowser.misc import objects
 
 if TYPE_CHECKING:
@@ -156,8 +155,7 @@ class NetworkManager(QNetworkAccessManager):
         self._tab_id = tab_id
         self._private = private
         self._scheme_handlers = {
-            'qute': webkitqutescheme.handler,
-            'file': filescheme.handler,
+            'qute': quteschemehandler.handler,
         }
         self._set_cookiejar()
         self._set_cache()
@@ -226,7 +224,8 @@ class NetworkManager(QNetworkAccessManager):
     def shutdown(self):
         """Abort all running requests."""
         try:
-            self.setNetworkAccessible(QNetworkAccessManager.NetworkAccessibility.NotAccessible)
+            self.setNetworkAccessible(  # type: ignore[attr-defined,unused-ignore]
+                QNetworkAccessManager.NetworkAccessibility.NotAccessible)  # type: ignore[attr-defined,unused-ignore]
         except AttributeError:
             # Qt 5 only, deprecated seemingly without replacement.
             pass
@@ -375,13 +374,13 @@ class NetworkManager(QNetworkAccessManager):
                   not urlutils.same_domain(req.url(), current_url)):
                 req.setRawHeader(b'Referer', QByteArray())
             # If refer_header_conf is set to 'always', we leave the header
-            # alone as QtWebKit did set it.
+            # alone.
         except urlutils.InvalidUrlError:
             # req.url() or current_url can be invalid - this happens on
             # https://www.playstation.com/ for example.
             pass
 
-    def createRequest(self, op, req, outgoing_data):
+    def createRequest(self, op, req, outgoing_data):  # type: ignore[override]
         """Return a new QNetworkReply object.
 
         Args:

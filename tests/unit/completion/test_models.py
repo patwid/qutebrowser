@@ -90,8 +90,7 @@ def configdata_stub(config_stub, monkeypatch, configdata_init):
                 valtype=configtypes.Command(),
             ),
             default={'q': 'quit'},
-            backends=[usertypes.Backend.QtWebKit,
-                      usertypes.Backend.QtWebEngine],
+            backends=[usertypes.Backend.QtWebEngine],
             raw_backends=None)),
         ('bindings.default', configdata.Option(
             name='bindings.default',

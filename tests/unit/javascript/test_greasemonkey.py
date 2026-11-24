@@ -12,7 +12,7 @@ import pathlib
 import pytest
 from qutebrowser.qt.core import QUrl
 
-from qutebrowser.utils import usertypes, version
+from qutebrowser.utils import usertypes
 from qutebrowser.browser import greasemonkey
 from qutebrowser.misc import objects
 
@@ -330,18 +330,6 @@ class TestForceDocumentEnd:
         script = self._get_script(namespace=namespace, name=name)
         assert script.needs_document_end_workaround() == force
 
-    @pytest.mark.parametrize('namespace, name', [
-        ('http://userstyles.org', 'foobar'),
-        ('https://github.com/ParticleCore', 'Iridium'),
-        ('https://github.com/ParticleCore', 'Foo'),
-        ('https://example.org', 'Iridium'),
-    ])
-    def test_webkit(self, monkeypatch, namespace, name):
-        monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebKit)
-        script = self._get_script(namespace=namespace, name=name)
-        assert not script.needs_document_end_workaround()
-
-
 def test_required_scripts_are_included(gm_manager, download_stub, tmp_path):
     test_require_script = textwrap.dedent("""
         // ==UserScript==
@@ -414,19 +402,8 @@ def test_window_isolation(js_tester, request):
     # What we expect the script to report back.
     expected = ["global", "global", "shadowed", "shadowed", "global", "global"]
 
-    # The JSCore in 602.1 doesn't fully support Proxy.
-    xfail = False
-    if (js_tester.tab.backend == usertypes.Backend.QtWebKit and
-            version.qWebKitVersion() == '602.1'):
-        expected[-1] = 'shadowed'
-        expected[-2] = 'shadowed'
-        xfail = True
-
     js_tester.run(setup_script)
     js_tester.run(test_script, expected=expected)
-
-    if xfail:
-        pytest.xfail("Broken on WebKit 602.1")
 
 
 def test_shared_window_proxy(js_tester):

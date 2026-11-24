@@ -49,7 +49,6 @@ Feature: Using hints
             """
 
     # https://github.com/qutebrowser/qutebrowser/issues/7842
-    @qtwebkit_skip
     Scenario: Following a hint from a local file to a remote origin
         When I open file://(testdata)/hints/link_inject.html?port=(port)
         And I hint with args "links" and follow a
@@ -224,7 +223,6 @@ Feature: Using hints
         And I hint with args "custom" and follow a
         Then the javascript message "beep!" should be logged
 
-    @qtwebkit_skip
     Scenario: Invalid custom selector
         When I open data/hints/custom_group.html
         And I set hints.selectors to {"custom":["@"]}

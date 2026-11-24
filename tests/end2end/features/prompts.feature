@@ -96,7 +96,6 @@ Feature: Prompts
         Then the javascript message "Alert done" should be logged
         And the javascript message "notification permission granted" should be logged
 
-    @qtwebkit_skip
     Scenario: Async question interrupted by async one
         Given I have a fresh instance
         When I set content.notifications.enabled to ask
@@ -112,7 +111,6 @@ Feature: Prompts
         Then the javascript message "notification permission granted" should be logged
         And "Added quickmark test for *" should be logged
 
-    @qtwebkit_skip
     Scenario: Async question interrupted by blocking one
         Given I have a fresh instance
         When I set content.notifications.enabled to ask
@@ -161,14 +159,12 @@ Feature: Prompts
 
     # Clipboard permissions - static
 
-    @qtwebkit_skip
     Scenario: Clipboard - no permission - copy
         When I set content.javascript.clipboard to none
         And I open data/prompt/clipboard.html
         And I run :click-element id copy
         Then the javascript message "Failed to copy text." should be logged
 
-    @qtwebkit_skip
     Scenario: Clipboard - no permission - paste
         When I set content.javascript.clipboard to none
         And I open data/prompt/clipboard.html
@@ -178,28 +174,25 @@ Feature: Prompts
     # access permission no longer allows copy permission on 6.8 because it
     # falls back to a permission prompt that we don't support
     # WORKAROUND for https://bugreports.qt.io/browse/QTBUG-130599
-    @qt<6.8 @qtwebkit_skip
+    @qt<6.8
     Scenario: Clipboard - access permission - copy
         When I set content.javascript.clipboard to access
         And I open data/prompt/clipboard.html
         And I run :click-element id copy
         Then the javascript message "Text copied: default text" should be logged
 
-    @qtwebkit_skip
     Scenario: Clipboard - access permission - paste
         When I set content.javascript.clipboard to access
         And I open data/prompt/clipboard.html
         And I run :click-element id paste
         Then the javascript message "Failed to read from clipboard." should be logged
 
-    @qtwebkit_skip
     Scenario: Clipboard - full permission - copy
         When I set content.javascript.clipboard to access-paste
         And I open data/prompt/clipboard.html
         And I run :click-element id copy
         Then the javascript message "Text copied: default text" should be logged
 
-    @qtwebkit_skip
     Scenario: Clipboard - full permission - paste
         When I set content.javascript.clipboard to access-paste
         And I open data/prompt/clipboard.html
@@ -294,7 +287,6 @@ Feature: Prompts
         Then the error "Certificate error: *" should be shown
         And the page should contain the plaintext "Hello World via SSL!"
 
-    @qtwebkit_openssl3_skip
     Scenario: SSL error with content.tls.certificate_errors = block
         When I clear SSL errors
         And I set content.tls.certificate_errors to block
@@ -310,7 +302,6 @@ Feature: Prompts
         And I wait until the SSL page finished loading
         Then the page should contain the plaintext "Hello World via SSL!"
 
-    @qtwebkit_openssl3_skip
     Scenario: SSL error with content.tls.certificate_errors = ask -> no
         When I clear SSL errors
         And I set content.tls.certificate_errors to ask
@@ -319,7 +310,6 @@ Feature: Prompts
         And I run :prompt-accept no
         Then a SSL error page should be shown
 
-    @qtwebkit_openssl3_skip
     Scenario: SSL error with content.tls.certificate_errors = ask -> abort
         When I clear SSL errors
         And I set content.tls.certificate_errors to ask
@@ -347,7 +337,6 @@ Feature: Prompts
         Then the javascript message "Script loaded" should be logged
         And the page should contain the plaintext "Script loaded"
 
-    @qtwebkit_openssl3_skip
     Scenario: SSL resource error with content.tls.certificate_errors = ask -> no
         When I clear SSL errors
         And I set content.tls.certificate_errors to ask
@@ -358,7 +347,6 @@ Feature: Prompts
         Then the javascript message "Script loaded" should not be logged
         And the page should contain the plaintext "Script not loaded"
 
-    @qtwebkit_openssl3_skip
     Scenario: SSL resource error with content.tls.certificate_errors = ask-block-thirdparty
         When I clear SSL errors
         And I set content.tls.certificate_errors to ask-block-thirdparty
@@ -406,7 +394,6 @@ Feature: Prompts
 
     # Notifications
 
-    @qtwebkit_skip
     Scenario: Always rejecting notifications
         Given I have a fresh instance
         When I set content.notifications.enabled to false
@@ -414,7 +401,6 @@ Feature: Prompts
         And I run :click-element id button
         Then the javascript message "notification permission denied" should be logged
 
-    @qtwebkit_skip
     Scenario: Always accepting notifications
         Given I have a fresh instance
         When I set content.notifications.enabled to true
@@ -422,7 +408,6 @@ Feature: Prompts
         And I run :click-element id button
         Then the javascript message "notification permission granted" should be logged
 
-    @qtwebkit_skip
     Scenario: notifications with ask -> false
         Given I have a fresh instance
         When I set content.notifications.enabled to ask
@@ -432,7 +417,6 @@ Feature: Prompts
         And I run :prompt-accept no
         Then the javascript message "notification permission denied" should be logged
 
-    @qtwebkit_skip
     Scenario: notifications with ask -> false and save
         Given I have a fresh instance
         When I set content.notifications.enabled to ask
@@ -443,7 +427,6 @@ Feature: Prompts
         Then the javascript message "notification permission denied" should be logged
         And the per-domain option content.notifications.enabled should be set to false for http://localhost:(port)
 
-    @qtwebkit_skip
     Scenario: notifications with ask -> true
         Given I have a fresh instance
         When I set content.notifications.enabled to ask
@@ -453,7 +436,6 @@ Feature: Prompts
         And I run :prompt-accept yes
         Then the javascript message "notification permission granted" should be logged
 
-    @qtwebkit_skip
     Scenario: notifications with ask -> true and save
         Given I have a fresh instance
         When I set content.notifications.enabled to ask
@@ -475,7 +457,6 @@ Feature: Prompts
         And I run :mode-leave
         Then the javascript message "notification permission aborted" should be logged
 
-    @qtwebkit_skip
     Scenario: answering notification after closing tab
         Given I have a fresh instance
         When I set content.notifications.enabled to ask
@@ -545,13 +526,6 @@ Feature: Prompts
               "user": "user4"
             }
             """
-
-    @qtwebengine_skip
-    Scenario: Cancelling webpage authentication with QtWebKit
-        When I open basic-auth/user6/password6 without waiting
-        And I wait for a prompt
-        And I run :mode-leave
-        Then basic-auth/user6/password6 should be loaded
 
     # :prompt-accept with value argument
 
@@ -657,7 +631,6 @@ Feature: Prompts
 
     # https://github.com/qutebrowser/qutebrowser/issues/1249#issuecomment-175205531
     # https://github.com/qutebrowser/qutebrowser/pull/2054#issuecomment-258285544
-    @qtwebkit_skip
     Scenario: Interrupting SSL prompt during a notification prompt
         Given I have a fresh instance
         When I set content.notifications.enabled to ask

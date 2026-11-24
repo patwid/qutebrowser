@@ -61,7 +61,7 @@ show it.
 *--target* '{auto,tab,tab-bg,tab-silent,tab-bg-silent,window,private-window}'::
     How URLs should be opened if there is already a qutebrowser instance running.
 
-*--backend* '{webkit,webengine}'::
+*--backend* '{webengine}'::
     Which backend to use.
 
 *--qt-wrapper* '{PyQt6,PyQt5}'::

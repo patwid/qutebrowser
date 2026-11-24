@@ -9,7 +9,7 @@ import pytest
 from qutebrowser.qt.core import QUrl, QIODevice
 from qutebrowser.qt.network import QNetworkRequest, QNetworkReply
 
-from qutebrowser.browser.webkit.network import networkreply
+from qutebrowser.browser.network import networkreply
 
 
 @pytest.fixture

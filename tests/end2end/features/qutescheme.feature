@@ -81,15 +81,6 @@ Feature: Special qute:// pages
         And I open qute://help/index.html/../ without waiting
         Then qute://help/ should be loaded
 
-    @qtwebengine_skip
-    Scenario: Opening a link with qute://help/img/ (QtWebKit)
-        When the documentation is up to date
-        And I open qute://help/img/ without waiting
-        Then "*Error while * qute://*" should be logged
-        And "*Is a directory*" should be logged
-        And "* url='qute://help/img'* LoadStatus.error" should be logged
-
-    @qtwebkit_skip
     Scenario: Opening a link with qute://help/img/ (QtWebEngine)
         When the documentation is up to date
         And I open qute://help/img/ without waiting
@@ -173,7 +164,6 @@ Feature: Special qute:// pages
         And I run :click-element id via-form
         Then the form request should be blocked
 
-    @qtwebkit_skip
     Scenario: qute://settings CSRF token (webengine)
         When I open qute://settings
         And I run :jseval const xhr = new XMLHttpRequest(); xhr.open("GET", "qute://settings/set"); xhr.send()
@@ -189,7 +179,6 @@ Feature: Special qute:// pages
         And I wait until PDF.js is ready
         # No "Then"
 
-    @qtwebkit_pdf_imageformat_skip
     Scenario: pdfjs is not used when disabled
         When I set content.pdfjs to false
         And I set downloads.location.prompt to false
@@ -317,8 +306,8 @@ Feature: Special qute:// pages
 
     # qute://start
 
-    # QtWebKit doesn't support formaction; unknown Qt 6.9 renderer process crashes
-    @qtwebkit_skip @qt69_ci_skip
+    # unknown Qt 6.9 renderer process crashes
+    @qt69_ci_skip
     Scenario: Searching on qute://start
         When I set url.searchengines to {"DEFAULT": "http://localhost:(port)/data/title.html?q={}"}
         And I open qute://start

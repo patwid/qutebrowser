@@ -23,6 +23,15 @@ Removed
 ~~~~~~~
 
 - Support for Python 3.9 was removed and Python 3.10 is now required (#8731)
+- Support for the legacy QtWebKit backend was removed, QtWebEngine is now the
+  only supported backend. As a consequence:
+  * The `backend` setting and the `--backend` argument only accept `webengine`.
+  * The QtWebKit-only settings `content.cache.maximum_pages`,
+    `content.cache.appcache`, `content.frame_flattening`,
+    `content.javascript.can_close_tabs`, `content.proxy_dns_requests`,
+    `hints.find_implementation` and `zoom.text_only` were removed.
+  * The QtWebKit-only `:debug-clear-ssl-errors` command and the
+    `qute://warning/webkit` page were removed.
 
 Fixed
 ~~~~~

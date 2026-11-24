@@ -166,26 +166,6 @@ class TestQFlagsKey:
         flags = debug.qflags_key(base, value, klass=klass)
         assert flags == expected
 
-    def test_find_flags(self):
-        """Test a weird TypeError we get from PyQt.
-
-        In exactly this constellation (happening via the "Searching with
-        --reverse" BDD test), calling QMetaEnum::valueToKey without wrapping
-        the flags in int() causes a TypeError.
-
-        No idea what's happening here exactly...
-        """
-        qwebpage = pytest.importorskip("qutebrowser.qt.webkitwidgets").QWebPage
-
-        flags = qwebpage.FindWrapsAroundDocument
-        flags |= qwebpage.FindBackward
-        flags &= ~qwebpage.FindBackward
-        flags &= ~qwebpage.FindWrapsAroundDocument
-
-        debug.qflags_key(qwebpage,
-                         flags,
-                         klass=qwebpage.FindFlag)
-
     def test_int_noklass(self):
         """Test passing an int without explicit klass given."""
         with pytest.raises(TypeError):

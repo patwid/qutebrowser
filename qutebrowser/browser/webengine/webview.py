@@ -40,10 +40,9 @@ class WebEngineView(QWebEngineView):
 
     """Custom QWebEngineView subclass with qutebrowser-specific features."""
 
-    def __init__(self, *, tabdata, win_id, private, parent=None):
+    def __init__(self, *, win_id, private, parent=None):
         super().__init__(parent)
         self._win_id = win_id
-        self._tabdata = tabdata
 
         style = self.style()
         assert style is not None

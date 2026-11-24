@@ -6,7 +6,7 @@ import pytest
 from qutebrowser.qt.core import QUrl
 from qutebrowser.qt.network import QSslError
 
-from qutebrowser.browser.webkit import certificateerror
+from qutebrowser.browser.network import certificateerror
 
 
 class FakeError:

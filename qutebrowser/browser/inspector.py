@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""Base class for a QtWebKit/QtWebEngine web inspector."""
+"""Base class for a QtWebEngine web inspector."""
 
 import base64
 import binascii
@@ -45,14 +45,9 @@ class _EventFilter(QObject):
     """Event filter to enter insert mode when inspector was clicked.
 
     We need to use this with a ChildEventFilter (rather than just overriding
-    mousePressEvent) for two reasons:
-
-    - For QtWebEngine, we need to listen for mouse events on its focusProxy(),
-      which can change when another page loads (which might be possible with an
-      inspector as well?)
-
-    - For QtWebKit, we need to listen for mouse events on the QWebView used by
-      the QWebInspector.
+    mousePressEvent) because for QtWebEngine, we need to listen for mouse events on
+    its focusProxy(), which can change when another page loads (which might be
+    possible with an inspector as well?)
     """
 
     clicked = pyqtSignal()
@@ -67,7 +62,7 @@ class _EventFilter(QObject):
 
 class AbstractWebInspector(QWidget):
 
-    """Base class for QtWebKit/QtWebEngine inspectors.
+    """Base class for QtWebEngine inspectors.
 
     Attributes:
         _position: position of the inspector (right/left/top/bottom/window)

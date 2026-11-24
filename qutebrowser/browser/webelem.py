@@ -52,7 +52,7 @@ def css_selector(group: str, url: QUrl) -> str:
 
 class AbstractWebElement(collections.abc.MutableMapping[str, str]):
 
-    """A wrapper around QtWebKit/QtWebEngine web element."""
+    """A wrapper around a QtWebEngine web element."""
 
     def __init__(self, tab: 'browsertab.AbstractTab') -> None:
         self._tab = tab
@@ -135,13 +135,11 @@ class AbstractWebElement(collections.abc.MutableMapping[str, str]):
         """Insert the given text into the element."""
         raise NotImplementedError
 
-    def rect_on_view(self, *, elem_geometry: QRect | None = None,
-                     no_js: bool = False) -> QRect:
+    def rect_on_view(self, *, elem_geometry: QRect | None = None) -> QRect:
         """Get the geometry of the element relative to the webview.
 
         Args:
             elem_geometry: The geometry of the element, or None.
-            no_js: Fall back to the Python implementation.
         """
         raise NotImplementedError
 

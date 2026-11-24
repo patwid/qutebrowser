@@ -67,7 +67,7 @@ def get_argparser():
                                              'window', 'private-window'],
                         help="How URLs should be opened if there is already a "
                              "qutebrowser instance running.")
-    parser.add_argument('--backend', choices=['webkit', 'webengine'],
+    parser.add_argument('--backend', choices=['webengine'],
                         help="Which backend to use.")
     parser.add_argument('--qt-wrapper', choices=machinery.WRAPPERS,
                         help="Which Qt wrapper to use. This can also be set "

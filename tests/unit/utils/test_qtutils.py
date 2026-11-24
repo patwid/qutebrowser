@@ -88,18 +88,7 @@ def test_version_check_compiled_and_exact():
         qtutils.version_check('1.2.3', exact=True, compiled=True)
 
 
-@pytest.mark.parametrize('version, is_new', [
-    ('537.21', False),  # QtWebKit 5.1
-    ('538.1', False),   # Qt 5.8
-    ('602.1', True)     # new QtWebKit TP5, 5.212 Alpha
-])
-def test_is_new_qtwebkit(monkeypatch, version, is_new):
-    monkeypatch.setattr(qtutils, 'qWebKitVersion', lambda: version)
-    assert qtutils.is_new_qtwebkit() == is_new
-
-
 @pytest.mark.parametrize('backend, arguments, single_process', [
-    (usertypes.Backend.QtWebKit, ['--single-process'], False),
     (usertypes.Backend.QtWebEngine, ['--single-process'], True),
     (usertypes.Backend.QtWebEngine, [], False),
 ])

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""Shared QtWebKit/QtWebEngine code for downloads."""
+"""Shared QtNetwork/QtWebEngine code for downloads."""
 
 import re
 import sys
@@ -401,7 +401,7 @@ class DownloadItemStats(QObject):
             bytes_done: How many bytes are downloaded.
             bytes_total: How many bytes there are to download in total.
         """
-        if bytes_total in [0, -1]:  # QtWebEngine, QtWebKit
+        if bytes_total in [0, -1]:  # QtWebEngine, QtNetwork
             bytes_total = None
         self.done = bytes_done
         self.total = bytes_total
@@ -507,7 +507,7 @@ class AbstractDownloadItem(QObject):
         assert not self.successful
         # Prevent actions if calling _die() twice.
         #
-        # For QtWebKit, this might happen if the error handler correctly
+        # For QtNetwork, this might happen if the error handler correctly
         # connects, and the error occurs in _init_reply between
         # reply.error.connect and the reply.error() check. In this case, the
         # connected error handlers will be called twice, once via the direct

@@ -14,7 +14,6 @@ QWebEngineScriptCollection = QtWebEngineCore.QWebEngineScriptCollection
 QWebEngineScript = QtWebEngineCore.QWebEngineScript
 
 from qutebrowser.browser import greasemonkey
-from qutebrowser.utils import usertypes
 webenginetab = pytest.importorskip(
     "qutebrowser.browser.webengine.webenginetab")
 
@@ -103,9 +102,6 @@ class TestWebengineScripts:
 
     def test_greasemonkey_document_end_workaround(self, monkeypatch, scripts_helper):
         """Make sure document-end is forced when needed."""
-        monkeypatch.setattr(greasemonkey.objects, 'backend',
-                            usertypes.Backend.QtWebEngine)
-
         scripts = [
             greasemonkey.GreasemonkeyScript([
                 ('name', 'Iridium'),

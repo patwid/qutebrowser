@@ -10,7 +10,6 @@ import configparser
 import subprocess
 import sys
 import logging
-import importlib
 import re
 import json
 import platform
@@ -37,16 +36,12 @@ IS_ARM = platform.machine() == 'aarch64'
 def _base_args(config):
     """Get the arguments to pass with every invocation."""
     args = ['--debug', '--json-logging', '--no-err-windows']
-    if config.webengine:
-        args += ['--backend', 'webengine']
-    else:
-        args += ['--backend', 'webkit']
+    args += ['--backend', 'webengine']
 
-    if config.webengine:
-        if testutils.disable_seccomp_bpf_sandbox():
-            args += testutils.DISABLE_SECCOMP_BPF_ARGS
-        if testutils.use_software_rendering():
-            args += testutils.SOFTWARE_RENDERING_ARGS
+    if testutils.disable_seccomp_bpf_sandbox():
+        args += testutils.DISABLE_SECCOMP_BPF_ARGS
+    if testutils.use_software_rendering():
+        args += testutils.SOFTWARE_RENDERING_ARGS
 
     args.append('about:blank')
     return args
@@ -76,7 +71,6 @@ def temp_basedir_env(tmp_path, runtime_tmpdir):
         '[general]',
         'quickstart-done = 1',
         'backend-warning-shown = 1',
-        'webkit-warning-shown = 1',
     ]
 
     state_file = data_dir / 'qutebrowser' / 'state'
@@ -198,9 +192,6 @@ def test_qt_arg(request, quteproc_new, tmp_path):
 @pytest.mark.linux
 def test_webengine_download_suffix(request, quteproc_new, tmp_path):
     """Make sure QtWebEngine does not add a suffix to downloads."""
-    if not request.config.webengine:
-        pytest.skip()
-
     download_dir = tmp_path / 'downloads'
     download_dir.mkdir()
 
@@ -322,7 +313,7 @@ def test_qute_settings_persistence(short_tmpdir, request, quteproc_new):
     ),
 
     ('never', None),
-    ('same-domain', 'http://localhost:(port2)/'),  # None with QtWebKit
+    ('same-domain', 'http://localhost:(port2)/'),
 ])
 def test_referrer(quteproc_new, server, server2, request, value, expected):
     """Check referrer settings."""
@@ -341,10 +332,6 @@ def test_referrer(quteproc_new, server, server2, request, value, expected):
     print(data)
     headers = data['headers']
 
-    if not request.config.webengine and value == 'same-domain':
-        # With QtWebKit and same-domain, we don't send a referer at all.
-        expected = None
-
     if expected is not None:
         for key, val in [('(port)', server.port), ('(port2)', server2.port)]:
             expected = expected.replace(key, str(val))
@@ -352,25 +339,9 @@ def test_referrer(quteproc_new, server, server2, request, value, expected):
     assert headers.get('Referer') == expected
 
 
-def test_preferred_colorscheme_unsupported(request, quteproc_new):
-    """Test versions without preferred-color-scheme support."""
-    if request.config.webengine:
-        pytest.skip("preferred-color-scheme is supported")
-
-    args = _base_args(request.config) + ['--temp-basedir']
-    quteproc_new.start(args)
-    quteproc_new.open_path('data/darkmode/prefers-color-scheme.html')
-    content = quteproc_new.get_content()
-    assert content == "Preference support missing."
-
-
-@pytest.mark.qtwebkit_skip
 @pytest.mark.parametrize('value', ["dark", "light", "auto", None])
 def test_preferred_colorscheme(request, quteproc_new, value):
     """Make sure the the preferred colorscheme is set."""
-    if not request.config.webengine:
-        pytest.skip("Skipped with QtWebKit")
-
     args = _base_args(request.config) + ['--temp-basedir']
     if value is not None:
         args += ['-s', 'colors.webpage.preferred_color_scheme', value]
@@ -411,9 +382,6 @@ def test_preferred_colorscheme_with_dark_mode(
     We would actually expect a color of 34, 34, 34 and 'Dark preference detected.'.
     That was the behavior on Qt 5.14 and 5.15.0/.1.
     """
-    if not request.config.webengine:
-        pytest.skip("Skipped with QtWebKit")
-
     args = _base_args(request.config) + [
         '--temp-basedir',
         '-s', 'colors.webpage.preferred_color_scheme', 'dark',
@@ -465,7 +433,6 @@ def test_preferred_colorscheme_with_dark_mode(
         pytest.xfail(xfail)
 
 
-@pytest.mark.qtwebkit_skip
 @pytest.mark.parametrize('reason', [
     'Explicitly enabled',
     'Qt version changed',
@@ -665,9 +632,6 @@ def test_permission_prompt_across_restart(quteproc_new, request, short_tmpdir):
 ])
 def test_dark_mode(webengine_versions, quteproc_new, request,
                    filename, algorithm, colors):
-    if not request.config.webengine:
-        pytest.skip("Skipped with QtWebKit")
-
     args = _base_args(request.config) + [
         '--temp-basedir',
         '-s', 'colors.webpage.darkmode.enabled', 'true',
@@ -704,9 +668,6 @@ def test_dark_mode(webengine_versions, quteproc_new, request,
 
 @pytest.mark.parametrize("suffix", ["inline", "display"])
 def test_dark_mode_mathml(webengine_versions, quteproc_new, request, qtbot, suffix):
-    if not request.config.webengine:
-        pytest.skip("Skipped with QtWebKit")
-
     args = _base_args(request.config) + [
         '--temp-basedir',
         '-s', 'colors.webpage.darkmode.enabled', 'true',
@@ -749,9 +710,6 @@ def test_dark_mode_mathml(webengine_versions, quteproc_new, request, qtbot, suff
     reason="Outcome on Windows depends on system settings",
 )
 def test_prefers_reduced_motion(quteproc_new, request, value, preference):
-    if not request.config.webengine:
-        pytest.skip("Skipped with QtWebKit")
-
     args = _base_args(request.config) + [
         '--temp-basedir',
         '-s', 'content.prefers_reduced_motion', value,
@@ -761,48 +719,6 @@ def test_prefers_reduced_motion(quteproc_new, request, value, preference):
     quteproc_new.open_path('data/prefers_reduced_motion.html')
     content = quteproc_new.get_content()
     assert content == f"{preference} preference detected."
-
-
-def test_unavailable_backend(request, quteproc_new):
-    """Test starting with a backend which isn't available.
-
-    If we use --qute-bdd-webengine, we test with QtWebKit here; otherwise we test with
-    QtWebEngine. If both are available, the test is skipped.
-
-    This ensures that we don't accidentally use backend-specific code before checking
-    that the chosen backend is actually available - i.e., that the error message is
-    properly printed, rather than an unhandled exception.
-    """
-    qtwe_module = "qutebrowser.qt.webenginewidgets"
-    qtwk_module = "qutebrowser.qt.webkitwidgets"
-    # Note we want to try the *opposite* backend here.
-    if request.config.webengine:
-        pytest.importorskip(qtwe_module)
-        module = qtwk_module
-        backend = 'webkit'
-    else:
-        pytest.importorskip(qtwk_module)
-        module = qtwe_module
-        backend = 'webengine'
-
-    try:
-        importlib.import_module(module)
-    except ImportError:
-        pass
-    else:
-        pytest.skip(f"{module} is available")
-
-    args = [
-        '--debug', '--json-logging', '--no-err-windows',
-        '--backend', backend,
-        '--temp-basedir'
-    ]
-    quteproc_new.exit_expected = True
-    quteproc_new.start(args)
-    line = quteproc_new.wait_for(
-        message=('*qutebrowser tried to start with the Qt* backend but failed '
-                 'because * could not be imported.*'))
-    line.expected = True
 
 
 def test_json_logging_without_debug(request, quteproc_new, runtime_tmpdir):
@@ -815,7 +731,6 @@ def test_json_logging_without_debug(request, quteproc_new, runtime_tmpdir):
     assert not quteproc_new.is_running()
 
 
-@pytest.mark.qtwebkit_skip
 @pytest.mark.parametrize(
     'sandboxing, has_namespaces, has_seccomp, has_yama, expected_result', [
         ('enable-all', True, True, True, "You are adequately sandboxed."),
@@ -831,9 +746,7 @@ def test_sandboxing(
     userns_restricted = testutils.is_userns_restricted()
     has_yama_non_broker = False
 
-    if not request.config.webengine:
-        pytest.skip("Skipped with QtWebKit")
-    elif sandboxing == "enable-all" and testutils.disable_seccomp_bpf_sandbox():
+    if sandboxing == "enable-all" and testutils.disable_seccomp_bpf_sandbox():
         pytest.skip("Full sandboxing not supported")
     elif version.is_flatpak() or userns_restricted:
         # https://github.com/flathub/io.qt.qtwebengine.BaseApp/pull/66

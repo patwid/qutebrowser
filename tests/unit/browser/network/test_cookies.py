@@ -7,8 +7,8 @@ from qutebrowser.qt.network import QNetworkCookie
 from qutebrowser.qt.core import QUrl
 import pytest
 
-from qutebrowser.browser.webkit import cookies
-from qutebrowser.utils import usertypes, urlmatch
+from qutebrowser.browser.network import cookies
+from qutebrowser.utils import urlmatch
 from qutebrowser.misc import lineparser, objects
 
 pytestmark = pytest.mark.usefixtures('data_tmpdir')
@@ -60,10 +60,6 @@ class TestSetCookies:
     @pytest.fixture
     def url(self):
         return QUrl('http://example.com/')
-
-    @pytest.fixture(autouse=True)
-    def set_webkit_backend(self, monkeypatch):
-        monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebKit)
 
     def test_accept(self, config_stub, qtbot, monkeypatch,
                     cookie, ram_jar, url):

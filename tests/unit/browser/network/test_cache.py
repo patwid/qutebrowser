@@ -7,7 +7,7 @@ import pytest
 from qutebrowser.qt.core import QUrl, QDateTime
 from qutebrowser.qt.network import QNetworkDiskCache, QNetworkCacheMetaData
 
-from qutebrowser.browser.webkit import cache
+from qutebrowser.browser.network import cache
 
 
 @pytest.fixture

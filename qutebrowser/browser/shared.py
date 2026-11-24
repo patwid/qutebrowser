@@ -53,8 +53,6 @@ def custom_headers(
     # The global Accept-Language header is set via
     # QWebEngineProfile::setHttpAcceptLanguage already anyways, so we only need
     # to take care of URL pattern overrides here.
-    #
-    # note: Once we drop QtWebKit, we could hardcode fallback_accept_language to False.
     accept_language = config.instance.get('content.headers.accept_language',
                                           url=url, fallback=fallback_accept_language)
     if accept_language is not None and not isinstance(accept_language, usertypes.Unset):
@@ -265,7 +263,7 @@ def handle_certificate_error(
         try:
             error.defer()
         except usertypes.UndeferrableError:
-            # QtNetwork / QtWebKit and buggy PyQt versions
+            # QtNetwork and buggy PyQt versions
             # Show blocking question prompt
             ignore = message.ask(title=title, text=msg,
                                  mode=usertypes.PromptMode.yesno, default=False,

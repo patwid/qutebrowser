@@ -23,8 +23,7 @@ from qutebrowser.qt.widgets import (QDialog, QPushButton, QHBoxLayout, QVBoxLayo
 from qutebrowser.qt.network import QSslSocket
 
 from qutebrowser.config import config, configfiles
-from qutebrowser.utils import (usertypes, version, qtutils, log, utils,
-                               standarddir)
+from qutebrowser.utils import usertypes, version, log, utils, standarddir
 from qutebrowser.misc import objects, msgbox, savemanager, quitter
 
 
@@ -34,8 +33,6 @@ class _Result(enum.IntEnum):
 
     quit = QDialog.DialogCode.Accepted + 1
     restart = QDialog.DialogCode.Accepted + 2
-    restart_webkit = QDialog.DialogCode.Accepted + 3
-    restart_webengine = QDialog.DialogCode.Accepted + 4
 
 
 @dataclasses.dataclass
@@ -49,42 +46,15 @@ class _Button:
     default: bool = False
 
 
-def _other_backend(backend: usertypes.Backend) -> tuple[usertypes.Backend, str]:
-    """Get the other backend enum/setting for a given backend."""
-    other_backend = {
-        usertypes.Backend.QtWebKit: usertypes.Backend.QtWebEngine,
-        usertypes.Backend.QtWebEngine: usertypes.Backend.QtWebKit,
-    }[backend]
-    other_setting = other_backend.name.lower()[2:]
-    return (other_backend, other_setting)
-
-
 def _error_text(
     because: str,
     text: str,
     backend: usertypes.Backend,
-    suggest_other_backend: bool = False,
 ) -> str:
     """Get an error text for the given information."""
     text = (f"<b>Failed to start with the {backend.name} backend!</b>"
             f"<p>qutebrowser tried to start with the {backend.name} backend but "
             f"failed because {because}.</p>{text}")
-
-    if suggest_other_backend:
-        other_backend, other_setting = _other_backend(backend)
-        if other_backend == usertypes.Backend.QtWebKit:
-            warning = ("<i>Note that QtWebKit hasn't been updated since "
-                    "July 2017 (including security updates).</i>")
-            suffix = " (not recommended)"
-        else:
-            warning = ""
-            suffix = ""
-
-        text += (f"<p><b>Forcing the {other_backend.name} backend{suffix}</b></p>"
-                 f"<p>This forces usage of the {other_backend.name} backend by "
-                 f"setting the <i>backend = '{other_setting}'</i> option "
-                 f"(if you have a <i>config.py</i> file, you'll need to set "
-                 f"this manually). {warning}</p>")
 
     text += f"<p>{machinery.INFO.to_html()}</p>"
     return text
@@ -97,14 +67,12 @@ class _Dialog(QDialog):
     def __init__(self, *, because: str,
                  text: str,
                  backend: usertypes.Backend,
-                 suggest_other_backend: bool = True,
                  buttons: Sequence[_Button] | None = None,
                  parent: QWidget | None = None) -> None:
         super().__init__(parent)
         vbox = QVBoxLayout(self)
 
-        text = _error_text(because, text, backend,
-                           suggest_other_backend=suggest_other_backend)
+        text = _error_text(because, text, backend)
 
         label = QLabel(text)
         label.setWordWrap(True)
@@ -118,16 +86,6 @@ class _Dialog(QDialog):
         quit_button.clicked.connect(lambda: self.done(_Result.quit))
         hbox.addWidget(quit_button)
 
-        if suggest_other_backend:
-            other_backend, other_setting = _other_backend(backend)
-            backend_text = "Force {} backend".format(other_backend.name)
-            if other_backend == usertypes.Backend.QtWebKit:
-                backend_text += ' (not recommended)'
-            backend_button = QPushButton(backend_text)
-            backend_button.clicked.connect(functools.partial(
-                self._change_setting, 'backend', other_setting))
-            hbox.addWidget(backend_button)
-
         for button in buttons:
             btn = QPushButton(button.text)
             btn.setDefault(button.default)
@@ -140,22 +98,7 @@ class _Dialog(QDialog):
     def _change_setting(self, setting: str, value: str) -> None:
         """Change the given setting and restart."""
         config.instance.set_obj(setting, value, save_yaml=True)
-
-        if setting == 'backend' and value == 'webkit':
-            self.done(_Result.restart_webkit)
-        elif setting == 'backend' and value == 'webengine':
-            self.done(_Result.restart_webengine)
-        else:
-            self.done(_Result.restart)
-
-
-@dataclasses.dataclass
-class _BackendImports:
-
-    """Whether backend modules could be imported."""
-
-    webkit_error: str | None = None
-    webengine_error: str | None = None
+        self.done(_Result.restart)
 
 
 class _BackendProblemChecker:
@@ -182,10 +125,6 @@ class _BackendProblemChecker:
 
         if status in [_Result.quit, QDialog.DialogCode.Rejected]:
             pass
-        elif status == _Result.restart_webkit:
-            quitter.instance.restart(override_args={'backend': 'webkit'})
-        elif status == _Result.restart_webengine:
-            quitter.instance.restart(override_args={'backend': 'webengine'})
         elif status == _Result.restart:
             quitter.instance.restart()
         else:
@@ -193,100 +132,39 @@ class _BackendProblemChecker:
 
         sys.exit(usertypes.Exit.err_init)
 
-    def _try_import_backends(self) -> _BackendImports:
-        """Check whether backends can be imported and return BackendImports."""
-        # pylint: disable=unused-import
-        results = _BackendImports()
-
-        try:
-            from qutebrowser.qt import webkit, webkitwidgets
-        except (ImportError, ValueError) as e:
-            results.webkit_error = str(e)
-            assert results.webkit_error
-        else:
-            if not qtutils.is_new_qtwebkit():
-                results.webkit_error = "Unsupported legacy QtWebKit found"
-
-        try:
-            from qutebrowser.qt import webenginecore, webenginewidgets
-        except (ImportError, ValueError) as e:
-            results.webengine_error = str(e)
-            assert results.webengine_error
-
-        return results
-
-    def _handle_ssl_support(self, fatal: bool = False) -> None:
-        """Check for full SSL availability.
-
-        If "fatal" is given, show an error and exit.
-        """
+    def _handle_ssl_support(self) -> None:
+        """Check for full SSL availability."""
         if QSslSocket.supportsSsl():
             return
 
         text = ("Could not initialize QtNetwork SSL support. This only "
                 "affects downloads and :adblock-update.")
 
-        if fatal:
-            errbox = msgbox.msgbox(parent=None,
-                                   title="SSL error",
-                                   text="Could not initialize SSL support.",
-                                   icon=QMessageBox.Icon.Critical,
-                                   plain_text=False)
-            errbox.exec()
-            sys.exit(usertypes.Exit.err_init)
-
-        # Doing this here because it's not relevant with QtWebKit where fatal=True
         if machinery.IS_QT6:
             text += ("\nHint: If installed via mkvenv.py on a system without "
                      "OpenSSL 3.x (e.g. Ubuntu 20.04), you can use --pyqt-version 6.4 "
                      "to get an older Qt still compatible with OpenSSL 1.1 (at the "
                      "expense of running an older QtWebEngine/Chromium)")
 
-        assert not fatal
         log.init.warning(text)
 
     def _check_backend_modules(self) -> None:
-        """Check for the modules needed for QtWebKit/QtWebEngine."""
-        imports = self._try_import_backends()
-
-        if not imports.webkit_error and not imports.webengine_error:
+        """Check for the modules needed for QtWebEngine."""
+        try:
+            # pylint: disable-next=unused-import
+            from qutebrowser.qt import webenginecore, webenginewidgets
+        except (ImportError, ValueError) as e:
+            error = str(e)
+            assert error
+        else:
             return
-        elif imports.webkit_error and imports.webengine_error:
-            text = ("<p>qutebrowser needs QtWebKit or QtWebEngine, but "
-                    "neither could be imported!</p>"
-                    "<p>The errors encountered were:<ul>"
-                    "<li><b>QtWebKit:</b> {webkit_error}"
-                    "<li><b>QtWebEngine:</b> {webengine_error}"
-                    "</ul></p><p>{info}</p>".format(
-                        webkit_error=html.escape(imports.webkit_error),
-                        webengine_error=html.escape(imports.webengine_error),
-                        info=machinery.INFO.to_html(),
-                    ))
-            errbox = msgbox.msgbox(parent=None,
-                                   title="No backend library found!",
-                                   text=text,
-                                   icon=QMessageBox.Icon.Critical,
-                                   plain_text=False)
-            errbox.exec()
-            sys.exit(usertypes.Exit.err_init)
-        elif objects.backend == usertypes.Backend.QtWebKit:
-            if not imports.webkit_error:
-                return
-            self._show_dialog(
-                backend=usertypes.Backend.QtWebKit,
-                because="QtWebKit could not be imported",
-                text="<p><b>The error encountered was:</b><br/>{}</p>".format(
-                    html.escape(imports.webkit_error))
-            )
-        elif objects.backend == usertypes.Backend.QtWebEngine:
-            if not imports.webengine_error:
-                return
-            self._show_dialog(
-                backend=usertypes.Backend.QtWebEngine,
-                because="QtWebEngine could not be imported",
-                text="<p><b>The error encountered was:</b><br/>{}</p>".format(
-                    html.escape(imports.webengine_error))
-            )
+
+        self._show_dialog(
+            backend=usertypes.Backend.QtWebEngine,
+            because="QtWebEngine could not be imported",
+            text="<p><b>The error encountered was:</b><br/>{}</p>".format(
+                html.escape(error))
+        )
 
         raise utils.Unreachable
 
@@ -414,7 +292,6 @@ class _BackendProblemChecker:
                          'chromium')
         self._show_dialog(
             backend=usertypes.Backend.QtWebEngine,
-            suggest_other_backend=False,
             because="a Qt 6.3.0 bug causes instant crashes with Qt Quick software rendering",
             text=text,
             buttons=[button],
@@ -486,18 +363,15 @@ class _BackendProblemChecker:
 
     def check(self) -> None:
         """Run all checks."""
+        self._assert_backend(usertypes.Backend.QtWebEngine)
         self._check_backend_modules()
-        if objects.backend == usertypes.Backend.QtWebEngine:
-            self._check_webengine_version()
-            self._handle_ssl_support()
-            self._handle_serviceworker_nuking()
-            self._check_software_rendering()
-            self._force_wayland_hardware_acceleration()
-            self._fix_wayland_amd_gbm()
-            self._confirm_chromium_version_changes()
-        else:
-            self._assert_backend(usertypes.Backend.QtWebKit)
-            self._handle_ssl_support(fatal=True)
+        self._check_webengine_version()
+        self._handle_ssl_support()
+        self._handle_serviceworker_nuking()
+        self._check_software_rendering()
+        self._force_wayland_hardware_acceleration()
+        self._fix_wayland_amd_gbm()
+        self._confirm_chromium_version_changes()
 
 
 def init(*, args: argparse.Namespace,

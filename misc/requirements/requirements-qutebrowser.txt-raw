@@ -13,6 +13,6 @@ PyYAML
 #@ add: pyobjc-framework-Cocoa ; sys_platform=="darwin"
 
 ## Optional dependencies
-Pygments  # For :view-source --pygments or on QtWebKit
+Pygments  # For :view-source --pygments
 colorama  # Colored log output on Windows
 adblock  # Improved adblocking

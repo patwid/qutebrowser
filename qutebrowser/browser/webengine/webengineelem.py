@@ -151,8 +151,7 @@ class WebEngineElement(webelem.AbstractWebElement):
         log.webelem.debug("Inserting text into element {!r}".format(self))
         self._js_call('insert_text', text)
 
-    def rect_on_view(self, *, elem_geometry: QRect | None = None,
-                     no_js: bool = False) -> QRect:
+    def rect_on_view(self, *, elem_geometry: QRect | None = None) -> QRect:
         """Get the geometry of the element relative to the webview.
 
         Skipping of small rectangles is due to <a> elements containing other
@@ -162,11 +161,8 @@ class WebEngineElement(webelem.AbstractWebElement):
         Args:
             elem_geometry: The geometry of the element, or None.
                            Ignored with QtWebEngine.
-            no_js: Fall back to the Python implementation.
-                   Ignored with QtWebEngine.
         """
         utils.unused(elem_geometry)
-        utils.unused(no_js)
         rects = self._js_dict['rects']
         for rect in rects:
             # FIXME:qtwebengine

@@ -15,7 +15,7 @@ def test_open_s(request, quteproc, ssl_server, scheme):
     quteproc.set_setting('content.tls.certificate_errors', 'load-insecurely')
     quteproc.send_cmd(':open -s {}localhost:{}/'
                       .format(scheme, ssl_server.port))
-    if scheme == 'http://' or not request.config.webengine:
+    if scheme == 'http://':
         # Error is only logged on the first error with QtWebEngine
         quteproc.mark_expected(category='message',
                                loglevel=logging.ERROR,

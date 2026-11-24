@@ -563,10 +563,7 @@ def qute_pdfjs(url: QUrl) -> _HandlerRet:
 def qute_warning(url: QUrl) -> _HandlerRet:
     """Handler for qute://warning."""
     path = url.path()
-    if path == '/webkit':
-        src = jinja.render('warning-webkit.html',
-                           title='QtWebKit backend warning')
-    elif path == '/sessions':
+    if path == '/sessions':
         src = jinja.render('warning-sessions.html',
                            title='Qt 5.15 sessions warning',
                            datadir=standarddir.data(),

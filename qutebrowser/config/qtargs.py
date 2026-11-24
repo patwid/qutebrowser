@@ -15,8 +15,7 @@ from qutebrowser.qt import machinery
 from qutebrowser.qt.core import QLocale
 
 from qutebrowser.config import config
-from qutebrowser.misc import objects
-from qutebrowser.utils import usertypes, qtutils, utils, log, version
+from qutebrowser.utils import qtutils, utils, log, version
 
 
 _ENABLE_FEATURES = '--enable-features='
@@ -43,10 +42,6 @@ def qt_args(namespace: argparse.Namespace) -> list[str]:
             argv += ['--' + name, value]
 
     argv += ['--' + arg for arg in config.val.qt.args]
-
-    if objects.backend != usertypes.Backend.QtWebEngine:
-        assert objects.backend == usertypes.Backend.QtWebKit, objects.backend
-        return argv
 
     try:
         # pylint: disable=unused-import
@@ -392,17 +387,14 @@ def _warn_qtwe_flags_envvar() -> None:
 
 def init_envvars() -> None:
     """Initialize environment variables which need to be set early."""
-    if objects.backend == usertypes.Backend.QtWebEngine:
-        software_rendering = config.val.qt.force_software_rendering
-        if software_rendering == 'software-opengl':
-            os.environ['QT_XCB_FORCE_SOFTWARE_OPENGL'] = '1'
-        elif software_rendering == 'qt-quick':
-            os.environ['QT_QUICK_BACKEND'] = 'software'
-        elif software_rendering == 'chromium':
-            os.environ['QT_WEBENGINE_DISABLE_NOUVEAU_WORKAROUND'] = '1'
-        _warn_qtwe_flags_envvar()
-    else:
-        assert objects.backend == usertypes.Backend.QtWebKit, objects.backend
+    software_rendering = config.val.qt.force_software_rendering
+    if software_rendering == 'software-opengl':
+        os.environ['QT_XCB_FORCE_SOFTWARE_OPENGL'] = '1'
+    elif software_rendering == 'qt-quick':
+        os.environ['QT_QUICK_BACKEND'] = 'software'
+    elif software_rendering == 'chromium':
+        os.environ['QT_WEBENGINE_DISABLE_NOUVEAU_WORKAROUND'] = '1'
+    _warn_qtwe_flags_envvar()
 
     if config.val.qt.force_platform is not None:
         os.environ['QT_QPA_PLATFORM'] = config.val.qt.force_platform

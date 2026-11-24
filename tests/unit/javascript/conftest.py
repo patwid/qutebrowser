@@ -114,12 +114,6 @@ class JSTester:
 
 
 @pytest.fixture
-def js_tester_webkit(webkit_tab, qtbot, config_stub):
-    """Fixture to test javascript snippets in webkit."""
-    return JSTester(webkit_tab, qtbot, config_stub)
-
-
-@pytest.fixture
 def js_tester_webengine(webengine_tab, qtbot, config_stub):
     """Fixture to test javascript snippets in webengine."""
     return JSTester(webengine_tab, qtbot, config_stub)

@@ -37,8 +37,7 @@ https://github.com/qutebrowser/qutebrowser#similar-projects[list of
 alternatives]).
 +
 qutebrowser uses https://www.qt.io/[Qt] and
-https://wiki.qt.io/QtWebEngine[QtWebEngine] by default (and supports
-https://wiki.qt.io/QtWebKit[QtWebKit] optionally). QtWebEngine is based on
+https://wiki.qt.io/QtWebEngine[QtWebEngine]. QtWebEngine is based on
 Google's https://www.chromium.org/Home[Chromium]. With an up-to-date Qt, it has
 much more man-power behind it than WebKitGTK+ has, and thus supports more modern
 web features - it's also arguably more secure.
@@ -63,7 +62,7 @@ Why Python?::
 But isn't Python too slow for a browser?::
     https://www.infoworld.com/article/2303031/van-rossum-python-is-not-too-slow-2.html[It's generally less of a problem than one would expect.]
     Most of the heavy lifting of qutebrowser is done by Qt and
-    QtWebKit/QtWebEngine in C++, with the
+    QtWebEngine in C++, with the
     https://wiki.python.org/moin/GlobalInterpreterLock[GIL] released.
 +
 It can be problematic in some areas, but various performance optimizations have
@@ -82,12 +81,6 @@ be receiving security updates on a regular basis, without qutebrowser having to
 do anything. Chromium's process isolation and
 https://chromium.googlesource.com/chromium/src/+/master/docs/design/sandbox.md[sandboxing]
 features are also enabled as a second line of defense.
-+
-https://wiki.qt.io/QtWebKit[QtWebKit] is also supported as an alternative
-backend, but hasn't seen new releases
-https://github.com/annulen/webkit/releases[in a while]. It also doesn't have any
-process isolation or sandboxing. See
-https://github.com/qutebrowser/qutebrowser/issues/4039[#4039] for more details.
 +
 Security issues in qutebrowser's code happen very rarely (as per September 2019,
 there have been three security issues caused by qutebrowser in almost 6 years).
@@ -203,27 +196,10 @@ When using quickmark, you can give them all names, like
 without having to remember the exact website title or address.
 
 How do I use spell checking?::
-	Configuring spell checking in qutebrowser depends on the backend in use
-    (see https://github.com/qutebrowser/qutebrowser/issues/700[#700] for
-	a more detailed discussion).
-+
-For QtWebKit:
-
-. Install https://github.com/QupZilla/qtwebkit-plugins[qtwebkit-plugins].
-  . Note: with QtWebKit reloaded you may experience some issues. See
-    https://github.com/QupZilla/qtwebkit-plugins/issues/10[#10].
-. The dictionary to use is taken from the `DICTIONARY` environment variable.
-  The default is `en_US`. For example to use Dutch spell check set `DICTIONARY`
-  to `nl_NL`; you can't use multiple dictionaries or change them at runtime at
-  the moment.
-  (also see the README file for `qtwebkit-plugins`).
-. Remember to install the hunspell dictionaries if you don't have them already
-  (most distros should have packages for this).
-+
-For QtWebEngine:
-
-. Use `dictcli.py` script to install dictionaries.
-  Run the script with `-h` for the parameter description.
+    Use the `dictcli.py` script to install dictionaries.
+    Run the script with `-h` for the parameter description.
+    See https://github.com/qutebrowser/qutebrowser/issues/700[#700] for
+    a more detailed discussion.
 . Set `spellcheck.languages` to the desired list of languages, e.g.:
   `:set spellcheck.languages "['en-US', 'pl-PL']"`
 
@@ -388,7 +364,7 @@ Unable to view Flash content.::
     in qutebrowser will enable plugins. Packages for Flash should
     be provided for your platform or it can be obtained from
     https://get.adobe.com/flashplayer/[Adobe]. Note that QtWebEngine needs
-    PPAPI Flash, while QtWebKit needs NPAPI Flash.
+    PPAPI Flash.
 
 Unable to view DRM content (Netflix, Spotify, etc.).::
     On Arch Linux, simply install `chromium-widevine` from the AUR.
@@ -405,13 +381,6 @@ Unable to use `spawn` on MacOS.::
 +
 See https://github.com/qutebrowser/qutebrowser/issues/4273[Issue #4273] for
 details and potential workarounds.
-
-QtWebKit: Experiencing freezing on sites like DuckDuckGo and YouTube.::
-    This issue could be caused by stale plugin files installed by `mozplugger`
-    if mozplugger was subsequently removed.
-    Try exiting qutebrowser and removing `~/.mozilla/plugins/mozplugger*.so`.
-    See https://github.com/qutebrowser/qutebrowser/issues/357[Issue #357]
-    for more details.
 
 My issue is not listed.::
     If you experience any segfaults or crashes, you can report the issue in

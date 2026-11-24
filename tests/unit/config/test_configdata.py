@@ -73,14 +73,14 @@ class TestReadYaml:
             test2:
                 type: String
                 default: foo
-                backend: QtWebKit
+                backend: QtWebEngine
                 desc: Hello World 2
         """)
         data, _migrations = configdata._read_yaml(yaml_data)
         assert data.keys() == {'test1', 'test2'}
         assert data['test1'].description == "Hello World"
         assert data['test2'].default == "foo"
-        assert data['test2'].backends == [usertypes.Backend.QtWebKit]
+        assert data['test2'].backends == [usertypes.Backend.QtWebEngine]
         assert isinstance(data['test1'].typ, configtypes.Bool)
 
     def test_invalid_keys(self):
@@ -254,30 +254,26 @@ class TestParseYamlBackend:
         return yaml.safe_load(textwrap.dedent(s))['backend']
 
     @pytest.mark.parametrize('backend, expected', [
-        ('QtWebKit', [usertypes.Backend.QtWebKit]),
         ('QtWebEngine', [usertypes.Backend.QtWebEngine]),
         # This is also what _parse_yaml_backends gets when backend: is not
         # given at all
-        ('null', [usertypes.Backend.QtWebKit, usertypes.Backend.QtWebEngine]),
+        ('null', [usertypes.Backend.QtWebEngine]),
     ])
     def test_simple(self, backend, expected):
-        """Check a simple "backend: QtWebKit"."""
+        """Check a simple "backend: QtWebEngine"."""
         data = self._yaml("backend: {}".format(backend))
         backends = configdata._parse_yaml_backends('test', data)
         assert backends == expected
 
-    @pytest.mark.parametrize('webkit, has_new_version, expected', [
-        (True, True, [usertypes.Backend.QtWebEngine,
-                      usertypes.Backend.QtWebKit]),
-        (False, True, [usertypes.Backend.QtWebEngine]),
-        (True, False, [usertypes.Backend.QtWebKit]),
+    @pytest.mark.parametrize('has_new_version, expected', [
+        (True, [usertypes.Backend.QtWebEngine]),
+        (False, []),
     ])
-    def test_dict(self, monkeypatch, webkit, has_new_version, expected):
+    def test_dict(self, monkeypatch, has_new_version, expected):
         data = self._yaml("""
             backend:
-              QtWebKit: {}
               QtWebEngine: Qt 5.15
-        """.format('true' if webkit else 'false'))
+        """)
         monkeypatch.setattr(configdata.qtutils, 'version_check',
                             lambda v: has_new_version)
         backends = configdata._parse_yaml_backends('test', data)
@@ -289,14 +285,12 @@ class TestParseYamlBackend:
         # Unknown key
         """
         backend:
-          QtWebKit: true
           QtWebEngine: true
           foo: bar
         """,
         # Missing key
         """
-        backend:
-          QtWebKit: true
+        backend: {}
         """,
     ])
     def test_invalid_backend(self, yaml_data):
