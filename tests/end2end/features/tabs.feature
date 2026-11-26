@@ -220,12 +220,12 @@ Feature: Tab management
         And I open data/numbers/3.txt in a new tab
         And I run :tab-focus 2
         And I run :tab-focus
-        Then the warning "Using :tab-focus without count is deprecated, use :tab-next instead." should be shown
+        Then the error "No index or count given!" should be shown
         And the following tabs should be open:
             """
             - data/numbers/1.txt
-            - data/numbers/2.txt
-            - data/numbers/3.txt (active)
+            - data/numbers/2.txt (active)
+            - data/numbers/3.txt
             """
 
     Scenario: :tab-focus with invalid index

@@ -234,14 +234,10 @@ def test_rl_kill_line(lineedit, text, deleted, rest):
                  marks=fixme),
     ('test del<ete >foobar', 'del', 'test |ete foobar'),  # wrong
 ])
-@pytest.mark.parametrize("method, args", [
-    (readlinecommands.rl_unix_word_rubout, []),  # deprecated
-    (readlinecommands.rl_rubout, [" "]),  # equivalent
-])
-def test_rl_unix_word_rubout(lineedit, text, deleted, rest, method, args):
+def test_rl_unix_word_rubout(lineedit, text, deleted, rest):
     """Delete to word beginning and see if it comes back with yank."""
     _validate_deletion(lineedit,
-                       method, args,
+                       readlinecommands.rl_rubout, [" "],
                        text, deleted, rest)
 
 
@@ -252,14 +248,10 @@ def test_rl_unix_word_rubout(lineedit, text, deleted, rest, method, args):
     ('open -t |github.com/foo/bar', '-t ', 'open |github.com/foo/bar'),
     ('open foo/bar.baz|', 'bar.baz', 'open foo/|'),
 ])
-@pytest.mark.parametrize("method, args", [
-    (readlinecommands.rl_unix_filename_rubout, []),  # deprecated
-    (readlinecommands.rl_rubout, [" /"]),  # equivalent
-])
-def test_rl_unix_filename_rubout(lineedit, text, deleted, rest, method, args):
+def test_rl_unix_filename_rubout(lineedit, text, deleted, rest):
     """Delete filename segment and see if it comes back with yank."""
     _validate_deletion(lineedit,
-                       method, args,
+                       readlinecommands.rl_rubout, [" /"],
                        text, deleted, rest)
 
 

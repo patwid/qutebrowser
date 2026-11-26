@@ -24,8 +24,7 @@ from qutebrowser.utils.version import pastebin_version
 from qutebrowser.qt import sip
 
 
-@cmdutils.register(maxsplit=1, no_cmd_split=True, no_replace_variables=True,
-                   deprecated_name='later')
+@cmdutils.register(maxsplit=1, no_cmd_split=True, no_replace_variables=True)
 @cmdutils.argument('win_id', value=cmdutils.Value.win_id)
 def cmd_later(duration: str, command: str, win_id: int) -> None:
     """Execute a command after some time.
@@ -56,8 +55,7 @@ def cmd_later(duration: str, command: str, win_id: int) -> None:
         raise
 
 
-@cmdutils.register(maxsplit=1, no_cmd_split=True, no_replace_variables=True,
-                   deprecated_name='repeat')
+@cmdutils.register(maxsplit=1, no_cmd_split=True, no_replace_variables=True)
 @cmdutils.argument('win_id', value=cmdutils.Value.win_id)
 @cmdutils.argument('count', value=cmdutils.Value.count)
 def cmd_repeat(times: int, command: str, win_id: int, count: int | None = None) -> None:
@@ -78,8 +76,7 @@ def cmd_repeat(times: int, command: str, win_id: int, count: int | None = None) 
         commandrunner.run_safely(command)
 
 
-@cmdutils.register(maxsplit=1, no_cmd_split=True, no_replace_variables=True,
-                   deprecated_name='run-with-count')
+@cmdutils.register(maxsplit=1, no_cmd_split=True, no_replace_variables=True)
 @cmdutils.argument('win_id', value=cmdutils.Value.win_id)
 @cmdutils.argument('count', value=cmdutils.Value.count)
 def cmd_run_with_count(count_arg: int, command: str, win_id: int,
@@ -183,7 +180,7 @@ def debug_set_fake_clipboard(s: str | None = None) -> None:
         utils.fake_clipboard = s
 
 
-@cmdutils.register(deprecated_name='repeat-command')
+@cmdutils.register()
 @cmdutils.argument('win_id', value=cmdutils.Value.win_id)
 @cmdutils.argument('count', value=cmdutils.Value.count)
 def cmd_repeat_last(win_id: int, count: int | None = None) -> None:

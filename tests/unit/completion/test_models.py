@@ -67,7 +67,6 @@ def cmdutils_stub(monkeypatch, stubs):
     return monkeypatch.setattr(objects, 'commands', {
         'quit': stubs.FakeCommand(name='quit', desc='quit qutebrowser'),
         'open': stubs.FakeCommand(name='open', desc='open a url'),
-        'prompt-yes': stubs.FakeCommand(name='prompt-yes', deprecated=True),
         'scroll': stubs.FakeCommand(
             name='scroll',
             desc='Scroll the current tab in the given direction.',
@@ -213,7 +212,7 @@ def test_command_completion(qtmodeltester, cmdutils_stub, configdata_stub,
     """Test the results of command completion.
 
     Validates that:
-        - only non-hidden and non-deprecated commands are included
+        - only non-hidden commands are included
         - the command description is shown in the desc column
         - the binding (if any) is shown in the misc column
         - aliases are included

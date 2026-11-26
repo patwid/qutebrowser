@@ -160,7 +160,7 @@ class KeyConfig:
             return None
 
         result = results[0]
-        if result.cmd.name not in ["set-cmd-text", "cmd-set-text"]:
+        if result.cmd.name != "cmd-set-text":
             return cmdline
         if not result.args:
             return None  # doesn't look like this sets a command
@@ -173,7 +173,7 @@ class KeyConfig:
         """Get a dict of commands to a list of bindings for the mode.
 
         This is intended for user-facing display of keybindings.
-        As such, bindings for 'set-cmd-text [flags] :<cmd> ...' are translated
+        As such, bindings for 'cmd-set-text [flags] :<cmd> ...' are translated
         to '<cmd> ...', as from the user's perspective these keys behave like
         bindings for '<cmd>' (that allow for further input before running).
 

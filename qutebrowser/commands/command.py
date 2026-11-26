@@ -42,7 +42,6 @@ class Command:
         name: The main name of the command.
         maxsplit: The maximum amount of splits to do for the commandline, or
                   None.
-        deprecated: False, or a string to describe why a command is deprecated.
         desc: The description of the command.
         handler: The handler function to call.
         debug: Whether this is a debugging command (only shown with --debug).
@@ -63,7 +62,7 @@ class Command:
 
     def __init__(
         self, *, handler, name, instance=None, maxsplit=None,
-        modes=None, not_modes=None, debug=False, deprecated=False,
+        modes=None, not_modes=None, debug=False,
         no_cmd_split=False, star_args_optional=False, scope='global',
         no_replace_variables=False,
     ):  # pylint: disable=too-many-arguments
@@ -87,7 +86,6 @@ class Command:
 
         self.name = name
         self.maxsplit = maxsplit
-        self.deprecated = deprecated
         self._instance = instance
         self._scope = scope
         self._star_args_optional = star_args_optional
@@ -129,9 +127,6 @@ class Command:
         from qutebrowser.keyinput import modeman
         mode_manager = modeman.instance(win_id)
         self.validate_mode(mode_manager.mode)
-
-        if self.deprecated:
-            message.warning(f'{self.name} is deprecated - {self.deprecated}')
 
     def _check_func(self):
         """Make sure the function parameters don't violate any rules."""

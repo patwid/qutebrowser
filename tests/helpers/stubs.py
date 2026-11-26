@@ -233,7 +233,6 @@ class FakeCommand:
     desc: str = ''
     hide: bool = False
     debug: bool = False
-    deprecated: bool = False
     completion: Any = None
     maxsplit: int = None
     takes_count: Callable[[], bool] = lambda: False

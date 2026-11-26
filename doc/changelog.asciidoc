@@ -70,6 +70,10 @@ Removed
     macOS) is gone from `:version`.
 - The `systray` and `herbe` values for `content.notifications.presenter` were
   removed.
+- The deprecated commands `:set-cmd-text`, `:edit-command`, `:later`,
+  `:repeat`, `:run-with-count`, `:repeat-command`, `:rl-unix-word-rubout` and
+  `:rl-unix-filename-rubout` were removed, as well as `:tab-only --force`.
+  `:tab-focus` without an index or count is now an error.
 - The check for a too old Python version at startup was removed.
 - Automatic migrations of `autoconfig.yml` were removed. Settings which were
   renamed or removed in the past are now unknown options and need to be fixed

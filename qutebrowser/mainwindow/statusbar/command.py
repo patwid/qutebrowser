@@ -110,7 +110,7 @@ class Command(misc.CommandLineEdit):
         self.show_cmd.emit()
 
     @cmdutils.register(instance='status-command', name='cmd-set-text',
-                       scope='window', maxsplit=0, deprecated_name='set-cmd-text')
+                       scope='window', maxsplit=0)
     @cmdutils.argument('count', value=cmdutils.Value.count)
     def cmd_set_text_command(self, text: str,
                              count: int | None = None,
@@ -196,8 +196,7 @@ class Command(misc.CommandLineEdit):
         if not was_search:
             self.got_cmd[str].emit(text[1:])
 
-    @cmdutils.register(instance='status-command', scope='window',
-                       deprecated_name='edit-command')
+    @cmdutils.register(instance='status-command', scope='window')
     def cmd_edit(self, run: bool = False) -> None:
         """Open an editor to modify the current command.
 

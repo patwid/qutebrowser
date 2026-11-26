@@ -1432,7 +1432,7 @@ Syntax: +:tab-focus [*--no-last*] ['index']+
 
 Select the tab given as argument/[count].
 
-If neither count nor index are given, it behaves like tab-next. If both are given, use count.
+If both count and index are given, use count.
 
 ==== positional arguments
 * +'index'+: The tab index to focus, starting with 1. The special value `last` focuses the last focused tab (regardless of count),
@@ -1500,7 +1500,7 @@ How many tabs to switch forward.
 
 [[tab-only]]
 === tab-only
-Syntax: +:tab-only [*--prev*] [*--next*] [*--pinned* 'behavior'] [*--force*]+
+Syntax: +:tab-only [*--prev*] [*--next*] [*--pinned* 'behavior']+
 
 Close all tabs except for the current one.
 
@@ -1509,7 +1509,6 @@ Close all tabs except for the current one.
 * +*-n*+, +*--next*+: Keep tabs after the current.
 * +*-P*+, +*--pinned*+: What to do with pinned tabs. Valid values: prompt, close, keep.
 
-* +*-f*+, +*--force*+: Avoid confirmation for pinned tabs.
 
 [[tab-pin]]
 === tab-pin

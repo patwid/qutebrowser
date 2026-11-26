@@ -252,28 +252,6 @@ def rl_kill_line() -> None:
     bridge.kill_line()
 
 
-@_register(deprecated="Use :rl-rubout ' ' instead.")
-def rl_unix_word_rubout() -> None:
-    """Remove chars from the cursor to the beginning of the word.
-
-    This acts like readline's unix-word-rubout. Whitespace is used as a
-    word delimiter.
-    """
-    bridge.rubout([" "])
-
-
-@_register(
-    deprecated='Use :rl-filename-rubout or :rl-rubout " /" instead '
-               '(see their `:help` for details).'
-)
-def rl_unix_filename_rubout() -> None:
-    """Remove chars from the cursor to the previous path separator.
-
-    This acts like readline's unix-filename-rubout.
-    """
-    bridge.rubout([" ", "/"])
-
-
 @_register()
 def rl_rubout(delim: str) -> None:
     r"""Delete backwards using the given characters as boundaries.

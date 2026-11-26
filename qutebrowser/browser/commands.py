@@ -778,8 +778,7 @@ class CommandDispatcher:
     @cmdutils.register(instance='command-dispatcher', scope='window')
     @cmdutils.argument('pinned', choices=['prompt', 'close', 'keep'], flag='P',
                        metavar='behavior')
-    @cmdutils.argument('force', hide=True)
-    def tab_only(self, *, prev=False, next_=False, pinned='prompt', force=False):
+    def tab_only(self, *, prev=False, next_=False, pinned='prompt'):
         """Close all tabs except for the current one.
 
         Args:
@@ -787,7 +786,6 @@ class CommandDispatcher:
             next_: Keep tabs after the current.
             pinned: What to do with pinned tabs.
                     Valid values: prompt, close, keep.
-            force: Avoid confirmation for pinned tabs.
         """
         cmdutils.check_exclusive((prev, next_), 'pn')
         cur_idx = self._tabbed_browser.widget.currentIndex()
@@ -799,10 +797,6 @@ class CommandDispatcher:
             return not (i == cur_idx or
                         (prev and i < cur_idx) or
                         (next_ and i > cur_idx))
-
-        if force:
-            message.warning("--force is deprecated, use --pinned close instead.")
-            pinned = 'close'
 
         # close as many tabs as we can
         first_tab = True
@@ -978,8 +972,7 @@ class CommandDispatcher:
                   count: int | None = None, no_last: bool = False) -> None:
         """Select the tab given as argument/[count].
 
-        If neither count nor index are given, it behaves like tab-next.
-        If both are given, use count.
+        If both count and index are given, use count.
 
         Args:
             index: The tab index to focus, starting with 1. The special value
@@ -997,11 +990,7 @@ class CommandDispatcher:
             self._tab_focus_stack(index)
             return
         elif index is None:
-            message.warning(
-                "Using :tab-focus without count is deprecated, "
-                "use :tab-next instead.")
-            self.tab_next()
-            return
+            raise cmdutils.CommandError("No index or count given!")
 
         assert isinstance(index, int)
 
@@ -1466,11 +1455,6 @@ class CommandDispatcher:
             if command not in objects.commands:
                 raise cmdutils.CommandError("Invalid command {}!".format(
                     command))
-
-            deprecated = objects.commands[command].deprecated
-            if deprecated:
-                raise cmdutils.CommandError(
-                    "{} is deprecated - {}".format(command, deprecated))
 
             path = 'commands.html#{}'.format(command)
         elif topic in configdata.DATA:
