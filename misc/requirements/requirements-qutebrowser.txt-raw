@@ -1,6 +1,0 @@
-Jinja2
-PyYAML
-
-## Optional dependencies
-Pygments  # For :view-source --pygments
-adblock  # Improved adblocking

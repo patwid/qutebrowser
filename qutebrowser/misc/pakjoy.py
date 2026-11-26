@@ -197,7 +197,6 @@ def _find_webengine_resources() -> pathlib.Path:
 
 def copy_webengine_resources() -> pathlib.Path | None:
     """Copy qtwebengine resources to local dir for patching."""
-    resources_dir = _find_webengine_resources()
     work_dir = pathlib.Path(standarddir.cache()) / CACHE_DIR_NAME
 
     if work_dir.exists():
@@ -213,6 +212,7 @@ def copy_webengine_resources() -> pathlib.Path | None:
         # No patching needed
         return None
 
+    resources_dir = _find_webengine_resources()
     log.misc.debug(
         "Copying webengine resources for quirk patching: "
         f"{resources_dir} -> {work_dir}"

@@ -1,7 +1,0 @@
-mypy
-lxml  # For HTML reports
-diff-cover
-
-types-PyYAML
-types-colorama
-types-Pygments

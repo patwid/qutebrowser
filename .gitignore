@@ -25,11 +25,6 @@ Sessionx.vim
 /README.html
 /qutebrowser/html/doc/
 /.venv*
-/.coverage
-/htmlcov
-/coverage.xml
-/.coverage.*
-/.tox
 /testresults.html
 /.cache
 /.pytest_cache

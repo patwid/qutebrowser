@@ -24,6 +24,65 @@
           adblock
         ];
 
+      # What the test suite and the linters need on top of pythonDeps.
+      devDeps =
+        ps: with ps; [
+          pytest
+          pytest-qt
+          pytest-mock
+          pytest-bdd
+          pytest-benchmark
+          pytest-instafail
+          pytest-rerunfailures
+          pytest-xdist
+          pytest-xvfb
+          hypothesis
+          beautifulsoup4
+          cheroot
+          flask
+          pillow
+          tldextract
+          flake8
+          vulture
+          pylint
+        ];
+
+      devPython = pkgs: pkgs.python3.withPackages (ps: pythonDeps ps ++ devDeps ps);
+
+      # Qt from nixpkgs only finds its plugins through this variable.
+      qtPluginPath =
+        pkgs:
+        pkgs.lib.makeSearchPath pkgs.qt6.qtbase.qtPluginPrefix [
+          pkgs.qt6.qtbase
+          pkgs.qt6.qtwayland
+          pkgs.qt6.qtsvg
+        ];
+
+      # A check which runs a command in a copy of the source tree.
+      mkCheck =
+        pkgs: name: command:
+        pkgs.stdenvNoCC.mkDerivation {
+          name = "qutebrowser-${name}";
+          src = self;
+          nativeBuildInputs = [
+            (devPython pkgs)
+            pkgs.dbus
+            pkgs.git
+          ];
+          dontConfigure = true;
+          QTWEBENGINE_RESOURCES_PATH = "${pkgs.qt6.qtwebengine}/resources";
+          QT_PLUGIN_PATH = qtPluginPath pkgs;
+          buildPhase = ''
+            runHook preBuild
+            export HOME=$TMPDIR/home XDG_RUNTIME_DIR=$TMPDIR/runtime
+            mkdir -p "$HOME" "$XDG_RUNTIME_DIR"
+            chmod 700 "$XDG_RUNTIME_DIR"
+            ${command}
+            runHook postBuild
+          '';
+          installPhase = "touch $out";
+        };
+
       version =
         pkgs:
         let
@@ -95,7 +154,7 @@
             )
           '';
 
-          # The test suite needs a full graphical session.
+          # The tests are run by the "tests" check below instead.
           doCheck = false;
           pythonImportsCheck = [ "qutebrowser" ];
 
@@ -116,32 +175,44 @@
         };
       });
 
+      # `nix flake check` runs the unit tests and the linters.
+      checks = forAllSystems (pkgs: {
+        # Not using pytest-xdist, as some tests depend on running in order.
+        tests = mkCheck pkgs "tests" ''
+          export QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software
+          dbus-run-session --config-file=${pkgs.dbus}/share/dbus-1/session.conf -- \
+            python3 -m pytest -p no:cacheprovider tests/unit
+        '';
+        flake8 = mkCheck pkgs "flake8" "python3 -m flake8 qutebrowser tests scripts";
+        pylint = mkCheck pkgs "pylint" ''
+          export PYTHONPATH=$PWD/scripts/dev/pylint_checkers
+          python3 -m pylint scripts qutebrowser --reports=no
+          python3 scripts/dev/run_pylint_on_tests.py "$PWD" --reports=no
+        '';
+        vulture = mkCheck pkgs "vulture" ''
+          QT_QPA_PLATFORM=offscreen PYTHONPATH=$PWD python3 scripts/dev/run_vulture.py
+        '';
+        misc = mkCheck pkgs "misc" ''
+          # misc_checks.py lists the files to check via git.
+          git init --quiet && git add --all
+          for check in vcs spelling pyqt-imports userscript-descriptions \
+              userscript-shebangs vim-modelines; do
+            python3 scripts/dev/misc_checks.py "$check"
+          done
+        '';
+      });
+
       # Run straight from the working tree: `nix develop -c python3 -m qutebrowser`
       devShells = forAllSystems (pkgs: {
         default = pkgs.mkShell {
           packages = [
-            (pkgs.python3.withPackages (
-              ps:
-              pythonDeps ps
-              ++ (with ps; [
-                pytest
-                pytest-qt
-                pytest-mock
-                pytest-bdd
-                hypothesis
-              ])
-            ))
+            (devPython pkgs)
             pkgs.asciidoc
+            pkgs.dbus
           ];
 
           QTWEBENGINE_RESOURCES_PATH = "${pkgs.qt6.qtwebengine}/resources";
-
-          # Qt from nixpkgs only finds its plugins through this variable.
-          QT_PLUGIN_PATH = pkgs.lib.makeSearchPath pkgs.qt6.qtbase.qtPluginPrefix [
-            pkgs.qt6.qtbase
-            pkgs.qt6.qtwayland
-            pkgs.qt6.qtsvg
-          ];
+          QT_PLUGIN_PATH = qtPluginPath pkgs;
         };
       });
     };

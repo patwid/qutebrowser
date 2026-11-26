@@ -255,8 +255,7 @@ def run(**kwargs) -> None:
     try:
         asciidoc.prepare()
     except FileNotFoundError:
-        utils.print_error("Could not find asciidoc! Please install it, e.g. via "
-                          "pip install -r misc/requirements/requirements-docs.txt")
+        utils.print_error("Could not find asciidoc!")
         sys.exit(1)
 
     try:

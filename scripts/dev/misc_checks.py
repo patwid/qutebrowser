@@ -21,7 +21,6 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from scripts import utils
-from scripts.dev import recompile_requirements
 
 BINARY_EXTS = {'.png', '.icns', '.ico', '.bmp', '.gz', '.bin', '.pdf',
                '.sqlite', '.woff2', '.whl', '.egg'}
@@ -62,47 +61,6 @@ def _get_files(
             print(path)
 
         yield path
-
-
-def check_changelog_urls(_args: argparse.Namespace | None = None) -> bool:
-    """Ensure we have changelog URLs for all requirements."""
-    ok = True
-    all_requirements = set()
-
-    for name in recompile_requirements.get_all_names():
-        outfile = recompile_requirements.get_outfile(name)
-        missing = set()
-        with open(outfile, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if line.startswith(('#', '--')) or not line:
-                    continue
-                req, _version = recompile_requirements.parse_versioned_line(line)
-                if req.startswith('./'):
-                    continue
-                if " @ " in req:  # vcs URL
-                    req = req.split(" @ ")[0]
-
-                all_requirements.add(req)
-                if req not in recompile_requirements.CHANGELOG_URLS:
-                    missing.add(req)
-
-        if missing:
-            ok = False
-            req_str = ', '.join(sorted(missing))
-            utils.print_col(
-                f"Missing changelog URLs in {name} requirements: {req_str}", 'red')
-
-    extra = set(recompile_requirements.CHANGELOG_URLS) - all_requirements
-    if extra:
-        ok = False
-        req_str = ', '.join(sorted(extra))
-        utils.print_col(f"Extra changelog URLs: {req_str}", 'red')
-
-    if not ok:
-        print("Hint: Changelog URLs are in scripts/dev/changelog_urls.json")
-
-    return ok
 
 
 def check_git(_args: argparse.Namespace | None = None) -> bool:
@@ -423,7 +381,6 @@ def main() -> int:
         'pyqt-imports': check_pyqt_imports,
         'userscript-descriptions': check_userscripts_descriptions,
         'userscript-shebangs': check_userscript_shebangs,
-        'changelog-urls': check_changelog_urls,
         'vim-modelines': check_vim_modelines,
     }
 

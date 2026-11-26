@@ -33,7 +33,7 @@ install: man
 		$(filter-out misc/userscripts/__pycache__,$(wildcard misc/userscripts/*))
 	install -Dm755 -t "$(DESTDIR)$(DATADIR)/qutebrowser/scripts/" \
 		$(filter-out scripts/__init__.py scripts/__pycache__ scripts/dev \
-		  scripts/testbrowser scripts/asciidoc2html.py scripts/setupcommon.py \
-			scripts/link_pyqt.py,$(wildcard scripts/*))
+		  scripts/testbrowser scripts/asciidoc2html.py scripts/setupcommon.py, \
+		  $(wildcard scripts/*))
 
 .PHONY: all man install
