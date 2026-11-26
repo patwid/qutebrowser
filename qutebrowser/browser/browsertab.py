@@ -17,7 +17,6 @@ from qutebrowser.qt.core import (pyqtSignal, pyqtSlot, QUrl, QObject, QSizeF, Qt
 from qutebrowser.qt.gui import QKeyEvent, QIcon, QPixmap
 from qutebrowser.qt.widgets import QApplication, QWidget
 from qutebrowser.qt.printsupport import QPrintDialog, QPrinter
-from qutebrowser.qt.network import QNetworkAccessManager
 
 if TYPE_CHECKING:
     from qutebrowser.qt.webenginecore import (
@@ -896,13 +895,6 @@ class AbstractTabPrivate:
         # so 65ms should be a safe bet and still not be too noticeable.
         QTimer.singleShot(
             65, lambda: self._tab.elements.find_focused(_auto_insert_mode_cb))
-
-    def networkaccessmanager(self) -> QNetworkAccessManager | None:
-        """Get the QNetworkAccessManager for this tab.
-
-        For QtWebEngine, always returns None.
-        """
-        raise NotImplementedError
 
     def shutdown(self) -> None:
         raise NotImplementedError

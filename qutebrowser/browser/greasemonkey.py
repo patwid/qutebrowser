@@ -17,10 +17,10 @@ from collections.abc import Sequence
 
 from qutebrowser.qt.core import pyqtSignal, QObject, QUrl
 
-from qutebrowser.utils import (log, standarddir, jinja, objreg, utils,
+from qutebrowser.utils import (log, standarddir, jinja, utils,
                                javascript, urlmatch, message)
 from qutebrowser.api import cmdutils
-from qutebrowser.browser import downloads
+from qutebrowser.misc import httpclient
 
 
 gm_manager = cast('GreasemonkeyManager', None)
@@ -287,7 +287,8 @@ class GreasemonkeyManager(QObject):
         self._run_start: list[GreasemonkeyScript] = []
         self._run_end: list[GreasemonkeyScript] = []
         self._run_idle: list[GreasemonkeyScript] = []
-        self._in_progress_dls: list[downloads.AbstractDownloadItem] = []
+        # Running fetches for @require -> the URL as given in the script
+        self._in_progress_dls: dict[httpclient.Fetch, str] = {}
 
     def load_scripts(self, *, force: bool = False) -> LoadResults:
         """Re-read Greasemonkey scripts from disk.
@@ -365,11 +366,25 @@ class GreasemonkeyManager(QObject):
             os.mkdir(requires_dir)
         return os.path.join(requires_dir, utils.sanitize_filename(url))
 
-    def _on_required_download_finished(self, script, download):
-        self._in_progress_dls.remove(download)
+    def _on_required_download_finished(self, script, download, target_path):
+        url = self._in_progress_dls.pop(download)
+        if not download.successful:
+            # The error was already shown, and the script can't be loaded
+            # without its requirements.
+            log.greasemonkey.debug(
+                f"Failed to download {url} for script {script}")
+            return
+
+        try:
+            with open(target_path, 'wb') as f:
+                f.write(download.fileobj.getvalue())
+        except OSError as e:
+            message.error(f"Failed to save {url} required by {script}: {e}")
+            return
+
         if not self._add_script_with_requires(script):
             log.greasemonkey.debug(
-                f"Finished download {download.basename} for script {script} "
+                f"Finished download {url} for script {script} "
                 "but some requirements are still pending")
 
     def _add_script_with_requires(self, script, quiet=False):
@@ -386,9 +401,8 @@ class GreasemonkeyManager(QObject):
                  dependencies being downloaded.
         """
         # See if we are still waiting on any required scripts for this one
-        for dl in self._in_progress_dls:
-            if dl.requested_url in script.requires:  # type: ignore[attr-defined]
-                return False
+        if any(url in script.requires for url in self._in_progress_dls.values()):
+            return False
 
         # Need to add the required scripts to the IIFE now
         for url in reversed(script.requires):
@@ -414,22 +428,12 @@ class GreasemonkeyManager(QObject):
             self._add_script_with_requires(script, quiet=True)
             return
 
-        download_manager = objreg.get('qtnetwork-download-manager')
-
         for url, target_path in required_dls:
-            target = downloads.FileDownloadTarget(target_path,
-                                                  force_overwrite=True)
-            download = download_manager.get(QUrl(url), target=target,
-                                            auto_remove=True)
-            # FIXME:mypy Build this into downloads instead of patching here?
-            download.requested_url = url
-            self._in_progress_dls.append(download)
-            if download.successful:
-                self._on_required_download_finished(script, download)
-            else:
-                download.finished.connect(
-                    functools.partial(self._on_required_download_finished,
-                                      script, download))
+            download = httpclient.fetch(QUrl(url))
+            self._in_progress_dls[download] = url
+            download.finished.connect(
+                functools.partial(self._on_required_download_finished,
+                                  script, download, target_path))
 
     def scripts_for(self, url):
         """Fetch scripts that are registered to run for url.

@@ -40,8 +40,8 @@ from qutebrowser.commands import runners
 from qutebrowser.config import (config, websettings, configfiles, configinit,
                                 qtargs)
 from qutebrowser.browser import (urlmarks, history, browsertab,
-                                 qtnetworkdownloads, downloads, greasemonkey)
-from qutebrowser.browser.network import proxy, cookies, cache, networkmanager
+                                 downloads, greasemonkey)
+from qutebrowser.browser.network import proxy
 from qutebrowser.extensions import loader
 from qutebrowser.keyinput import macros, eventfilter
 from qutebrowser.mainwindow import mainwindow, prompt, windowundo
@@ -441,9 +441,6 @@ def _init_modules(*, args):
     log.init.debug("Initializing prompts...")
     prompt.init()
 
-    log.init.debug("Initializing network...")
-    networkmanager.init()
-
     log.init.debug("Initializing proxy...")
     proxy.init()
     quitter.instance.shutting_down.connect(proxy.shutdown)
@@ -483,15 +480,6 @@ def _init_modules(*, args):
     log.init.debug("Initializing bookmarks...")
     bookmark_manager = urlmarks.BookmarkManager(objects.qapp)
     objreg.register('bookmark-manager', bookmark_manager)
-
-    log.init.debug("Initializing cookies...")
-    cookies.init(objects.qapp)
-
-    log.init.debug("Initializing cache...")
-    cache.init(objects.qapp)
-
-    log.init.debug("Initializing downloads...")
-    qtnetworkdownloads.init()
 
     log.init.debug("Initializing Greasemonkey...")
     greasemonkey.init()

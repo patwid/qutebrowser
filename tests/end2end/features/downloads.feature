@@ -59,7 +59,7 @@ Feature: Downloading things from a website.
         And I open data/downloads/issue889.html
         And I hint with args "links download" and follow a
         And I run :tab-close
-        And I wait for "redirected: *" in the log
+        And I wait until the download is finished
         Then no crash should happen
 
     Scenario: Downloading with error in closed tab (issue 889)
@@ -67,9 +67,9 @@ Feature: Downloading things from a website.
         And I open data/downloads/issue889.html
         And I hint with args "links download" and follow s
         And I run :tab-close
-        And I wait for the error "Download error: * - server replied: NOT FOUND"
+        And I wait for the error "Download error: The server does not have the requested data"
         And I run :download-retry
-        And I wait for the error "Download error: * - server replied: NOT FOUND"
+        And I wait for the error "Download error: The server does not have the requested data"
         Then no crash should happen
 
     Scenario: Downloading a link without path information (issue 1243)
@@ -77,9 +77,7 @@ Feature: Downloading things from a website.
         And I set downloads.location.prompt to true
         And I open data/downloads/issue1243.html
         And I hint with args "links download" and follow a
-        And I wait for "Asking question <qutebrowser.utils.usertypes.Question default='qutebrowser-download' mode=<PromptMode.download: 5> option=None text=* title='Save file to:'>, *" in the log
-        Then the error "Download error: Invalid host (from path): ''" should be shown
-        And "UrlInvalidError while handling qute://* URL" should be logged
+        Then the error "Download error: Can't download qute:// URLs" should be shown
 
     Scenario: Downloading a data: link (issue 1214)
         When I set downloads.location.suggestion to filename
@@ -115,19 +113,6 @@ Feature: Downloading things from a website.
         And I wait until the download is finished
         And I run :close
         Then qutebrowser should quit
-
-    # https://github.com/qutebrowser/qutebrowser/issues/2134
-    @qtwebengine_skip
-    Scenario: Downloading, then closing a tab
-        When I set downloads.location.prompt to false
-        And I open about:blank
-        And I open data/downloads/issue2134.html in a new tab
-        # This needs to be a download connected to the tabs QNAM
-        And I hint with args "links normal" and follow a
-        And I wait for "fetch: * -> drip" in the log
-        And I run :tab-close
-        And I wait for "Download drip finished" in the log
-        Then the downloaded file drip should be 128 bytes big
 
     Scenario: Shutting down with a download question
         When I set downloads.location.prompt to true
@@ -188,9 +173,9 @@ Feature: Downloading things from a website.
 
     Scenario: Retrying a failed download
         When I run :download http://localhost:(port)/does-not-exist
-        And I wait for the error "Download error: * - server replied: NOT FOUND"
+        And I wait for the error "Download error: The server does not have the requested data"
         And I run :download-retry
-        And I wait for the error "Download error: * - server replied: NOT FOUND"
+        And I wait for the error "Download error: The server does not have the requested data"
         Then the requests should be:
             """
             does-not-exist
@@ -201,9 +186,9 @@ Feature: Downloading things from a website.
     Scenario: Retrying with count
         When I run :download http://localhost:(port)/data/downloads/download.bin
         And I run :download http://localhost:(port)/does-not-exist
-        And I wait for the error "Download error: * - server replied: NOT FOUND"
+        And I wait for the error "Download error: The server does not have the requested data"
         And I run :download-retry with count 2
-        And I wait for the error "Download error: * - server replied: NOT FOUND"
+        And I wait for the error "Download error: The server does not have the requested data"
         Then the requests should be:
             """
             data/downloads/download.bin
@@ -214,10 +199,10 @@ Feature: Downloading things from a website.
     Scenario: Retrying with two failed downloads
         When I run :download http://localhost:(port)/does-not-exist
         And I run :download http://localhost:(port)/does-not-exist-2
-        And I wait for the error "Download error: * - server replied: NOT FOUND"
-        And I wait for the error "Download error: * - server replied: NOT FOUND"
+        And I wait for the error "Download error: The server does not have the requested data"
+        And I wait for the error "Download error: The server does not have the requested data"
         And I run :download-retry
-        And I wait for the error "Download error: * - server replied: NOT FOUND"
+        And I wait for the error "Download error: The server does not have the requested data"
         Then the requests should be:
             """
             does-not-exist
@@ -305,6 +290,7 @@ Feature: Downloading things from a website.
 
     Scenario: Cancelling a download
         When I run :download http://localhost:(port)/drip?numbytes=128&duration=5
+        And I wait for "State for * changed to DownloadInProgress" in the log
         And I run :download-cancel
         Then "cancelled" should be logged
 
@@ -330,7 +316,9 @@ Feature: Downloading things from a website.
 
     Scenario: Cancelling all downloads
         When I run :download http://localhost:(port)/drip?numbytes=128&duration=5
-        And I run :download http://localhost:(port)/drip?numbytes=128&duration=5
+        And I wait for "State for * changed to DownloadInProgress" in the log
+        And I run :download http://localhost:(port)/drip?numbytes=128&duration=5 --dest drip2
+        And I wait for "State for * changed to DownloadInProgress" in the log
         And I run :download-cancel --all
         Then "cancelled" should be logged
         And "cancelled" should be logged
@@ -358,11 +346,13 @@ Feature: Downloading things from a website.
 
     Scenario: Removing a download which is not done yet
         When I run :download http://localhost:(port)/drip?numbytes=128&duration=5
+        And I wait for "State for * changed to DownloadInProgress" in the log
         And I run :download-remove
         Then the error "Download 1 is not done!" should be shown
 
     Scenario: Removing a download which is not done yet (with count)
         When I run :download http://localhost:(port)/drip?numbytes=128&duration=5
+        And I wait for "State for * changed to DownloadInProgress" in the log
         And I run :download-remove with count 1
         Then the error "Download 1 is not done!" should be shown
 
@@ -397,11 +387,13 @@ Feature: Downloading things from a website.
 
     Scenario: Deleting a download which is not done yet
         When I run :download http://localhost:(port)/drip?numbytes=128&duration=5
+        And I wait for "State for * changed to DownloadInProgress" in the log
         And I run :download-delete
         Then the error "Download 1 is not done!" should be shown
 
     Scenario: Deleting a download which is not done yet (with count)
         When I run :download http://localhost:(port)/drip?numbytes=128&duration=5
+        And I wait for "State for * changed to DownloadInProgress" in the log
         And I run :download-delete with count 1
         Then the error "Download 1 is not done!" should be shown
 
@@ -443,11 +435,13 @@ Feature: Downloading things from a website.
 
     Scenario: Opening a download which is not done yet
         When I run :download http://localhost:(port)/drip?numbytes=128&duration=5
+        And I wait for "State for * changed to DownloadInProgress" in the log
         And I run :download-open
         Then the error "Download 1 is not done!" should be shown
 
     Scenario: Opening a download which is not done yet (with count)
         When I run :download http://localhost:(port)/drip?numbytes=128&duration=5
+        And I wait for "State for * changed to DownloadInProgress" in the log
         And I run :download-open with count 1
         Then the error "Download 1 is not done!" should be shown
 
@@ -587,13 +581,13 @@ Feature: Downloading things from a website.
     Scenario: Downloading with infinite redirect
         When I set downloads.location.prompt to false
         And I run :download http://localhost:(port)/redirect/21 --dest redirection
-        Then the error "Download error: Too many redirects" should be shown
+        Then the error "Download error: General network failure" should be shown
         And the downloaded file redirection should not exist
 
     Scenario: Downloading with redirect to itself
         When I set downloads.location.prompt to false
         And I run :download http://localhost:(port)/redirect-self
-        Then the error "Download error: Too many redirects" should be shown
+        Then the error "Download error: General network failure" should be shown
         And the downloaded file redirect-self should not exist
 
     Scenario: Downloading with absolute redirect
@@ -608,13 +602,14 @@ Feature: Downloading things from a website.
         And I wait until the download is finished
         Then the downloaded file relative-redirect should exist
 
-    Scenario: Downloading with insecure redirect
+    # Certificate errors aren't reported to us for downloads we start
+    # ourselves, so those fail no matter what content.tls.certificate_errors is
+    # set to.
+    Scenario: Downloading from a server with an invalid certificate
         When I set downloads.location.prompt to false
         And I set content.tls.certificate_errors to load-insecurely
         And I download an SSL redirect page
-        # First error is due to the load-insecurely value above
-        Then the error "Certificate error: *The certificate is self-signed, and untrusted" should be shown
-        And the error "Download error: Insecure redirect" should be shown
+        Then the error "Download error: General network failure" should be shown
         And the downloaded file download.bin should not exist
 
     ## Other
@@ -690,14 +685,12 @@ Feature: Downloading things from a website.
         And I wait until the download is finished
         Then the downloaded file download.bin should exist
 
-    @qtwebengine_skip  # We can't get the UA from the page there
     Scenario: user-agent when using :download
         When I open user-agent
         And I run :download --dest user-agent
         And I wait until the download is finished
         Then the downloaded file user-agent should contain Safari/
 
-    @qtwebengine_skip  # We can't get the UA from the page there
     Scenario: user-agent when using hints
         When I open /
         And I run :hint links download

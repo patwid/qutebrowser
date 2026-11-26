@@ -51,6 +51,25 @@ Removed
   * `pyobjc-core` and `pyobjc-framework-Cocoa` are not needed on macOS anymore
     (they were only used with Qt older than 6.3).
 
+Changed
+~~~~~~~
+
+- Downloads started via `:download` or hints are now handled by QtWebEngine,
+  like all other downloads, instead of by a separate QtNetwork-based download
+  manager. As a consequence:
+  * Those downloads now use the cookies (and thus logins) and the private
+    browsing state of the window they were started from.
+  * They only show up in the download bar once the server has responded, and
+    error messages are the ones from QtWebEngine (e.g. "The server does not
+    have the requested data" instead of "server replied: NOT FOUND").
+  * `:download` can't be used with `qute://` URLs anymore.
+  * Downloads from servers with an invalid certificate or requiring HTTP
+    authentication fail instead of showing a prompt. Open the URL in a tab
+    instead to get one.
+- Adblock/hosts lists and Greasemonkey `@require` scripts are fetched in the
+  background, without showing up in the download bar. A failing blocklist
+  download doesn't prevent `:adblock-update` from finishing anymore.
+
 Fixed
 ~~~~~
 

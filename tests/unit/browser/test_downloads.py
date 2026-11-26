@@ -4,13 +4,14 @@
 
 import pytest
 
-from qutebrowser.browser import downloads, qtnetworkdownloads
+from qutebrowser.browser import downloads
+from qutebrowser.browser.webengine import webenginedownloads
 
 
 @pytest.fixture
-def manager(config_stub, cookiejar_and_cache):
-    """A QtNetwork download manager."""
-    dl_manager = qtnetworkdownloads.DownloadManager()
+def manager(config_stub):
+    """A download manager."""
+    dl_manager = webenginedownloads.DownloadManager()
     yield dl_manager
     dl_manager.deleteLater()
 
@@ -64,11 +65,6 @@ class TestDownloadTarget:
         target = downloads.FileDownloadTarget("/foo/bar")
         assert target.filename == "/foo/bar"
 
-    def test_fileobj(self):
-        fobj = object()
-        target = downloads.FileObjDownloadTarget(fobj)
-        assert target.fileobj is fobj
-
     def test_openfile(self):
         target = downloads.OpenFileDownloadTarget()
         assert target.cmdline is None
@@ -79,7 +75,6 @@ class TestDownloadTarget:
 
     @pytest.mark.parametrize('obj', [
         downloads.FileDownloadTarget('foobar'),
-        downloads.FileObjDownloadTarget(None),
         downloads.OpenFileDownloadTarget(),
     ])
     def test_class_hierarchy(self, obj):

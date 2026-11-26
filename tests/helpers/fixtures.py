@@ -24,7 +24,6 @@ import pytest
 import py.path
 from qutebrowser.qt.core import QSize, Qt
 from qutebrowser.qt.widgets import QWidget, QHBoxLayout, QVBoxLayout
-from qutebrowser.qt.network import QNetworkCookieJar
 
 import helpers.stubs as stubsmod
 import qutebrowser
@@ -33,8 +32,7 @@ from qutebrowser.config import (config, configdata, configtypes, configexc,
 from qutebrowser.api import config as configapi
 from qutebrowser.utils import objreg, standarddir, usertypes, version
 from qutebrowser.browser import greasemonkey, history, qutescheme
-from qutebrowser.browser.network import cookies, cache
-from qutebrowser.misc import savemanager, sql, objects, sessions
+from qutebrowser.misc import savemanager, sql, objects, sessions, httpclient
 from qutebrowser.keyinput import modeman
 from qutebrowser.qt import sip
 
@@ -400,14 +398,6 @@ def webengineview(qtbot, monkeypatch, web_tab_setup):
 
 
 @pytest.fixture
-def cookiejar_and_cache(stubs, monkeypatch):
-    """Fixture providing a fake cookie jar and cache."""
-    monkeypatch.setattr(cookies, 'cookie_jar', QNetworkCookieJar())
-    monkeypatch.setattr(cookies, 'ram_cookie_jar', cookies.RAMCookieJar())
-    monkeypatch.setattr(cache, 'diskcache', stubs.FakeNetworkCache())
-
-
-@pytest.fixture
 def py_proc(tmp_path):
     """Get a python executable and args list which executes the given code."""
     if getattr(sys, 'frozen', False):
@@ -569,12 +559,11 @@ def model_validator(qtmodeltester):
 
 
 @pytest.fixture
-def download_stub(win_registry, tmpdir, stubs):
-    """Register a FakeDownloadManager."""
+def download_stub(tmpdir, stubs, monkeypatch):
+    """Use a FakeDownloadManager for httpclient.fetch()."""
     stub = stubs.FakeDownloadManager(tmpdir)
-    objreg.register('qtnetwork-download-manager', stub)
-    yield stub
-    objreg.delete('qtnetwork-download-manager')
+    monkeypatch.setattr(httpclient, 'fetch', stub.fetch)
+    return stub
 
 
 @pytest.fixture

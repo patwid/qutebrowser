@@ -351,16 +351,8 @@ class MainWindow(QWidget):
 
     def _init_downloadmanager(self):
         log.init.debug("Initializing downloads...")
-        qtnetwork_download_manager = objreg.get('qtnetwork-download-manager')
-
-        try:
-            webengine_download_manager = objreg.get(
-                'webengine-download-manager')
-        except KeyError:
-            webengine_download_manager = None
-
-        self._download_model = downloads.DownloadModel(
-            qtnetwork_download_manager, webengine_download_manager)
+        download_manager = objreg.get('webengine-download-manager')
+        self._download_model = downloads.DownloadModel(download_manager)
         objreg.register('download-model', self._download_model,
                         scope='window', window=self.win_id,
                         command_only=True)

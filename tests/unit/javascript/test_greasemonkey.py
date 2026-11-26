@@ -349,7 +349,8 @@ def test_required_scripts_are_included(gm_manager, download_stub, tmp_path):
 
     gm_manager.load_scripts()
     assert len(gm_manager._in_progress_dls) == 1
-    for download in gm_manager._in_progress_dls:
+    for download in list(gm_manager._in_progress_dls):
+        download.successful = True
         download.finished.emit()
 
     scripts = gm_manager.all_scripts()

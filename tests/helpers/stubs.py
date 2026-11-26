@@ -9,7 +9,7 @@
 from typing import Any
 from collections.abc import Callable
 from unittest import mock
-import contextlib
+import io
 import shutil
 import dataclasses
 import builtins
@@ -18,39 +18,11 @@ import types
 
 from qutebrowser.qt.core import pyqtSignal, QPoint, QProcess, QObject, QUrl, QByteArray
 from qutebrowser.qt.gui import QIcon
-from qutebrowser.qt.network import (QNetworkRequest, QAbstractNetworkCache,
-                             QNetworkCacheMetaData)
 from qutebrowser.qt.widgets import QCommonStyle, QLineEdit, QWidget, QTabBar
 
-from qutebrowser.browser import browsertab, downloads
+from qutebrowser.browser import browsertab
 from qutebrowser.utils import usertypes
 from qutebrowser.commands import runners
-
-
-class FakeNetworkCache(QAbstractNetworkCache):
-
-    """Fake cache with no data."""
-
-    def cacheSize(self):
-        return 0
-
-    def data(self, _url):
-        return None
-
-    def insert(self, _dev):
-        pass
-
-    def metaData(self, _url):
-        return QNetworkCacheMetaData()
-
-    def prepare(self, _metadata):
-        return None
-
-    def remove(self, _url):
-        return False
-
-    def updateMetaData(self, _url):
-        pass
 
 
 class FakeKeyEvent:
@@ -114,69 +86,6 @@ class FakeQApplication:
         self.activeWindow = lambda: active_window
         self.arguments = lambda: arguments
         self.platformName = lambda: platform_name
-
-
-class FakeNetworkReply:
-
-    """QNetworkReply stub which provides a Content-Disposition header."""
-
-    KNOWN_HEADERS = {
-        QNetworkRequest.KnownHeaders.ContentTypeHeader: 'Content-Type',
-    }
-
-    def __init__(self, headers=None, url=None):
-        if url is None:
-            url = QUrl()
-        if headers is None:
-            self.headers = {}
-        else:
-            self.headers = headers
-        self.url = mock.Mock(return_value=url)
-
-    def hasRawHeader(self, name):
-        """Check if the reply has a certain header.
-
-        Args:
-            name: The name of the header as ISO-8859-1 encoded bytes object.
-
-        Return:
-            True if the header is present, False if not.
-        """
-        return name.decode('iso-8859-1') in self.headers
-
-    def rawHeader(self, name):
-        """Get the raw header data of a header.
-
-        Args:
-            name: The name of the header as ISO-8859-1 encoded bytes object.
-
-        Return:
-            The header data, as ISO-8859-1 encoded bytes() object.
-        """
-        name = name.decode('iso-8859-1')
-        return self.headers[name].encode('iso-8859-1')
-
-    def header(self, known_header):
-        """Get a known header.
-
-        Args:
-            known_header: A QNetworkRequest::KnownHeaders member.
-        """
-        key = self.KNOWN_HEADERS[known_header]
-        try:
-            return self.headers[key]
-        except KeyError:
-            return None
-
-    def setHeader(self, known_header, value):
-        """Set a known header.
-
-        Args:
-            known_header: A QNetworkRequest::KnownHeaders member.
-            value: The value to set.
-        """
-        key = self.KNOWN_HEADERS[known_header]
-        self.headers[key] = value
 
 
 class FakeProcess(QProcess):
@@ -561,7 +470,7 @@ class HTTPPostStub(QObject):
 
 class FakeDownloadItem(QObject):
 
-    """Mock browser.downloads.DownloadItem."""
+    """Mock misc.httpclient.Fetch."""
 
     finished = pyqtSignal()
 
@@ -574,39 +483,24 @@ class FakeDownloadItem(QObject):
 
 class FakeDownloadManager:
 
-    """Mock browser.downloads.DownloadManager."""
+    """Mock for misc.httpclient.fetch()."""
 
     def __init__(self, tmpdir):
         self._tmpdir = tmpdir
         self.downloads = []
 
-    @contextlib.contextmanager
-    def _open_fileobj(self, target):
-        """Ensure a DownloadTarget's fileobj attribute is available."""
-        if isinstance(target, downloads.FileDownloadTarget):
-            target.fileobj = open(target.filename, 'wb')
-            try:
-                yield target.fileobj
-            finally:
-                target.fileobj.close()
-        else:
-            yield target.fileobj
-
-    def get(self, url, target, **kwargs):
+    def fetch(self, url):
         """Return a FakeDownloadItem instance with a fileobj.
 
         The content is copied from the file the given url links to.
         """
-        with self._open_fileobj(target):
-            download_item = FakeDownloadItem(target.fileobj, name=url.path())
-            with (self._tmpdir / url.path()).open('rb') as fake_url_file:
-                shutil.copyfileobj(fake_url_file, download_item.fileobj)
+        fileobj = io.BytesIO()
+        fileobj.name = 'temporary: ' + url.host()
+        download_item = FakeDownloadItem(fileobj, name=url.path())
+        with (self._tmpdir / url.path()).open('rb') as fake_url_file:
+            shutil.copyfileobj(fake_url_file, download_item.fileobj)
         self.downloads.append(download_item)
         return download_item
-
-    def has_downloads_with_nam(self, _nam):
-        """Needed during WebView.shutdown()."""
-        return False
 
 
 class FakeHistoryTick(Exception):

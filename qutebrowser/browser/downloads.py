@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""Shared QtNetwork/QtWebEngine code for downloads."""
+"""Backend-independent code for downloads."""
 
 import re
 import sys
@@ -40,20 +40,6 @@ last_used_directory: str | None = None
 # All REFRESH_INTERVAL milliseconds, speeds will be recalculated and downloads
 # redrawn.
 _REFRESH_INTERVAL = 500
-
-
-class UnsupportedAttribute:
-
-    """Class which is used to create attributes which are not supported.
-
-    This is used for attributes like "fileobj" for downloads which are not
-    supported with QtWebengine.
-    """
-
-
-class UnsupportedOperationError(Exception):
-
-    """Raised when an operation is not supported with the given backend."""
 
 
 def init():
@@ -269,30 +255,6 @@ class FileDownloadTarget(_DownloadTarget):
         return self.filename
 
 
-class FileObjDownloadTarget(_DownloadTarget):
-
-    """Save the download to the given file-like object.
-
-    Attributes:
-        fileobj: File-like object where the download should be written to.
-    """
-
-    def __init__(self, fileobj):
-        self.fileobj = fileobj
-
-    def suggested_filename(self):
-        try:
-            return self.fileobj.name
-        except AttributeError:
-            raise NoFilenameError
-
-    def __str__(self):
-        try:
-            return 'file object at {}'.format(self.fileobj.name)
-        except AttributeError:
-            return 'anonymous file object'
-
-
 class OpenFileDownloadTarget(_DownloadTarget):
 
     """Save the download in a temp dir and directly open it.
@@ -401,7 +363,7 @@ class DownloadItemStats(QObject):
             bytes_done: How many bytes are downloaded.
             bytes_total: How many bytes there are to download in total.
         """
-        if bytes_total in [0, -1]:  # QtWebEngine, QtNetwork
+        if bytes_total in [0, -1]:
             bytes_total = None
         self.done = bytes_done
         self.total = bytes_total
@@ -409,7 +371,7 @@ class DownloadItemStats(QObject):
 
 class AbstractDownloadItem(QObject):
 
-    """Shared QtNetwork/QtWebEngine part of a download item.
+    """Backend-independent part of a download item.
 
     Attributes:
         done: Whether the download is finished.
@@ -417,8 +379,6 @@ class AbstractDownloadItem(QObject):
         index: The index of the download in the view.
         successful: Whether the download has completed successfully.
         error_msg: The current error message, or None
-        fileobj: The file object to download the file to.
-        raw_headers: The headers sent by the server.
         _filename: The filename of the download.
         _dead: Whether the Download has _die()'d.
         _manager: The DownloadManager which started this download.
@@ -452,9 +412,6 @@ class AbstractDownloadItem(QObject):
         self.error_msg = None
         self.basename = '???'
         self.successful = False
-
-        self.fileobj: UnsupportedAttribute | IO[bytes] | None = UnsupportedAttribute()
-        self.raw_headers: UnsupportedAttribute | dict[bytes, bytes] = UnsupportedAttribute()
 
         self._filename: str | None = None
         self._dead = False
@@ -506,22 +463,6 @@ class AbstractDownloadItem(QObject):
         """Abort the download and emit an error."""
         assert not self.successful
         # Prevent actions if calling _die() twice.
-        #
-        # For QtNetwork, this might happen if the error handler correctly
-        # connects, and the error occurs in _init_reply between
-        # reply.error.connect and the reply.error() check. In this case, the
-        # connected error handlers will be called twice, once via the direct
-        # error.emit() and once here in _die(). The stacks look like this then:
-        #
-        #   <networkmanager error.emit> -> on_reply_error -> _die ->
-        #   self.error.emit()
-        #
-        # and
-        #
-        #   [_init_reply -> <single shot timer> ->] <lambda in _init_reply> ->
-        #   self.error.emit()
-        #
-        # which may lead to duplicate error messages (and failing tests)
         if self._dead:
             return
         self._dead = True
@@ -593,14 +534,6 @@ class AbstractDownloadItem(QObject):
         """Retry a failed download."""
         raise NotImplementedError
 
-    @pyqtSlot()
-    def try_retry(self):
-        """Try to retry a download and show an error if it's unsupported."""
-        try:
-            self.retry()
-        except UnsupportedOperationError as e:
-            message.error(str(e))
-
     def url(self) -> QUrl:
         """Get the download's URL (i.e. where the file is downloaded from)."""
         raise NotImplementedError
@@ -655,17 +588,6 @@ class AbstractDownloadItem(QObject):
     def _ask_create_parent_question(self, title, msg,
                                     force_overwrite, remember_directory):
         """Ask a confirmation question for the parent directory."""
-        raise NotImplementedError
-
-    def _set_fileobj(self, fileobj, *, autoclose=True):
-        """Set a file object to save the download to.
-
-        Not supported by QtWebEngine.
-
-        Args:
-            fileobj: The file object to download to.
-            autoclose: Close the file object automatically when it's done.
-        """
         raise NotImplementedError
 
     def _set_tempfile(self, fileobj):
@@ -853,9 +775,7 @@ class AbstractDownloadItem(QObject):
         Args:
             target: The DownloadTarget for this download.
         """
-        if isinstance(target, FileObjDownloadTarget):
-            self._set_fileobj(target.fileobj, autoclose=False)
-        elif isinstance(target, FileDownloadTarget):
+        if isinstance(target, FileDownloadTarget):
             self._set_filename(
                 target.filename, force_overwrite=target.force_overwrite)
         elif isinstance(target, (OpenFileDownloadTarget, PDFJSDownloadTarget)):
@@ -886,7 +806,6 @@ class AbstractDownloadManager(QObject):
 
     Attributes:
         downloads: A list of active DownloadItems.
-        _networkmanager: A NetworkManager for generic downloads.
 
     Signals:
         begin_remove_row: Emitted before downloads are removed.
@@ -1017,37 +936,19 @@ class DownloadModel(QAbstractListModel):
 
     """A list model showing downloads."""
 
-    def __init__(self, qtnetwork_manager, webengine_manager=None, parent=None):
+    def __init__(self, manager, parent=None):
         super().__init__(parent)
-        self._qtnetwork_manager = qtnetwork_manager
-        self._webengine_manager = webengine_manager
+        self._manager = manager
 
-        qtnetwork_manager.data_changed.connect(
-            functools.partial(self._on_data_changed, webengine=False))
-        qtnetwork_manager.begin_insert_row.connect(
-            functools.partial(self._on_begin_insert_row, webengine=False))
-        qtnetwork_manager.begin_remove_row.connect(
-            functools.partial(self._on_begin_remove_row, webengine=False))
-        qtnetwork_manager.end_insert_row.connect(self.endInsertRows)
-        qtnetwork_manager.end_remove_row.connect(self.endRemoveRows)
-
-        if webengine_manager is not None:
-            webengine_manager.data_changed.connect(
-                functools.partial(self._on_data_changed, webengine=True))
-            webengine_manager.begin_insert_row.connect(
-                functools.partial(self._on_begin_insert_row, webengine=True))
-            webengine_manager.begin_remove_row.connect(
-                functools.partial(self._on_begin_remove_row, webengine=True))
-            webengine_manager.end_insert_row.connect(self.endInsertRows)
-            webengine_manager.end_remove_row.connect(self._on_end_remove_row)
+        manager.data_changed.connect(self._on_data_changed)
+        manager.begin_insert_row.connect(self._on_begin_insert_row)
+        manager.begin_remove_row.connect(self._on_begin_remove_row)
+        manager.end_insert_row.connect(self.endInsertRows)
+        manager.end_remove_row.connect(self._on_end_remove_row)
 
     def _all_downloads(self):
-        """Combine downloads from both downloaders."""
-        if self._webengine_manager is None:
-            return self._qtnetwork_manager.downloads[:]
-        else:
-            return (self._qtnetwork_manager.downloads +
-                    self._webengine_manager.downloads)
+        """Get a copy of the list of all downloads."""
+        return self._manager.downloads[:]
 
     def __len__(self):
         return len(self._all_downloads())
@@ -1058,31 +959,25 @@ class DownloadModel(QAbstractListModel):
     def __getitem__(self, idx):
         return self._all_downloads()[idx]
 
-    def _on_begin_insert_row(self, idx, webengine=False):
-        log.downloads.debug("_on_begin_insert_row with idx {}, "
-                            "webengine {}".format(idx, webengine))
+    def _on_begin_insert_row(self, idx):
+        log.downloads.debug("_on_begin_insert_row with idx {}".format(idx))
         if idx == -1:
             self.beginInsertRows(QModelIndex(), 0, -1)
             return
 
         assert idx >= 0, idx
-        if webengine:
-            idx += len(self._qtnetwork_manager.downloads)
         self.beginInsertRows(QModelIndex(), idx, idx)
 
-    def _on_begin_remove_row(self, idx, webengine=False):
+    def _on_begin_remove_row(self, idx):
         if sip.isdeleted(self):
             # https://github.com/qutebrowser/qutebrowser/issues/5865
             return
-        log.downloads.debug("_on_begin_remove_row with idx {}, "
-                            "webengine {}".format(idx, webengine))
+        log.downloads.debug("_on_begin_remove_row with idx {}".format(idx))
         if idx == -1:
             self.beginRemoveRows(QModelIndex(), 0, -1)
             return
 
         assert idx >= 0, idx
-        if webengine:
-            idx += len(self._qtnetwork_manager.downloads)
         self.beginRemoveRows(QModelIndex(), idx, idx)
 
     def _on_end_remove_row(self):
@@ -1091,13 +986,11 @@ class DownloadModel(QAbstractListModel):
             return
         self.endRemoveRows()
 
-    def _on_data_changed(self, idx, *, webengine):
-        """Called when a downloader's data changed.
+    def _on_data_changed(self, idx):
+        """Called when the download manager's data changed.
 
         Args:
-            idx: The changed index as int.
-            webengine: If given, the QtNetwork download length is added to the
-                      index.
+            idx: The changed index as int, or -1 for all downloads.
         """
         if sip.isdeleted(self):
             # https://github.com/qutebrowser/qutebrowser/issues/5865
@@ -1106,8 +999,6 @@ class DownloadModel(QAbstractListModel):
             start_index = self.index(0, 0)
             end_index = self.last_index()
         else:
-            if webengine:
-                idx += len(self._qtnetwork_manager.downloads)
             start_index = self.index(idx, 0)
             end_index = self.index(idx, 0)
             qtutils.ensure_valid(start_index)
@@ -1220,7 +1111,7 @@ class DownloadModel(QAbstractListModel):
             if not to_retry:
                 raise cmdutils.CommandError("No failed downloads!")
             download = to_retry[0]
-        download.try_retry()
+        download.retry()
 
     def can_clear(self):
         """Check if there are finished downloads to clear."""

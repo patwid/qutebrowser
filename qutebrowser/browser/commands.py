@@ -1374,8 +1374,7 @@ class CommandDispatcher:
             dest: The file path to write the download to, or None to ask.
             mhtml_: Download the current page and all assets as mhtml file.
         """
-        # FIXME:qtwebengine do this with the QtWebEngine download manager?
-        download_manager = objreg.get('qtnetwork-download-manager')
+        download_manager = objreg.get('webengine-download-manager')
         target = None
         if dest is not None:
             dest = downloads.transform_path(dest)
@@ -1391,25 +1390,20 @@ class CommandDispatcher:
                                             "page as mhtml.")
             url = QUrl.fromUserInput(url)
             urlutils.raise_cmdexc_if_invalid(url)
-            download_manager.get(url, target=target)
+            download_manager.get(url, private=tab.is_private, target=target)
         elif mhtml_:
-            tab = self._current_widget()
-            webengine_download_manager = objreg.get(
-                'webengine-download-manager')
             try:
-                webengine_download_manager.get_mhtml(tab, target)
+                download_manager.get_mhtml(tab, target)
             except browsertab.UnsupportedOperationError as e:
                 raise cmdutils.CommandError(e)
         else:
-            qnam = tab.private_api.networkaccessmanager()
-
             suggested_fn = downloads.suggested_fn_from_title(
                 self._current_url().path(), tab.title()
             )
 
             download_manager.get(
                 self._current_url(),
-                qnam=qnam,
+                private=tab.is_private,
                 target=target,
                 suggested_fn=suggested_fn
             )

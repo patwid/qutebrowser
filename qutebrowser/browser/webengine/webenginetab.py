@@ -1223,9 +1223,6 @@ class WebEngineTabPrivate(browsertab.AbstractTabPrivate):
 
     _widget: webview.WebEngineView
 
-    def networkaccessmanager(self):
-        return None
-
     def user_agent(self):
         return None
 

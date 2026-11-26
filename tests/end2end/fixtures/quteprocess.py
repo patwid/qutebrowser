@@ -799,9 +799,8 @@ class QuteProc(testprocess.Process):
         assert url
 
         pattern = re.compile(
-            r"(load status for <qutebrowser\.browser\..* "
-            r"tab_id=\d+ url='{url}/?'>: LoadStatus\.{load_status}|fetch: "
-            r"Py.*\.QtCore\.QUrl\('{url}'\) -> .*)".format(
+            r"load status for <qutebrowser\.browser\..* "
+            r"tab_id=\d+ url='{url}/?'>: LoadStatus\.{load_status}".format(
                 load_status=re.escape(load_status), url=re.escape(url)))
 
         try:

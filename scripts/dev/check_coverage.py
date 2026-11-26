@@ -65,18 +65,10 @@ PERFECT_FILES = [
     (None,
      'qutebrowser/api/qtutils.py'),
 
-    ('tests/unit/browser/network/test_cache.py',
-     'qutebrowser/browser/network/cache.py'),
-    ('tests/unit/browser/network/test_cookies.py',
-     'qutebrowser/browser/network/cookies.py'),
     ('tests/unit/browser/test_history.py',
      'qutebrowser/browser/history.py'),
     ('tests/unit/browser/test_pdfjs.py',
      'qutebrowser/browser/pdfjs.py'),
-    ('tests/unit/browser/network/http/test_httpheaders.py',
-     'qutebrowser/browser/network/httpheaders.py'),
-    ('tests/unit/browser/network/test_networkreply.py',
-     'qutebrowser/browser/network/networkreply.py'),
 
     ('tests/unit/browser/test_signalfilter.py',
      'qutebrowser/browser/signalfilter.py'),

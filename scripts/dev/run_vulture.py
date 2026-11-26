@@ -99,7 +99,6 @@ def whitelist_generator():  # noqa: C901
 
     # attrs
     yield 'qutebrowser.browser.greasemonkey.MatchingScripts.idle'
-    yield 'qutebrowser.browser.network.networkmanager.ProxyId.hostname'
     yield 'qutebrowser.command.command.ArgInfo._validate_exclusive'
     yield 'scripts.get_coredumpctl_traces.Line.uid'
     yield 'scripts.get_coredumpctl_traces.Line.gid'

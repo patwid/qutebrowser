@@ -6,7 +6,8 @@ import pytest
 
 from qutebrowser.qt.core import QUrl
 
-from qutebrowser.browser import downloads, qtnetworkdownloads, downloadview
+from qutebrowser.browser import downloads, downloadview
+from qutebrowser.browser.webengine import webenginedownloads
 
 
 class FakeDownload(downloads.AbstractDownloadItem):
@@ -24,15 +25,15 @@ class FakeDownload(downloads.AbstractDownloadItem):
 
 
 @pytest.fixture
-def qtnetwork_manager(config_stub, cookiejar_and_cache):
-    """A QtNetwork-based download manager."""
-    return qtnetworkdownloads.DownloadManager()
+def manager(config_stub):
+    """A download manager."""
+    return webenginedownloads.DownloadManager()
 
 
 @pytest.fixture
-def model(qtnetwork_manager, qtmodeltester, qapp):
+def model(manager, qtmodeltester, qapp):
     """A simple DownloadModel."""
-    model = downloads.DownloadModel(qtnetwork_manager)
+    model = downloads.DownloadModel(manager)
     qtmodeltester.check(model)
     return model
 
@@ -65,12 +66,12 @@ def view(model, qtbot):
         ["Retry", "Remove", "Copy URL"],
     ),
 ])
-def test_get_menu_actions(can_clear, item, expected, view, qtnetwork_manager):
+def test_get_menu_actions(can_clear, item, expected, view, manager):
     if can_clear:
-        qtnetwork_manager.downloads.append(FakeDownload(done=True))
+        manager.downloads.append(FakeDownload(done=True))
         expected = expected.copy() + [None, "Remove all finished"]
     else:
-        assert not qtnetwork_manager.downloads
+        assert not manager.downloads
         assert "Remove all finished" not in expected
 
     actions = view._get_menu_actions(item)

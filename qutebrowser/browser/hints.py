@@ -292,11 +292,9 @@ class HintActions:
             raise HintingError("No suitable link found for this element.")
 
         prompt = False if context.rapid else None
-        qnam = context.tab.private_api.networkaccessmanager()
-
-        # FIXME:qtwebengine do this with QtWebEngine downloads?
-        download_manager = objreg.get('qtnetwork-download-manager')
-        download_manager.get(url, qnam=qnam, prompt_download_directory=prompt)
+        download_manager = objreg.get('webengine-download-manager')
+        download_manager.get(url, private=context.tab.is_private,
+                             prompt_download_directory=prompt)
 
     def call_userscript(self, elem: webelem.AbstractWebElement,
                         context: HintContext) -> None:

@@ -7,12 +7,41 @@
 import re
 import os.path
 import functools
+import dataclasses
 
 from qutebrowser.qt.core import pyqtSlot, Qt, QUrl, QObject
-from qutebrowser.qt.webenginecore import QWebEngineDownloadRequest
+from qutebrowser.qt.webenginecore import (QWebEngineDownloadRequest, QWebEnginePage,
+                                          QWebEngineProfile)
 
 from qutebrowser.browser import downloads, pdfjs
-from qutebrowser.utils import debug, usertypes, message, log, objreg
+from qutebrowser.utils import debug, usertypes, message, log, urlutils
+
+
+# URL schemes which can be downloaded via DownloadManager.get(). For anything
+# else, QtWebEngine silently never starts a download.
+_DOWNLOADABLE_SCHEMES = ['http', 'https', 'file', 'data']
+
+
+@dataclasses.dataclass
+class _Request:
+
+    """A download started by qutebrowser rather than by a website.
+
+    Attributes:
+        url: The URL which was requested.
+        private: Whether to download via the private profile.
+        target: Where to save the download as downloads.DownloadTarget, or None
+                to use the default location or ask the user.
+        suggested_fn: The filename to suggest, or None to let QtWebEngine pick.
+        prompt_download_directory: Overrides downloads.location.prompt if not
+                                   None.
+    """
+
+    url: QUrl
+    private: bool
+    target: downloads._DownloadTarget | None = None
+    suggested_fn: str | None = None
+    prompt_download_directory: bool | None = None
 
 
 class DownloadItem(downloads.AbstractDownloadItem):
@@ -21,13 +50,17 @@ class DownloadItem(downloads.AbstractDownloadItem):
 
     Attributes:
         _qt_item: The wrapped item.
+        _request: The _Request this download was started with, or None if it
+                  was started by a website.
     """
 
     def __init__(self, qt_item: QWebEngineDownloadRequest,
-                 manager: downloads.AbstractDownloadManager,
+                 manager: 'DownloadManager',
+                 request: _Request | None = None,
                  parent: QObject | None = None) -> None:
         super().__init__(manager=manager, parent=manager)
         self._qt_item = qt_item
+        self._request = request
         qt_item.receivedBytesChanged.connect(
             lambda: self.stats.on_download_progress(
                 qt_item.receivedBytes(),
@@ -99,6 +132,17 @@ class DownloadItem(downloads.AbstractDownloadItem):
         self._qt_item.cancel()
 
     def retry(self):
+        if self._request is not None:
+            # QtWebEngine doesn't send a new request when resuming e.g. after a
+            # server error, so we start from scratch instead.
+            assert self.done
+            assert not self.successful
+            self.remove()
+            self.delete()
+            self._manager.get_request(dataclasses.replace(
+                self._request, suggested_fn=self.basename))
+            return
+
         state = self._qt_item.state()
         if state != QWebEngineDownloadRequest.DownloadState.DownloadInterrupted:
             log.downloads.warning(
@@ -117,9 +161,6 @@ class DownloadItem(downloads.AbstractDownloadItem):
     def origin(self) -> QUrl:
         page = self._qt_item.page()
         return page.url() if page else QUrl()
-
-    def _set_fileobj(self, fileobj, *, autoclose=True):
-        raise downloads.UnsupportedOperationError
 
     def _set_tempfile(self, fileobj):
         fileobj.close()
@@ -176,27 +217,6 @@ class DownloadItem(downloads.AbstractDownloadItem):
 
         self._qt_item.accept()
 
-    def _get_conflicting_download(self):
-        """Return another potential active download with the same name.
-
-        webenginedownloads.DownloadItem needs to look for downloads both in its
-        manager and in qtnetwork-download-manager as both are used
-        simultaneously.
-
-        This method can be safely removed once #2328 is fixed.
-        """
-        conflicting_download = super()._get_conflicting_download()
-        if conflicting_download:
-            return conflicting_download
-
-        qtnetwork_download_manager = objreg.get(
-            'qtnetwork-download-manager')
-        for download in qtnetwork_download_manager.downloads:
-            if self._conflicts_with(download):
-                return download
-        return None
-
-
 def _strip_suffix(filename):
     """Convert a path we got from chromium to a suggested filename.
 
@@ -229,31 +249,105 @@ class DownloadManager(downloads.AbstractDownloadManager):
 
     Attributes:
         _mhtml_target: DownloadTarget for the next MHTML download.
+        _profiles: The profiles we're installed on, by their private state.
+        _requests: Downloads requested via get() which QtWebEngine didn't
+                   report back yet, by the page they were requested with.
     """
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._mhtml_target = None
+        self._profiles: dict[bool, QWebEngineProfile] = {}
+        self._requests: dict[QWebEnginePage, _Request] = {}
 
     def install(self, profile):
         """Set up the download manager on a QWebEngineProfile."""
+        self._profiles[profile.isOffTheRecord()] = profile
         profile.downloadRequested.connect(self.handle_download,
                                           Qt.ConnectionType.DirectConnection)
+
+    def get(self, url, *, private, target=None, suggested_fn=None,
+            prompt_download_directory=None):
+        """Start a download of the given URL.
+
+        Args:
+            url: The URL to get, as QUrl.
+            private: Whether to download via the private profile.
+            target: Where to save the download as downloads.DownloadTarget.
+            suggested_fn: The filename to use for the file.
+            prompt_download_directory: Whether to prompt for a location to
+                                       download the file to.
+        """
+        if not url.isValid():
+            urlutils.invalid_url_error(url, "start download")
+            return
+
+        if url.scheme() not in _DOWNLOADABLE_SCHEMES:
+            message.error(f"Download error: Can't download {url.scheme()}:// URLs")
+            return
+
+        self.get_request(_Request(
+            url=url,
+            private=private,
+            target=target,
+            suggested_fn=suggested_fn,
+            prompt_download_directory=prompt_download_directory,
+        ))
+
+    def get_request(self, request):
+        """Start a download for the given _Request."""
+        log.downloads.debug(f"get: {request.url.toDisplayString()}")
+        # QtWebEngine doesn't tell us which QWebEnginePage.download() call a
+        # download belongs to, and only gives us the URL after redirects. Thus,
+        # we use a separate page per download, so that we can tell them apart
+        # (and apart from downloads started by a website) in handle_download.
+        #
+        # This also means that the download isn't affected by the tab it was
+        # started from: There is no referer, and it keeps running when the tab
+        # gets closed.
+        page = QWebEnginePage(self._profiles[request.private], self)
+        self._requests[page] = request
+        page.download(request.url)
+
+    def _suggested_filename(self, qt_item, request):
+        """Get the filename to suggest for the given download."""
+        if request is not None and request.suggested_fn is not None:
+            return request.suggested_fn
+
+        suggested_filename = _strip_suffix(qt_item.downloadFileName())
+        if (request is not None and
+                os.path.splitext(suggested_filename)[0] == 'qwe_download'):
+            # QtWebEngine couldn't come up with a name (e.g. for data: URLs),
+            # see if we can do better.
+            return urlutils.filename_from_url(
+                request.url, fallback='qutebrowser-download')
+        return suggested_filename
 
     @pyqtSlot(QWebEngineDownloadRequest)
     def handle_download(self, qt_item):
         """Start a download coming from a QWebEngineProfile."""
-        qt_filename = qt_item.downloadFileName()
         mime_type = qt_item.mimeType()
         url = qt_item.url()
 
-        suggested_filename = _strip_suffix(qt_filename)
+        page = qt_item.page()
+        request = self._requests.pop(page, None)
+        suggested_filename = self._suggested_filename(qt_item, request)
 
-        use_pdfjs = pdfjs.should_use_pdfjs(mime_type, url)
+        # Downloads we were explicitly asked for are never shown via PDF.js.
+        use_pdfjs = request is None and pdfjs.should_use_pdfjs(mime_type, url)
 
-        download = DownloadItem(qt_item, manager=self)
+        download = DownloadItem(qt_item, manager=self, request=request)
         self._init_item(download, auto_remove=use_pdfjs,
                         suggested_filename=suggested_filename)
+
+        prompt_download_directory = None
+        if request is not None:
+            # The page needs to stay around as long as the download does.
+            download.destroyed.connect(page.deleteLater)
+            prompt_download_directory = request.prompt_download_directory
+            if request.target is not None:
+                download.set_target(request.target)
+                return
 
         if self._mhtml_target is not None:
             download.set_target(self._mhtml_target)
@@ -263,7 +357,7 @@ class DownloadManager(downloads.AbstractDownloadManager):
             download.set_target(downloads.PDFJSDownloadTarget())
             return
 
-        filename = downloads.immediate_download_path()
+        filename = downloads.immediate_download_path(prompt_download_directory)
         if filename is not None:
             # User doesn't want to be asked, so just use the download_dir
             target = downloads.FileDownloadTarget(filename)
