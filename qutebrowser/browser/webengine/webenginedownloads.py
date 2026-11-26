@@ -217,6 +217,7 @@ class DownloadItem(downloads.AbstractDownloadItem):
 
         self._qt_item.accept()
 
+
 def _strip_suffix(filename):
     """Convert a path we got from chromium to a suggested filename.
 

@@ -175,7 +175,7 @@ class StateConfig(configparser.ConfigParser):
         else:
             self.qutebrowser_version_changed = VersionChange.major
 
-    def _set_chromium_changed_attribute(self) -> None:
+    def _set_chromium_changed_attribute(self) -> None:  # noqa: C901
         if not self._has_webengine():
             return
 

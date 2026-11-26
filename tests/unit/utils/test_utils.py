@@ -790,8 +790,6 @@ def test_unused():
     utils.unused(None)
 
 
-
-
 class TestYaml:
 
     def test_load(self):

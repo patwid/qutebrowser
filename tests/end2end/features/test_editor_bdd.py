@@ -15,7 +15,6 @@ from qutebrowser.qt.core import pyqtSignal, pyqtSlot, QObject, QFileSystemWatche
 bdd.scenarios('editor.feature')
 
 
-
 @bdd.when(bdd.parsers.parse('I setup a fake editor replacing "{text}" by '
                             '"{replacement}"'))
 def set_up_editor_replacement(quteproc, server, tmpdir, text, replacement):

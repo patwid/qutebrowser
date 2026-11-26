@@ -11,7 +11,6 @@ import ipaddress
 import posixpath
 import urllib.parse
 import mimetypes
-from typing import TypeAlias
 from collections.abc import Iterable
 
 from qutebrowser.qt.core import QUrl, QUrlQuery
@@ -24,9 +23,6 @@ from qutebrowser.utils import log, qtutils, message, utils
 
 # FIXME: we probably could raise some exceptions on invalid URLs
 # https://github.com/qutebrowser/qutebrowser/issues/108
-
-
-UrlFlagsType: TypeAlias = QUrl.UrlFormattingOption | QUrl.ComponentFormattingOption
 
 
 class FormatOption:
@@ -424,34 +420,6 @@ def filename_from_url(url: QUrl, fallback: str | None = None) -> str | None:
         return url.host() + '.html'
     else:
         return fallback
-
-
-HostTupleType: TypeAlias = tuple[str, str, int]
-
-
-def host_tuple(url: QUrl) -> HostTupleType:
-    """Get a (scheme, host, port) tuple from a QUrl.
-
-    This is suitable to identify a connection, e.g. for SSL errors.
-    """
-    ensure_valid(url)
-    scheme, host, port = url.scheme(), url.host(), url.port()
-    assert scheme
-    if not host:
-        raise ValueError("Got URL {} without host.".format(
-            url.toDisplayString()))
-    if port == -1:
-        port_mapping = {
-            'http': 80,
-            'https': 443,
-            'ftp': 21,
-        }
-        try:
-            port = port_mapping[scheme]
-        except KeyError:
-            raise ValueError("Got URL {} with unknown port.".format(
-                url.toDisplayString()))
-    return scheme, host, port
 
 
 def get_errstring(url: QUrl, base: str = "Invalid URL") -> str:

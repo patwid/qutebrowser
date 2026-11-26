@@ -150,6 +150,7 @@ class TestStandardDir:
         standarddir._init_runtime(args=init_args)
         assert standarddir.runtime() == str(expected)
 
+
 class TestArguments:
 
     """Tests the --basedir argument."""

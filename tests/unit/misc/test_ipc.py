@@ -196,6 +196,7 @@ class TestSocketName:
             fake_runtime_dir / 'app' / 'org.qutebrowser.qutebrowser' / expected)
         assert socketname == expected_path
 
+
 class TestExceptions:
 
     def test_listen_error(self, qlocalserver):

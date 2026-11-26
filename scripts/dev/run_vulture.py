@@ -89,6 +89,9 @@ def whitelist_generator():  # noqa: C901
 
     yield 'include_aliases'
 
+    # Only used by the tests
+    yield 'qutebrowser.utils.qtutils.version_check'
+
     for attr in ['_get_default_metavar_for_optional',
                  '_get_default_metavar_for_positional', '_metavar_formatter']:
         yield 'scripts.dev.src2asciidoc.UsageFormatter.' + attr

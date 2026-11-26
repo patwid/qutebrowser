@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# pylint: disable=import-error,wildcard-import,unused-wildcard-import
+# pylint: disable=wildcard-import,unused-wildcard-import
 
 """Wrapped Qt imports for Qt Print Support.
 

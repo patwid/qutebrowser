@@ -552,31 +552,6 @@ def test_filename_from_url_fallback(qurl):
     assert urlutils.filename_from_url(qurl, fallback='fallback') == 'fallback'
 
 
-@pytest.mark.parametrize('qurl, expected', [
-    (QUrl('ftp://example.com/'), ('ftp', 'example.com', 21)),
-    (QUrl('ftp://example.com:2121/'), ('ftp', 'example.com', 2121)),
-    (QUrl('http://qutebrowser.org:8010/waterfall'),
-     ('http', 'qutebrowser.org', 8010)),
-    (QUrl('https://example.com/'), ('https', 'example.com', 443)),
-    (QUrl('https://example.com:4343/'), ('https', 'example.com', 4343)),
-    (QUrl('http://user:password@qutebrowser.org/foo?bar=baz#fish'),
-     ('http', 'qutebrowser.org', 80)),
-])
-def test_host_tuple_valid(qurl, expected):
-    assert urlutils.host_tuple(qurl) == expected
-
-
-@pytest.mark.parametrize('qurl, expected', [
-    (QUrl(), urlutils.InvalidUrlError),
-    (QUrl('qute://'), ValueError),
-    (QUrl('qute://foobar'), ValueError),
-    (QUrl('mailto:nobody'), ValueError),
-])
-def test_host_tuple_invalid(qurl, expected):
-    with pytest.raises(expected):
-        urlutils.host_tuple(qurl)
-
-
 class TestInvalidUrlError:
 
     @pytest.mark.parametrize('url, raising, has_err_string', [

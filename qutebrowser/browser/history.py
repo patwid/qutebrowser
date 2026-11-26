@@ -480,4 +480,3 @@ def init(db_path: pathlib.Path, parent: QObject | None = None) -> None:
     progress = HistoryProgress()
     database = sql.Database(str(db_path))
     web_history = WebHistory(database=database, progress=progress, parent=parent)
-

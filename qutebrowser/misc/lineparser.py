@@ -84,6 +84,7 @@ class BaseLineParser(QObject):
         self._opened = True
         try:
             if self._binary:
+                # pylint: disable-next=unspecified-encoding
                 with open(self._configfile, mode + 'b') as f:
                     yield f
             else:

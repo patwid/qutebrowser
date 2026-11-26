@@ -30,7 +30,7 @@ from qutebrowser.qt.widgets import QApplication
 
 
 import qutebrowser
-from qutebrowser.utils import (log, utils, standarddir, usertypes, message, resources,
+from qutebrowser.utils import (log, utils, standarddir, message, resources,
                                qtutils)
 from qutebrowser.misc import objects, earlyinit, sql, httpclient, pastebin, wmname
 from qutebrowser.browser import pdfjs
