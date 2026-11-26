@@ -7,7 +7,6 @@
 import os
 import signal
 import configparser
-import subprocess
 import sys
 import logging
 import re
@@ -21,7 +20,6 @@ from qutebrowser.qt.core import QProcess, QPoint
 from helpers import testutils
 from end2end.fixtures import quteprocess
 from qutebrowser.utils import utils, version
-from qutebrowser.misc import checkpyver
 
 
 # For some reason (some floating point rounding differences?), color values are
@@ -221,17 +219,6 @@ def test_command_on_start(request, quteproc_new):
     quteproc_new.start(args)
     quteproc_new.send_cmd(':quit')
     quteproc_new.wait_for_quit()
-
-
-@pytest.mark.parametrize('python', testutils.old_python_versions())
-def test_launching_with_old_python(python):
-    proc = subprocess.run(
-        [python, '-m', 'qutebrowser', '--no-err-windows'],
-        stderr=subprocess.PIPE,
-        check=False)
-    assert proc.returncode == 1
-    error = f"At least Python {checkpyver.MIN_PYTHON_VERSION_STR} is required to run qutebrowser"
-    assert proc.stderr.decode('ascii').startswith(error)
 
 
 def test_initial_private_browsing(request, quteproc_new):

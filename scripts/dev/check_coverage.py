@@ -90,8 +90,6 @@ PERFECT_FILES = [
      'qutebrowser/misc/split.py'),
     ('tests/unit/misc/test_msgbox.py',
      'qutebrowser/misc/msgbox.py'),
-    ('tests/unit/misc/test_checkpyver.py',
-     'qutebrowser/misc/checkpyver.py'),
     ('tests/unit/misc/test_guiprocess.py',
      'qutebrowser/misc/guiprocess.py'),
     ('tests/unit/misc/test_editor.py',

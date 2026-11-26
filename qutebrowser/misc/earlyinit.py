@@ -2,11 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""Things which need to be done really early (e.g. before importing Qt).
-
-At this point we can be sure we have all features available from the minimal Python
-version listed in misc.checkpyver.
-"""
+"""Things which need to be done really early (e.g. before importing Qt)."""
 
 try:
     # Importing hunter to register its atexit handler early so it gets called

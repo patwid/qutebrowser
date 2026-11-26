@@ -9,8 +9,6 @@ qutebrowser's initialization process roughly looks like this:
 
 - This file gets imported, either via the setuptools entry point or
   __main__.py.
-- At import time, we check for the correct Python version and show an error if
-  it's too old.
 - The main() function in this file gets invoked
 - Argument parsing takes place
 - earlyinit.early_init() gets invoked to do various low-level initialization
@@ -21,24 +19,9 @@ qutebrowser's initialization process roughly looks like this:
 
 import sys
 import json
+import argparse
 
 import qutebrowser
-try:
-    from qutebrowser.misc.checkpyver import check_python_version
-except ImportError:
-    try:
-        # python2
-        from .misc.checkpyver import check_python_version
-    except (SystemError, ValueError):
-        # Import without module - SystemError on Python3, ValueError (?!?) on
-        # Python2
-        sys.stderr.write("Please don't run this script directly, do something "
-                         "like   python3 -m qutebrowser   instead.\n")
-        sys.stderr.flush()
-        sys.exit(100)
-check_python_version()
-
-import argparse
 from qutebrowser.misc import earlyinit
 
 
