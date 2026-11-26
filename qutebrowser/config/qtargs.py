@@ -54,7 +54,7 @@ def qt_args(namespace: argparse.Namespace) -> list[str]:
         log.init.debug("QtWebEngine requested, but unavailable...")
         return argv
 
-    versions = version.qtwebengine_versions(avoid_init=True)
+    versions = version.qtwebengine_versions()
     # https://codereview.qt-project.org/c/qt/qtwebengine/+/376704
     argv.insert(1, "--webEngineArgs")
 

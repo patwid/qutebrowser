@@ -105,8 +105,6 @@ PERFECT_FILES = [
      'qutebrowser/misc/keyhintwidget.py'),
     ('tests/unit/misc/test_pastebin.py',
      'qutebrowser/misc/pastebin.py'),
-    ('tests/unit/misc/test_objects.py',
-     'qutebrowser/misc/objects.py'),
     ('tests/unit/misc/test_throttle.py',
      'qutebrowser/misc/throttle.py'),
     ('tests/unit/misc/test_pakjoy.py',

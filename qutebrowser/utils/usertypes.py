@@ -285,14 +285,6 @@ class LoadStatus(enum.Enum):
     loading = enum.auto()
 
 
-class Backend(enum.Enum):
-
-    """The backend being used (usertypes.backend)."""
-
-    # pylint: disable=invalid-name
-    QtWebEngine = enum.auto()
-
-
 class JsWorld(enum.Enum):
 
     """World/context to run JavaScript code in."""

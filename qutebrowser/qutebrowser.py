@@ -66,8 +66,6 @@ def get_argparser():
                                              'window', 'private-window'],
                         help="How URLs should be opened if there is already a "
                              "qutebrowser instance running.")
-    parser.add_argument('--backend', choices=['webengine'],
-                        help="Which backend to use.")
     parser.add_argument('--desktop-file-name',
                         default="org.qutebrowser.qutebrowser",
                         help="Set the base name of the desktop entry for this "

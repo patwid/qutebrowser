@@ -30,7 +30,7 @@ import qutebrowser
 from qutebrowser.config import (config, configdata, configtypes, configexc,
                                 configfiles, configcache, stylesheet)
 from qutebrowser.api import config as configapi
-from qutebrowser.utils import objreg, standarddir, usertypes, version
+from qutebrowser.utils import objreg, standarddir, version
 from qutebrowser.browser import greasemonkey, history, qutescheme
 from qutebrowser.misc import savemanager, sql, objects, sessions, httpclient
 from qutebrowser.keyinput import modeman
@@ -198,8 +198,6 @@ def web_tab_setup(qtbot, tab_registry, session_manager_stub,
 def webengine_tab(web_tab_setup, qtbot, redirect_webengine_data,
                   tabbed_browser_stubs, mode_manager, widget_container,
                   monkeypatch):
-    monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebEngine)
-
     tabwidget = tabbed_browser_stubs[0].widget
     tabwidget.current_index = 0
     tabwidget.index_of = 0
@@ -209,7 +207,6 @@ def webengine_tab(web_tab_setup, qtbot, redirect_webengine_data,
 
     tab = webenginetab.WebEngineTab(win_id=0, mode_manager=mode_manager,
                                     private=False)
-    tab.backend = usertypes.Backend.QtWebEngine
     widget_container.set_widget(tab)
 
     yield tab
@@ -391,7 +388,6 @@ def unicode_encode_err():
 def webengineview(qtbot, monkeypatch, web_tab_setup):
     """Get a QWebEngineView if QtWebEngine is available."""
     QtWebEngineWidgets = pytest.importorskip('qutebrowser.qt.webenginewidgets')
-    monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebEngine)
     view = QtWebEngineWidgets.QWebEngineView()
     qtbot.add_widget(view)
     return view

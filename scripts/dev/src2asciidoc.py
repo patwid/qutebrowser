@@ -411,25 +411,6 @@ def generate_commands(filename):
             f.write(_get_command_doc(name, cmd))
 
 
-def _generate_setting_backend_info(f, opt):
-    """Generate backend information for the given option."""
-    all_backends = [usertypes.Backend.QtWebEngine]
-    if opt.raw_backends is not None:
-        for name, conditional in sorted(opt.raw_backends.items()):
-            if conditional is True:
-                pass
-            elif conditional is False:
-                f.write("\nOn {}, this setting is unavailable.\n".format(name))
-            else:
-                f.write("\nOn {}, this setting requires {} or newer.\n"
-                        .format(name, conditional))
-    elif opt.backends == all_backends:
-        pass
-    else:
-        raise ValueError("Invalid value {!r} for opt.backends"
-                         .format(opt.backends))
-
-
 def _generate_setting_option(f, opt):
     """Generate documentation for a single section."""
     f.write("\n")
@@ -442,7 +423,6 @@ def _generate_setting_option(f, opt):
         f.write("\nThis setting supports link:configuring{outfilesuffix}#patterns[URL patterns].\n")
     if opt.no_autoconfig:
         f.write("\nThis setting can only be set in config.py.\n")
-    _generate_setting_backend_info(f, opt)
     f.write("\n")
     typ = opt.typ.get_name().replace(',', '&#44;')
     f.write('Type: <<types,{typ}>>\n'.format(typ=typ))

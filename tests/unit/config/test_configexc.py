@@ -10,7 +10,6 @@ import textwrap
 import pytest
 
 from qutebrowser.config import configexc
-from qutebrowser.utils import usertypes
 
 
 def test_validation_error():
@@ -52,23 +51,6 @@ def test_no_option_error_clash():
 def test_no_autoconfig_error():
     e = configexc.NoAutoconfigError('opt')
     expected = "The opt setting can only be set in config.py!"
-    assert str(e) == expected
-
-
-@pytest.mark.parametrize('raw_backends', [
-    None,
-    {'QtWebEngine': False}
-])
-def test_backend_error(raw_backends):
-    e = configexc.BackendError('foo', usertypes.Backend.QtWebEngine, raw_backends)
-    expected = "The foo setting is not available with the QtWebEngine backend!"
-    assert str(e) == expected
-
-
-def test_backend_error_condition():
-    e = configexc.BackendError('foo', usertypes.Backend.QtWebEngine,
-                               {'QtWebEngine': 'Qt 6.11'})
-    expected = "The foo setting needs Qt 6.11 with the QtWebEngine backend!"
     assert str(e) == expected
 
 

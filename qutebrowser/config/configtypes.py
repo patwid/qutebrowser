@@ -51,7 +51,6 @@ from qutebrowser.config import configexc, configutils
 from qutebrowser.utils import (standarddir, utils, qtutils, urlutils, urlmatch,
                                usertypes, log)
 from qutebrowser.keyinput import keyutils
-from qutebrowser.browser.network import pac
 
 
 class _SystemProxy:
@@ -1642,7 +1641,7 @@ class Proxy(BaseType):
     def to_py(
             self,
             value: _StrUnset
-    ) -> _UnsetNone | QNetworkProxy | _SystemProxy | pac.PACFetcher:
+    ) -> _UnsetNone | QNetworkProxy | _SystemProxy:
         self._basic_py_validation(value, str)
         if isinstance(value, usertypes.Unset):
             return value
@@ -1677,7 +1676,6 @@ class Proxy(BaseType):
         out.append(('socks://', 'SOCKS proxy URL'))
         out.append(('socks://localhost:9050/', 'Tor via SOCKS'))
         out.append(('http://localhost:8080/', 'Local HTTP proxy'))
-        out.append(('pac+https://example.com/proxy.pac', 'Proxy autoconfiguration file URL'))
         return out
 
 

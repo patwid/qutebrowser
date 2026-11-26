@@ -400,16 +400,3 @@ class TestLateInit:
 
         assert config.instance.get('fonts.hints') == 'bold 23pt SomeFamily'
         assert 'fonts.hints' in changed_options
-
-
-@pytest.mark.parametrize('arg, confval, used', [
-    # given via commandline arg
-    ('webengine', 'webengine', usertypes.Backend.QtWebEngine),
-    # set in config
-    (None, 'webengine', usertypes.Backend.QtWebEngine),
-])
-def test_get_backend(args, config_stub, arg, confval, used):
-    args.backend = arg
-    config_stub.val.backend = confval
-
-    assert configinit.get_backend(args) == used

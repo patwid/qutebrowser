@@ -16,8 +16,7 @@ from collections.abc import Iterable, MutableMapping, MutableSequence
 from qutebrowser.qt.core import Qt, QUrl, QObject, QPoint, QTimer, QDateTime
 import yaml
 
-from qutebrowser.utils import (standarddir, objreg, qtutils, log, message,
-                               utils, usertypes)
+from qutebrowser.utils import (standarddir, objreg, qtutils, log, message, utils)
 from qutebrowser.api import cmdutils
 from qutebrowser.config import config, configfiles
 from qutebrowser.completion.models import miscmodels
@@ -50,9 +49,7 @@ def init(parent=None):
 
     # WORKAROUND for https://github.com/qutebrowser/qutebrowser/issues/5359
     backup_path = base_path / 'before-qt-515'
-    do_backup = objects.backend == usertypes.Backend.QtWebEngine
-
-    if base_path.exists() and not backup_path.exists() and do_backup:
+    if base_path.exists() and not backup_path.exists():
         backup_path.mkdir()
         for path in base_path.glob('*.yml'):
             shutil.copy(path, backup_path)

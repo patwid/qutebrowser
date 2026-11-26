@@ -378,7 +378,6 @@ class DownloadManager(downloads.AbstractDownloadManager):
 
     def get_mhtml(self, tab, target):
         """Download the given tab as mhtml to the given target."""
-        assert tab.backend == usertypes.Backend.QtWebEngine
         assert self._mhtml_target is None, self._mhtml_target
         self._mhtml_target = target
         tab.action.save_page()

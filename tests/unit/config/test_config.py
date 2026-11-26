@@ -6,7 +6,6 @@
 """Tests for qutebrowser.config.config."""
 
 import types
-import dataclasses
 import unittest.mock
 import functools
 
@@ -16,7 +15,6 @@ from qutebrowser.qt.gui import QColor
 
 from qutebrowser.config import config, configdata, configexc
 from qutebrowser.utils import usertypes, urlmatch
-from qutebrowser.misc import objects
 from qutebrowser.keyinput import keyutils
 
 
@@ -403,13 +401,6 @@ class TestConfig:
         expected_message = 'Config option changed: tabs.show = never'
         assert caplog.messages == [expected_message]
 
-    def test_set_value_no_backend(self, monkeypatch, conf):
-        """Make sure setting values when the backend is still unknown works."""
-        monkeypatch.setattr(config.objects, 'backend', objects.NoBackend())
-        opt = conf.get_opt('tabs.show')
-        conf._set_value(opt, 'never')
-        assert conf.get_obj('tabs.show') == 'never'
-
     @pytest.mark.parametrize('save_yaml', [True, False])
     def test_unset(self, conf, qtbot, yaml_value, save_yaml):
         name = 'tabs.show'
@@ -670,17 +661,6 @@ class TestConfig:
             with qtbot.assert_not_emitted(conf.changed):
                 meth('content.plugins', '42')
         assert not conf._values['content.plugins']
-
-    @pytest.mark.parametrize('method', ['set_obj', 'set_str'])
-    def test_set_wrong_backend(self, conf, qtbot, monkeypatch, method):
-        monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebEngine)
-        meth = getattr(conf, method)
-        opt = dataclasses.replace(configdata.DATA['hints.uppercase'], backends=[])
-        monkeypatch.setitem(configdata.DATA, 'hints.uppercase', opt)
-        with pytest.raises(configexc.BackendError):
-            with qtbot.assert_not_emitted(conf.changed):
-                meth('hints.uppercase', True if method == 'set_obj' else 'true')
-        assert not conf._values['hints.uppercase']
 
     @pytest.mark.parametrize('method, value', [
         ('set_obj', {}),

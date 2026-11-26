@@ -283,7 +283,7 @@ class TabbedBrowser(QWidget):
         """
         widgets = []
         for i in range(self.widget.count()):
-            widget = qtutils.add_optional(self.widget.widget(i))
+            widget = self.widget.widget(i)
             if widget is None:
                 log.webview.debug("Got None-widget in tabbedbrowser!")
             else:
@@ -861,7 +861,7 @@ class TabbedBrowser(QWidget):
         instead of Qt implicitly calling its QWidget::focusNextPrevChild() method,
         finding a new widget to give keyboard focus to.
         """
-        widget = qtutils.add_optional(self.widget.currentWidget())
+        widget = self.widget.currentWidget()
         if widget is None:
             return
 
@@ -874,7 +874,7 @@ class TabbedBrowser(QWidget):
         if config.val.tabs.mode_on_change != 'restore':
             return
 
-        widget = qtutils.add_optional(self.widget.currentWidget())
+        widget = self.widget.currentWidget()
         if widget is None:
             return
 

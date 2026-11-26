@@ -16,7 +16,7 @@ from qutebrowser.qt.core import QSettings
 
 from qutebrowser.config import (config, configfiles, configexc, configdata,
                                 configtypes)
-from qutebrowser.utils import utils, usertypes, urlmatch, standarddir, version
+from qutebrowser.utils import utils, urlmatch, standarddir, version
 from qutebrowser.keyinput import keyutils
 
 
@@ -182,7 +182,7 @@ def qtwe_version_patcher(monkeypatch):
         monkeypatch.setattr(
             configfiles.version,
             'qtwebengine_versions',
-            lambda avoid_init=False:
+            lambda:
                 version.WebEngineVersions(
                     webengine=utils.VersionNumber.parse(ver),
                     chromium=chromium_version,
@@ -1392,7 +1392,6 @@ class TestConfigPyWriter:
                 "tempor ligula erat quis odio.")
         opt = configdata.Option(
             name='opt', typ=configtypes.Int(), default='def',
-            backends=[usertypes.Backend.QtWebEngine], raw_backends=None,
             description=desc)
         options = [(None, opt, 'val')]
         bindings = {'normal': {',x': 'message-info normal'},
@@ -1457,7 +1456,6 @@ class TestConfigPyWriter:
     def test_commented(self):
         opt = configdata.Option(
             name='opt', typ=configtypes.Int(), default='def',
-            backends=[usertypes.Backend.QtWebEngine], raw_backends=None,
             description='Hello World')
         options = [(None, opt, 'val')]
         bindings = {'normal': {',x': 'message-info normal'},
@@ -1478,11 +1476,9 @@ class TestConfigPyWriter:
     def test_valid_values(self):
         opt1 = configdata.Option(
             name='opt1', typ=configtypes.BoolAsk(), default='ask',
-            backends=[usertypes.Backend.QtWebEngine], raw_backends=None,
             description='Hello World')
         opt2 = configdata.Option(
             name='opt2', typ=configtypes.ColorSystem(), default='rgb',
-            backends=[usertypes.Backend.QtWebEngine], raw_backends=None,
             description='All colors are beautiful!')
 
         options = [(None, opt1, 'ask'), (None, opt2, 'rgb')]
@@ -1522,7 +1518,6 @@ class TestConfigPyWriter:
     def test_pattern(self):
         opt = configdata.Option(
             name='opt', typ=configtypes.BoolAsk(), default='ask',
-            backends=[usertypes.Backend.QtWebEngine], raw_backends=None,
             description='Hello World')
         options = [
             (urlmatch.UrlPattern('https://www.example.com/'), opt, 'ask'),
@@ -1549,12 +1544,7 @@ class TestConfigPyWriter:
         writer = configfiles.ConfigPyWriter(options, bindings, commented=False)
         writer.write(confpy.filename)
 
-        try:
-            configfiles.read_config_py(confpy.filename)
-        except configexc.ConfigFileErrors as exc:
-            # Make sure no other errors happened
-            for error in exc.errors:
-                assert isinstance(error.exception, configexc.BackendError)
+        configfiles.read_config_py(confpy.filename)
 
 
 @pytest.fixture

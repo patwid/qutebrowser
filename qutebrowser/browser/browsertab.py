@@ -53,13 +53,9 @@ def create(win_id: int,
     # Importing modules here so we don't depend on QtWebEngine without the
     # argument and to avoid circular imports.
     mode_manager = modeman.instance(win_id)
-    if objects.backend == usertypes.Backend.QtWebEngine:
-        from qutebrowser.browser.webengine import webenginetab
-        tab_class: type[AbstractTab] = webenginetab.WebEngineTab
-    else:
-        raise utils.Unreachable(objects.backend)
-    return tab_class(win_id=win_id, mode_manager=mode_manager, private=private,
-                     parent=parent)
+    from qutebrowser.browser.webengine import webenginetab
+    return webenginetab.WebEngineTab(win_id=win_id, mode_manager=mode_manager,
+                                     private=private, parent=parent)
 
 
 class WebTabError(Exception):
@@ -1022,7 +1018,6 @@ class AbstractTab(QWidget):
         self._load_status = usertypes.LoadStatus.none
         self._tab_event_filter = eventfilter.TabEventFilter(
             self, parent=self)
-        self.backend: usertypes.Backend | None = None
 
         # If true, this tab has been requested to be removed (or is removed).
         self.pending_removal = False

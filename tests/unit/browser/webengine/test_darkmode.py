@@ -7,14 +7,7 @@ import pytest
 QWebEngineSettings = pytest.importorskip("qutebrowser.qt.webenginecore").QWebEngineSettings
 
 from qutebrowser.config import configdata
-from qutebrowser.utils import usertypes
 from qutebrowser.browser.webengine import darkmode
-from qutebrowser.misc import objects
-
-
-@pytest.fixture(autouse=True)
-def patch_backend(monkeypatch):
-    monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebEngine)
 
 
 class TestSetting:
@@ -153,7 +146,3 @@ def test_options(configdata_init):
         if name != 'colors.webpage.darkmode.enabled':
             assert not opt.supports_pattern, name
             assert opt.restart, name
-
-        if opt.backends:
-            # On older Qt versions, this is an empty list.
-            assert opt.backends == [usertypes.Backend.QtWebEngine], name

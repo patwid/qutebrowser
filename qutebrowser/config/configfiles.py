@@ -103,10 +103,7 @@ class StateConfig(configparser.ConfigParser):
         self['general']['version'] = qutebrowser.__version__
 
     def _has_webengine(self) -> bool:
-        """Check if QtWebEngine is available.
-
-        Note that it's too early to use objects.backend here...
-        """
+        """Check if QtWebEngine is available."""
         try:
             # pylint: disable=unused-import,redefined-outer-name
             import qutebrowser.qt.webenginewidgets
@@ -118,7 +115,7 @@ class StateConfig(configparser.ConfigParser):
         """Get the QtWebEngine versions."""
         if not self._has_webengine():
             return None
-        return version.qtwebengine_versions(avoid_init=True)
+        return version.qtwebengine_versions()
 
     def _qtwe_version_str(self) -> str:
         """Get the QtWebEngine version string."""
@@ -212,7 +209,7 @@ class StateConfig(configparser.ConfigParser):
                     f"Unable to parse old Chromium version {old_chromium_version_str}")
                 return
 
-        new_versions = version.qtwebengine_versions(avoid_init=True)
+        new_versions = version.qtwebengine_versions()
         new_chromium_version = new_versions.chromium_major
 
         if old_chromium_version is None or new_chromium_version is None:

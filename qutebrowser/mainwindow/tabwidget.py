@@ -18,7 +18,7 @@ from qutebrowser.qt.gui import QIcon, QPalette, QColor
 
 from qutebrowser.utils import qtutils, objreg, utils, usertypes, log
 from qutebrowser.config import config, stylesheet
-from qutebrowser.misc import objects, debugcachestats
+from qutebrowser.misc import debugcachestats
 from qutebrowser.browser import browsertab
 
 
@@ -174,7 +174,6 @@ class TabWidget(QTabWidget):
         fields['current_title'] = page_title
         fields['title_sep'] = ' - ' if page_title else ''
         fields['perc_raw'] = tab.progress()
-        fields['backend'] = objects.backend.name
         fields['private'] = ' [Private Mode] ' if tab.is_private else ''
         try:
             if tab.audio.is_muted():

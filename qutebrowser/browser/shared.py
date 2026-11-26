@@ -18,7 +18,7 @@ from qutebrowser.config import config, configtypes
 from qutebrowser.utils import (usertypes, message, log, objreg, jinja, utils,
                                qtutils, version, urlutils)
 from qutebrowser.mainwindow import mainwindow
-from qutebrowser.misc import guiprocess, objects
+from qutebrowser.misc import guiprocess
 
 
 class CallSuper(Exception):
@@ -397,8 +397,7 @@ def get_user_stylesheet(searching=False):
     if setting == 'never' or setting == 'when-searching' and not searching:
         css += '\nhtml > ::-webkit-scrollbar { width: 0px; height: 0px; }'
 
-    if (objects.backend == usertypes.Backend.QtWebEngine and
-            version.qtwebengine_versions().chromium_major in [87, 90] and
+    if (version.qtwebengine_versions().chromium_major in [87, 90] and
             config.val.colors.webpage.darkmode.enabled and
             config.val.colors.webpage.darkmode.policy.images == 'smart' and
             config.val.content.site_specific_quirks.enabled and

@@ -19,7 +19,7 @@ import pathlib
 import operator
 import contextlib
 from typing import (TYPE_CHECKING, BinaryIO, IO, Literal, TypeAlias, Union, Protocol,
-                    cast, overload, TypeVar)
+                    cast, overload)
 from collections.abc import Iterator
 
 from qutebrowser.qt import sip
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from qutebrowser.qt.webenginecore import QWebEngineHistory
 
 from qutebrowser.misc import objects
-from qutebrowser.utils import usertypes, utils
+from qutebrowser.utils import utils
 
 
 MAXVALS = {
@@ -119,7 +119,6 @@ MAX_WORLD_ID = 256
 
 def is_single_process() -> bool:
     """Check whether QtWebEngine is running in single-process mode."""
-    assert objects.backend == usertypes.Backend.QtWebEngine, objects.backend
     args = objects.qapp.arguments()
     return '--single-process' in args
 
@@ -683,21 +682,3 @@ def qobj_repr(obj: QObject | None) -> str:
         parts.append(f"className={class_name!r}")
 
     return f"<{', '.join(parts)}>"
-
-
-_T = TypeVar("_T")
-
-
-# Those used to add/remove Optional where Qt 5 type annotations didn't have it. With
-# Qt 6, all those things are handled correctly by type annotations, so we have no-ops
-# below.
-
-def remove_optional(obj: _T | None) -> _T | None:
-    return obj
-
-
-def add_optional(obj: _T | None) -> _T | None:
-    return obj
-
-
-QT_NONE: None = None

@@ -16,7 +16,6 @@ import hypothesis
 import hypothesis.strategies
 
 from qutebrowser.api import cmdutils
-from qutebrowser.browser.network import pac
 from qutebrowser.utils import utils, urlutils, usertypes
 
 
@@ -668,16 +667,12 @@ class TestProxyFromUrl:
     def test_proxy_from_url_valid(self, url, expected):
         assert urlutils.proxy_from_url(QUrl(url)) == expected
 
-    @pytest.mark.parametrize('scheme', ['pac+http', 'pac+https'])
-    def test_proxy_from_url_pac(self, scheme, qapp):
-        fetcher = urlutils.proxy_from_url(QUrl('{}://foo'.format(scheme)))
-        assert isinstance(fetcher, pac.PACFetcher)
-
     @pytest.mark.parametrize('url, exception', [
         ('blah', urlutils.InvalidProxyTypeError),
         (':', urlutils.InvalidUrlError),  # invalid URL
         # Invalid/unsupported scheme
         ('ftp://example.com/', urlutils.InvalidProxyTypeError),
+        ('pac+http://example.com/proxy.pac', urlutils.InvalidProxyTypeError),
         ('socks4://example.com/', urlutils.InvalidProxyTypeError),
     ])
     def test_invalid(self, url, exception):

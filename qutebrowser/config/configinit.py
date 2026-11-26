@@ -72,7 +72,6 @@ def early_init(args: argparse.Namespace) -> None:
         except configexc.Error as e:
             message.error("set: {} - {}".format(e.__class__.__name__, e))
 
-    objects.backend = get_backend(args)
     objects.debug_flags = set(args.debug_flags)
 
     stylesheet.init()
@@ -98,18 +97,6 @@ def _update_font_defaults(setting: str) -> None:
             continue
 
         config.instance.changed.emit(name)
-
-
-def get_backend(args: argparse.Namespace) -> usertypes.Backend:
-    """Find out what backend to use based on available libraries."""
-    str_to_backend = {
-        'webengine': usertypes.Backend.QtWebEngine,
-    }
-
-    if args.backend is not None:
-        return str_to_backend[args.backend]
-    else:
-        return str_to_backend[config.val.backend]
 
 
 def late_init(save_manager: savemanager.SaveManager) -> None:

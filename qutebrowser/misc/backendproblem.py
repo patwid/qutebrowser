@@ -45,16 +45,11 @@ class _Button:
     default: bool = False
 
 
-def _error_text(
-    because: str,
-    text: str,
-    backend: usertypes.Backend,
-) -> str:
+def _error_text(because: str, text: str) -> str:
     """Get an error text for the given information."""
-    text = (f"<b>Failed to start with the {backend.name} backend!</b>"
-            f"<p>qutebrowser tried to start with the {backend.name} backend but "
+    return ("<b>Failed to start with QtWebEngine!</b>"
+            "<p>qutebrowser tried to start with QtWebEngine but "
             f"failed because {because}.</p>{text}")
-    return text
 
 
 class _Dialog(QDialog):
@@ -63,13 +58,12 @@ class _Dialog(QDialog):
 
     def __init__(self, *, because: str,
                  text: str,
-                 backend: usertypes.Backend,
                  buttons: Sequence[_Button] | None = None,
                  parent: QWidget | None = None) -> None:
         super().__init__(parent)
         vbox = QVBoxLayout(self)
 
-        text = _error_text(because, text, backend)
+        text = _error_text(because, text)
 
         label = QLabel(text)
         label.setWordWrap(True)
@@ -151,7 +145,6 @@ class _BackendProblemChecker:
             return
 
         self._show_dialog(
-            backend=usertypes.Backend.QtWebEngine,
             because="QtWebEngine could not be imported",
             text="<p><b>The error encountered was:</b><br/>{}</p>".format(
                 html.escape(error))
@@ -194,7 +187,7 @@ class _BackendProblemChecker:
 
     def _confirm_chromium_version_changes(self) -> None:
         """Ask if there are Chromium downgrades or a Qt 5 -> 6 upgrade."""
-        versions = version.qtwebengine_versions(avoid_init=True)
+        versions = version.qtwebengine_versions()
         change = configfiles.state.chromium_version_changed
         webengine_data_dir = os.path.join(standarddir.data(), "webengine")
 
@@ -254,7 +247,7 @@ class _BackendProblemChecker:
         if objects.qapp.platformName() != 'wayland':
             return
 
-        versions = version.qtwebengine_versions(avoid_init=True)
+        versions = version.qtwebengine_versions()
         if versions.webengine >= utils.VersionNumber(6, 10):
             # Qt workaround is active
             return
@@ -274,7 +267,7 @@ class _BackendProblemChecker:
         if objects.qapp.platformName() != "wayland":
             return
 
-        versions = version.qtwebengine_versions(avoid_init=True)
+        versions = version.qtwebengine_versions()
         if versions.webengine != utils.VersionNumber(6, 11):
             # Older versions are not affected; assuming fixed with Qt 6.11.1
             return
@@ -297,12 +290,8 @@ class _BackendProblemChecker:
             "Qt 6.11.0")
         os.environ[env_var] = "0"
 
-    def _assert_backend(self, backend: usertypes.Backend) -> None:
-        assert objects.backend == backend, objects.backend
-
     def check(self) -> None:
         """Run all checks."""
-        self._assert_backend(usertypes.Backend.QtWebEngine)
         self._check_backend_modules()
         self._handle_ssl_support()
         self._handle_serviceworker_nuking()

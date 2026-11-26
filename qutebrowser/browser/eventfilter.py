@@ -99,12 +99,8 @@ class TabEventFilter(QObject):
         Return:
             True if the event should be filtered, False otherwise.
         """
-        is_rocker_gesture = (config.val.input.mouse.rocker_gestures and
-                             e.buttons() == Qt.MouseButton.LeftButton | Qt.MouseButton.RightButton)
-
-        if e.button() in [Qt.MouseButton.XButton1, Qt.MouseButton.XButton2] or is_rocker_gesture:
-            # FIXME:qt6 Qt handles back/forward itself. For some reason, this
-            # doesn't filter the action on Qt 6...
+        if e.button() in [Qt.MouseButton.XButton1, Qt.MouseButton.XButton2]:
+            # Qt handles back/forward itself.
             return True
 
         self._ignore_wheel_event = True

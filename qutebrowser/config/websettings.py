@@ -17,7 +17,7 @@ from qutebrowser.qt.gui import QFont
 import qutebrowser
 from qutebrowser.config import config
 from qutebrowser.utils import usertypes, urlmatch, qtutils, utils
-from qutebrowser.misc import objects, debugcachestats
+from qutebrowser.misc import debugcachestats
 
 UNSET = object()
 
@@ -197,8 +197,7 @@ class AbstractSettings:
 
 @debugcachestats.register(name='user agent cache')
 @functools.lru_cache
-def _format_user_agent(template: str, backend: usertypes.Backend) -> str:
-    assert backend == usertypes.Backend.QtWebEngine, backend
+def _format_user_agent(template: str) -> str:
     from qutebrowser.browser.webengine import webenginesettings
     parsed = webenginesettings.parsed_user_agent
     assert parsed is not None
@@ -221,17 +220,14 @@ def user_agent(url: QUrl | None = None) -> str:
     Note that the given URL should always be valid.
     """
     template = config.instance.get('content.headers.user_agent', url=url)
-    return _format_user_agent(template=template, backend=objects.backend)
+    return _format_user_agent(template=template)
 
 
 def init(args: argparse.Namespace) -> None:
     """Initialize all QWeb(Engine)Settings."""
     utils.unused(args)
-    if objects.backend == usertypes.Backend.QtWebEngine:
-        from qutebrowser.browser.webengine import webenginesettings
-        webenginesettings.init()
-    else:
-        raise utils.Unreachable(objects.backend)
+    from qutebrowser.browser.webengine import webenginesettings
+    webenginesettings.init()
 
     # Make sure special URLs always get JS support
     for pattern in ['chrome://*/*', 'qute://*/*']:
@@ -242,18 +238,12 @@ def init(args: argparse.Namespace) -> None:
 
 def clear_private_data() -> None:
     """Clear cookies, cache and related data for private browsing sessions."""
-    if objects.backend == usertypes.Backend.QtWebEngine:
-        from qutebrowser.browser.webengine import webenginesettings
-        webenginesettings.init_private_profile()
-    else:
-        raise utils.Unreachable(objects.backend)
+    from qutebrowser.browser.webengine import webenginesettings
+    webenginesettings.init_private_profile()
 
 
 @pyqtSlot()
 def shutdown() -> None:
     """Shut down QWeb(Engine)Settings."""
-    if objects.backend == usertypes.Backend.QtWebEngine:
-        from qutebrowser.browser.webengine import webenginesettings
-        webenginesettings.shutdown()
-    else:
-        raise utils.Unreachable(objects.backend)
+    from qutebrowser.browser.webengine import webenginesettings
+    webenginesettings.shutdown()

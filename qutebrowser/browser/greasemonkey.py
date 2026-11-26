@@ -7,7 +7,6 @@
 import re
 import os
 import json
-import fnmatch
 import functools
 import glob
 import textwrap
@@ -18,7 +17,7 @@ from collections.abc import Sequence
 from qutebrowser.qt.core import pyqtSignal, QObject, QUrl
 
 from qutebrowser.utils import (log, standarddir, jinja, utils,
-                               javascript, urlmatch, message)
+                               javascript, message)
 from qutebrowser.api import cmdutils
 from qutebrowser.misc import httpclient
 
@@ -192,17 +191,6 @@ class GreasemonkeyScript:
 
 
 @dataclasses.dataclass
-class MatchingScripts:
-
-    """All userscripts registered to run on a particular url."""
-
-    url: QUrl
-    start: list[GreasemonkeyScript] = dataclasses.field(default_factory=list)
-    end: list[GreasemonkeyScript] = dataclasses.field(default_factory=list)
-    idle: list[GreasemonkeyScript] = dataclasses.field(default_factory=list)
-
-
-@dataclasses.dataclass
 class LoadResults:
 
     """The results of loading all Greasemonkey scripts."""
@@ -232,42 +220,6 @@ class LoadResults:
 
         lines = '\n'.join(f"{script}: {error}" for script, error in sorted(self.errors))
         return f"Greasemonkey scripts failed to load:\n\n{lines}"
-
-
-class GreasemonkeyMatcher:
-
-    """Check whether scripts should be loaded for a given URL."""
-
-    # https://wiki.greasespot.net/Include_and_exclude_rules#Greaseable_schemes
-    # Limit the schemes scripts can run on due to unreasonable levels of
-    # exploitability
-    GREASEABLE_SCHEMES = ['http', 'https', 'ftp', 'file']
-
-    def __init__(self, url):
-        self._url = url
-        self._url_string = url.toString(QUrl.ComponentFormattingOption.FullyEncoded)
-        self.is_greaseable = url.scheme() in self.GREASEABLE_SCHEMES
-
-    def _match_pattern(self, pattern):
-        # For include and exclude rules if they start and end with '/' they
-        # should be treated as a (ecma syntax) regular expression.
-        if pattern.startswith('/') and pattern.endswith('/'):
-            matches = re.search(pattern[1:-1], self._url_string, flags=re.I)
-            return matches is not None
-
-        # Otherwise they are glob expressions.
-        return fnmatch.fnmatch(self._url_string, pattern)
-
-    def matches(self, script):
-        """Check whether the URL matches filtering rules of the script."""
-        assert self.is_greaseable
-        matching_includes = any(self._match_pattern(pat)
-                                for pat in script.includes)
-        matching_match = any(urlmatch.UrlPattern(pat).matches(self._url)
-                             for pat in script.matches)
-        matching_excludes = any(self._match_pattern(pat)
-                                for pat in script.excludes)
-        return (matching_includes or matching_match) and not matching_excludes
 
 
 class GreasemonkeyManager(QObject):
@@ -434,25 +386,6 @@ class GreasemonkeyManager(QObject):
             download.finished.connect(
                 functools.partial(self._on_required_download_finished,
                                   script, download, target_path))
-
-    def scripts_for(self, url):
-        """Fetch scripts that are registered to run for url.
-
-        returns a tuple of lists of scripts meant to run at (document-start,
-        document-end, document-idle)
-        """
-        matcher = GreasemonkeyMatcher(url)
-        if not matcher.is_greaseable:
-            return MatchingScripts(url, [], [], [])
-        return MatchingScripts(
-            url=url,
-            start=[script for script in self._run_start
-                   if matcher.matches(script)],
-            end=[script for script in self._run_end
-                 if matcher.matches(script)],
-            idle=[script for script in self._run_idle
-                  if matcher.matches(script)]
-        )
 
     def all_scripts(self):
         """Return all scripts found in the configured script directory."""

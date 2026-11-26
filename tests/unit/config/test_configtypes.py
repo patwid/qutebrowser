@@ -23,7 +23,6 @@ from qutebrowser.qt.network import QNetworkProxy
 from qutebrowser.misc import objects
 from qutebrowser.config import configtypes, configexc
 from qutebrowser.utils import debug, utils, qtutils, urlmatch, usertypes
-from qutebrowser.browser.network import pac
 from qutebrowser.keyinput import keyutils
 from helpers import testutils
 
@@ -1900,10 +1899,6 @@ class TestProxy:
         ('socks5://foo:bar@example.com:2323',
          lambda: QNetworkProxy(
              QNetworkProxy.ProxyType.Socks5Proxy, 'example.com', 2323, 'foo', 'bar')),
-        ('pac+http://example.com/proxy.pac',
-         lambda: pac.PACFetcher(QUrl('pac+http://example.com/proxy.pac'))),
-        ('pac+file:///tmp/proxy.pac',
-         lambda: pac.PACFetcher(QUrl('pac+file:///tmp/proxy.pac'))),
     ])
     def test_to_py_valid(self, klass, val, expected_factory):
         actual = klass().to_py(val)
@@ -1915,6 +1910,7 @@ class TestProxy:
         'blah',
         ':',  # invalid URL
         'ftp://example.com/',  # invalid scheme
+        'pac+http://example.com/proxy.pac',  # PAC is not supported
     ])
     def test_to_py_invalid(self, klass, val):
         with pytest.raises(configexc.ValidationError):

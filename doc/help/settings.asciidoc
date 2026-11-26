@@ -13,7 +13,6 @@
 |<<aliases,aliases>>|Aliases for commands.
 |<<auto_save.interval,auto_save.interval>>|Time interval (in milliseconds) between auto-saves of config/cookies/etc.
 |<<auto_save.session,auto_save.session>>|Always restore open sites when qutebrowser is reopened.
-|<<backend,backend>>|Backend to use to display websites.
 |<<bindings.commands,bindings.commands>>|Keybindings mapping keys to commands in different modes.
 |<<bindings.default,bindings.default>>|Default keybindings. If you want to add bindings, modify `bindings.commands` instead.
 |<<bindings.key_mappings,bindings.key_mappings>>|Map keys to other keys, so that they are equivalent in all modes.
@@ -270,8 +269,6 @@
 |<<input.match_counts,input.match_counts>>|Interpret number prefixes as counts for bindings.
 |<<input.media_keys,input.media_keys>>|Whether the underlying Chromium should handle media keys.
 |<<input.mode_override,input.mode_override>>|Mode to change to when focusing on a tab/URL changes.
-|<<input.mouse.back_forward_buttons,input.mouse.back_forward_buttons>>|Enable back and forward buttons on the mouse.
-|<<input.mouse.rocker_gestures,input.mouse.rocker_gestures>>|Enable Opera-like mouse rocker gestures.
 |<<input.partial_timeout,input.partial_timeout>>|Timeout (in milliseconds) for partially typed key bindings.
 |<<input.spatial_navigation,input.spatial_navigation>>|Enable spatial navigation.
 |<<keyhint.blacklist,keyhint.blacklist>>|Keychains that shouldn't be shown in the keyhint dialog.
@@ -390,22 +387,6 @@ By default, this will save to the session which was last loaded. This behavior c
 Type: <<types,Bool>>
 
 Default: +pass:[false]+
-
-[[backend]]
-=== backend
-Backend to use to display websites.
-QtWebEngine is the only supported backend. It's based on a stripped-down Chromium and regularly updated with security fixes and new features by the Qt project: https://wiki.qt.io/QtWebEngine
-Support for the legacy QtWebKit backend was removed. This setting is only kept so that existing configs setting it to `webengine` continue to work.
-
-This setting requires a restart.
-
-Type: <<types,String>>
-
-Valid values:
-
- * +webengine+: Use QtWebEngine (based on Chromium).
-
-Default: +pass:[webengine]+
 
 [[bindings.commands]]
 === bindings.commands
@@ -3496,23 +3477,6 @@ Valid values:
 
 Default: empty
 
-[[input.mouse.back_forward_buttons]]
-=== input.mouse.back_forward_buttons
-Enable back and forward buttons on the mouse.
-
-Type: <<types,Bool>>
-
-Default: +pass:[true]+
-
-[[input.mouse.rocker_gestures]]
-=== input.mouse.rocker_gestures
-Enable Opera-like mouse rocker gestures.
-This disables the context menu.
-
-Type: <<types,Bool>>
-
-Default: +pass:[false]+
-
 [[input.partial_timeout]]
 === input.partial_timeout
 Timeout (in milliseconds) for partially typed key bindings.
@@ -4392,7 +4356,6 @@ The following placeholders are defined:
 * `{id}`: Internal tab ID of this tab.
 * `{scroll_pos}`: Page scroll position.
 * `{host}`: Host of the current web page.
-* `{backend}`: Always `webengine`
 * `{private}`: Indicates when private mode is enabled.
 * `{current_url}`: URL of the current web page.
 * `{protocol}`: Protocol (http/https/...) of the current web page.

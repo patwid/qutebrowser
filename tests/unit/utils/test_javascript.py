@@ -10,7 +10,7 @@ import pytest
 import hypothesis
 import hypothesis.strategies
 
-from qutebrowser.utils import javascript, usertypes
+from qutebrowser.utils import javascript
 
 
 @dataclasses.dataclass
@@ -66,7 +66,7 @@ class TestStringEscape:
     @pytest.mark.parametrize('case', TESTS, ids=str)
     def test_real_escape(self, web_tab, qtbot, case):
         """Test javascript escaping with a real QWebPage."""
-        if web_tab.backend == usertypes.Backend.QtWebEngine and case.webkit_only:
+        if case.webkit_only:
             pytest.xfail("Not supported with QtWebEngine")
         self._test_escape(case.original, web_tab, qtbot)
 
@@ -74,8 +74,7 @@ class TestStringEscape:
     @hypothesis.given(hypothesis.strategies.text())
     def test_real_escape_hypothesis(self, web_tab, qtbot, text):
         """Test javascript escaping with a real QWebPage and hypothesis."""
-        if web_tab.backend == usertypes.Backend.QtWebEngine:
-            hypothesis.assume('\x00' not in text)
+        hypothesis.assume('\x00' not in text)
         self._test_escape(text, web_tab, qtbot)
 
 

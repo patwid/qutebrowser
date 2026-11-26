@@ -323,7 +323,7 @@ def disable_seccomp_bpf_sandbox() -> bool:
     """
     if not _has_qtwebengine():
         return False
-    versions = version.qtwebengine_versions(avoid_init=True)
+    versions = version.qtwebengine_versions()
     return (
         versions.webengine == utils.VersionNumber(5, 15, 2)
         or _needs_map_discard_workaround(versions.webengine)

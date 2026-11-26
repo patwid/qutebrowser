@@ -11,7 +11,7 @@ from qutebrowser.qt.widgets import (QLineEdit, QWidget, QHBoxLayout, QLabel,
 from qutebrowser.qt.gui import QValidator, QPainter, QResizeEvent
 
 from qutebrowser.config import config, configfiles
-from qutebrowser.utils import utils, log, usertypes, debug, qtutils
+from qutebrowser.utils import utils, log, usertypes, debug
 from qutebrowser.misc import cmdhistory
 from qutebrowser.browser import inspector
 from qutebrowser.keyinput import keyutils, modeman
@@ -230,10 +230,10 @@ class WrapperLayout(QLayout):
         if self._widget is None:
             return
         assert self._container is not None
-        self._widget.setParent(qtutils.QT_NONE)
+        self._widget.setParent(None)
         self._widget.deleteLater()
         self._widget = None
-        self._container.setFocusProxy(qtutils.QT_NONE)
+        self._container.setFocusProxy(None)
 
 
 class FullscreenNotification(QLabel):

@@ -22,7 +22,7 @@ pytest.importorskip("qutebrowser.qt.webenginecore")
 pytestmark = pytest.mark.usefixtures("cache_tmpdir")
 
 
-versions = version.qtwebengine_versions(avoid_init=True)
+versions = version.qtwebengine_versions()
 
 
 @pytest.fixture(autouse=True)
@@ -184,7 +184,7 @@ def read_patched_manifest():
 
 
 skip_if_incompatible = pytest.mark.skipif(
-    version.qtwebengine_versions(avoid_init=True).webengine
+    version.qtwebengine_versions().webengine
     >= utils.VersionNumber(6, 10),
     reason="Qt 6.10+ uses gzip storage for manifest",
 )

@@ -7,9 +7,9 @@
 import difflib
 import dataclasses
 from typing import Any
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 
-from qutebrowser.utils import usertypes, log
+from qutebrowser.utils import log
 
 
 class Error(Exception):
@@ -24,25 +24,6 @@ class NoAutoconfigError(Error):
     def __init__(self, name: str) -> None:
         super().__init__("The {} setting can only be set in config.py!"
                          .format(name))
-
-
-class BackendError(Error):
-
-    """Raised when this setting is unavailable with the current backend."""
-
-    def __init__(
-            self, name: str,
-            backend: usertypes.Backend,
-            raw_backends: Mapping[str, bool] | None
-    ) -> None:
-        if raw_backends is None or not raw_backends[backend.name]:
-            msg = ("The {} setting is not available with the {} backend!"
-                   .format(name, backend.name))
-        else:
-            msg = ("The {} setting needs {} with the {} backend!"
-                   .format(name, raw_backends[backend.name], backend.name))
-
-        super().__init__(msg)
 
 
 class NoPatternError(Error):

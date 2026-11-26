@@ -7,17 +7,15 @@
 
 import logging
 import functools
-import dataclasses
 import unittest.mock
 
 import pytest
 from qutebrowser.qt.core import QUrl
 
-from qutebrowser.config import configcommands, configdata
+from qutebrowser.config import configcommands
 from qutebrowser.api import cmdutils
 from qutebrowser.utils import usertypes, urlmatch, utils
 from qutebrowser.keyinput import keyutils
-from qutebrowser.misc import objects
 
 
 # Alias because we need this a lot in here.
@@ -74,7 +72,6 @@ class TestSet:
 
         Should set the setting accordingly.
         """
-        monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebEngine)
         assert config_stub.get(option) == old_value
 
         commands.set(0, option, inp, temp=temp)
@@ -83,7 +80,6 @@ class TestSet:
         assert yaml_value(option) == (usertypes.UNSET if temp else new_value)
 
     def test_set_with_pattern(self, monkeypatch, commands, config_stub):
-        monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebEngine)
         option = 'content.javascript.enabled'
 
         commands.set(0, option, 'false', pattern='*://example.com')
@@ -93,7 +89,6 @@ class TestSet:
         assert not config_stub.get_obj_for_pattern(option, pattern=pattern)
 
     def test_set_invalid_pattern(self, monkeypatch, commands):
-        monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebEngine)
         option = 'content.javascript.enabled'
 
         with pytest.raises(cmdutils.CommandError,
@@ -164,15 +159,6 @@ class TestSet:
         with pytest.raises(cmdutils.CommandError,
                            match="Invalid value 'blah' - must be a boolean!"):
             commands.set(0, 'auto_save.session', 'blah')
-
-    def test_set_wrong_backend(self, commands, monkeypatch):
-        monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebEngine)
-        opt = dataclasses.replace(configdata.DATA['hints.uppercase'], backends=[])
-        monkeypatch.setitem(configdata.DATA, 'hints.uppercase', opt)
-        with pytest.raises(cmdutils.CommandError,
-                           match="The hints.uppercase setting is "
-                           "not available with the QtWebEngine backend!"):
-            commands.set(0, 'hints.uppercase', 'true')
 
     def test_empty(self, commands):
         """Run ':set ?'.

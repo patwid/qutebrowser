@@ -267,8 +267,6 @@ class TestInit:
             history.web_history = None
 
     def test_init(self, qapp, tmpdir, data_tmpdir, monkeypatch, cleanup_init):
-        monkeypatch.setattr(history.objects, 'backend',
-                            usertypes.Backend.QtWebEngine)
         history.init(data_tmpdir / 'test_init', qapp)
         assert history.web_history.parent() is qapp
 

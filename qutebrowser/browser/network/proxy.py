@@ -6,13 +6,10 @@
 
 from typing import Optional
 
-from qutebrowser.qt.core import QUrl, pyqtSlot
+from qutebrowser.qt.core import pyqtSlot
 from qutebrowser.qt.network import QNetworkProxy, QNetworkProxyFactory, QNetworkProxyQuery
 
 from qutebrowser.config import config, configtypes
-from qutebrowser.utils import message, usertypes, urlutils, qtutils
-from qutebrowser.misc import objects
-from qutebrowser.browser.network import pac
 
 
 application_factory: Optional["ProxyFactory"] = None
@@ -24,40 +21,15 @@ def init():
     application_factory = ProxyFactory()
     QNetworkProxyFactory.setApplicationProxyFactory(application_factory)
 
-    config.instance.changed.connect(_warn_for_pac)
-    _warn_for_pac()
-
-
-@config.change_filter('content.proxy', function=True)
-def _warn_for_pac():
-    """Show a warning if PAC is used with QtWebEngine."""
-    proxy = config.val.content.proxy
-    if (isinstance(proxy, pac.PACFetcher) and
-            objects.backend == usertypes.Backend.QtWebEngine):
-        message.error("PAC support isn't implemented for QtWebEngine yet!")
-
 
 @pyqtSlot()
 def shutdown():
-    QNetworkProxyFactory.setApplicationProxyFactory(
-        qtutils.QT_NONE)
+    QNetworkProxyFactory.setApplicationProxyFactory(None)
 
 
 class ProxyFactory(QNetworkProxyFactory):
 
     """Factory for proxies to be used by qutebrowser."""
-
-    def get_error(self):
-        """Check if proxy can't be resolved.
-
-        Return:
-           None if proxy is correct, otherwise an error message.
-        """
-        proxy = config.val.content.proxy
-        if isinstance(proxy, pac.PACFetcher):
-            return proxy.fetch_error()
-        else:
-            return None
 
     def _set_capabilities(self, proxy):
         if proxy.type() == QNetworkProxy.ProxyType.NoProxy:
@@ -83,11 +55,6 @@ class ProxyFactory(QNetworkProxyFactory):
             # set system proxy.
             # ref. https://doc.qt.io/qt-6/qnetworkproxyfactory.html#systemProxyForQuery
             proxies = QNetworkProxyFactory.systemProxyForQuery(query)
-        elif isinstance(proxy, pac.PACFetcher):
-            # Looks like query.url() is always invalid on QtWebEngine...
-            proxy = urlutils.proxy_from_url(QUrl('direct://'))
-            assert not isinstance(proxy, pac.PACFetcher)
-            proxies = [proxy]
         else:
             proxies = [proxy]
         for proxy in proxies:

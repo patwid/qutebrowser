@@ -20,7 +20,6 @@ from qutebrowser.qt.network import QHostInfo, QHostAddress, QNetworkProxy
 from qutebrowser.api import cmdutils
 from qutebrowser.config import config
 from qutebrowser.utils import log, qtutils, message, utils
-from qutebrowser.browser.network import pac
 
 
 # FIXME: we probably could raise some exceptions on invalid URLs
@@ -132,9 +131,9 @@ def _get_search_url(txt: str) -> QUrl:
         url = QUrl.fromUserInput(evaluated)
     else:
         url = QUrl.fromUserInput(config.val.url.searchengines[engine])
-        url.setPath(qtutils.QT_NONE)
-        url.setFragment(qtutils.QT_NONE)
-        url.setQuery(qtutils.QT_NONE)
+        url.setPath(None)
+        url.setFragment(None)
+        url.setQuery(None)
     qtutils.ensure_valid(url)
     return url
 
@@ -520,7 +519,7 @@ class InvalidProxyTypeError(Exception):
         super().__init__("Invalid proxy type {}!".format(typ))
 
 
-def proxy_from_url(url: QUrl) -> QNetworkProxy | pac.PACFetcher:
+def proxy_from_url(url: QUrl) -> QNetworkProxy:
     """Create a QNetworkProxy from QUrl and a proxy type.
 
     Args:
@@ -532,11 +531,6 @@ def proxy_from_url(url: QUrl) -> QNetworkProxy | pac.PACFetcher:
     ensure_valid(url)
 
     scheme = url.scheme()
-    if scheme in ['pac+http', 'pac+https', 'pac+file']:
-        fetcher = pac.PACFetcher(url)
-        fetcher.fetch()
-        return fetcher
-
     types = {
         'http': QNetworkProxy.ProxyType.HttpProxy,
         'socks': QNetworkProxy.ProxyType.Socks5Proxy,

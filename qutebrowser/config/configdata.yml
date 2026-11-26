@@ -131,21 +131,7 @@ session.lazy_restore:
   desc: Load a restored tab as soon as it takes focus.
 
 backend:
-  type:
-    name: String
-    valid_values:
-      - webengine: "Use QtWebEngine (based on Chromium)."
-  default: webengine
-  restart: true
-  desc: >-
-    Backend to use to display websites.
-
-    QtWebEngine is the only supported backend. It's based on a stripped-down Chromium
-    and regularly updated with security fixes and new features by the Qt project:
-    https://wiki.qt.io/QtWebEngine
-
-    Support for the legacy QtWebKit backend was removed. This setting is only kept so
-    that existing configs setting it to `webengine` continue to work.
+  deleted: true
 
 
 ## qt
@@ -197,7 +183,6 @@ qt.force_software_rendering:
             rendering instead. (`--disable-gpu`)
       - none: Don't force software rendering.
   default: none
-  backend: QtWebEngine
   restart: true
   desc: >-
     Force software rendering for QtWebEngine.
@@ -249,7 +234,6 @@ qt.chromium.process_model:
       - single-process: Run all tabs in a single process. This should be used
             for debugging purposes only, and it disables `:open --private`.
   default: process-per-site-instance
-  backend: QtWebEngine
   restart: true
   desc: >-
     Which Chromium process model to use.
@@ -274,7 +258,6 @@ qt.chromium.low_end_device_mode:
             RAM).
       - never: Never use low-end device mode.
   default: auto
-  backend: QtWebEngine
   restart: true
   desc: >-
     When to use Chromium's low-end device mode.
@@ -290,7 +273,6 @@ qt.chromium.sandboxing:
       - disable-seccomp-bpf: Disable the Seccomp BPF filter sandbox (Linux only).
       - disable-all: Disable all sandboxing (**not recommended!**).
   default: enable-all
-  backend: QtWebEngine
   restart: true
   no_autoconfig: true  # due to it being dangerous
   # yamllint disable rule:line-length
@@ -324,7 +306,6 @@ qt.chromium.experimental_web_platform_features:
       - auto: Currently the same as `never` (used to enable the features with Qt 5).
       - never: Disable experimental web platform features.
   default: auto
-  backend: QtWebEngine
   restart: true
   desc: >-
     Enables Web Platform features that are in development.
@@ -370,7 +351,6 @@ qt.workarounds.disable_accelerated_2d_canvas:
       - auto: Disable on Qt versions with known issues, enable otherwise
       - never: Enable accelerated 2d canvas
   default: auto
-  backend: QtWebEngine
   restart: true
   desc: >-
     Disable accelerated 2d canvas to avoid graphical glitches.
@@ -384,7 +364,6 @@ qt.workarounds.disable_accelerated_2d_canvas:
 qt.workarounds.disable_hangouts_extension:
   type: Bool
   default: false
-  backend: QtWebEngine
   restart: true
   desc: >-
     Disable the Hangouts extension.
@@ -405,7 +384,6 @@ qt.workarounds.disable_accessibility:
       - auto: Disable on Qt versions with known issues, enable otherwise
       - never: Enable renderer accessibility
   default: auto
-  backend: QtWebEngine
   restart: true
   desc: >-
     Disable accessibility to avoid crashes on Qt 6.10.1.
@@ -439,7 +417,6 @@ auto_save.session:
 content.autoplay:
   default: true
   type: Bool
-  backend: QtWebEngine
   supports_pattern: true
   desc: >-
     Automatically start playing `<video>` elements.
@@ -459,7 +436,6 @@ content.cache.size:
 content.canvas_reading:
   default: true
   type: Bool
-  backend: QtWebEngine
   supports_pattern: true
   desc: >-
     Allow websites to read canvas elements.
@@ -535,7 +511,6 @@ content.unknown_url_scheme_policy:
       - allow-all: "Allows all navigation requests to URLs with unknown
           schemes."
   default: allow-from-user-interaction
-  backend: QtWebEngine
   supports_pattern: true
   desc: >-
     How navigation requests to URLs with unknown schemes are handled.
@@ -572,7 +547,6 @@ content.developer_extras:
 content.dns_prefetch:
   default: true
   type: Bool
-  backend: QtWebEngine
   supports_pattern: true
   desc: Try to pre-fetch DNS entries to speed up browsing.
 
@@ -582,7 +556,6 @@ content.frame_flattening:
 content.prefers_reduced_motion:
   default: false
   type: Bool
-  backend: QtWebEngine
   restart: true
   desc: >-
     Request websites to minimize non-essentials animations and motion.
@@ -631,7 +604,6 @@ content.mouse_lock:
   default: ask
   type: BoolAsk
   supports_pattern: true
-  backend: QtWebEngine
   desc: Allow websites to lock your mouse pointer.
 
 content.headers.accept_language:
@@ -1001,7 +973,6 @@ content.javascript.legacy_touch_events:
             detected on startup.
       - never: Legacy touch events are always disabled.
   default: never
-  backend: QtWebEngine
   restart: true
   desc: >-
     Enables the legacy touch event feature.
@@ -1038,21 +1009,18 @@ content.media.audio_capture:
   default: ask
   type: BoolAsk
   supports_pattern: true
-  backend: QtWebEngine
   desc: Allow websites to record audio.
 
 content.media.audio_video_capture:
   default: ask
   type: BoolAsk
   supports_pattern: true
-  backend: QtWebEngine
   desc: Allow websites to record audio and video.
 
 content.media.video_capture:
   default: ask
   type: BoolAsk
   supports_pattern: true
-  backend: QtWebEngine
   desc: Allow websites to record video.
 
 content.netrc_file:
@@ -1094,7 +1062,6 @@ content.notifications.presenter:
             aren't available.
       - herbe: (experimental!) Show notifications using herbe (github.com/dudik/herbe).
             Most notification features aren't available.
-  backend: QtWebEngine
   desc: >-
     What notification presenter to use for web notifications.
 
@@ -1111,7 +1078,6 @@ content.notifications.show_origin:
   default: true
   type: Bool
   supports_pattern: true
-  backend: QtWebEngine
   desc: >-
     Whether to show the origin URL for notifications.
 
@@ -1136,7 +1102,6 @@ content.persistent_storage:
   default: ask
   type: BoolAsk
   supports_pattern: true
-  backend: QtWebEngine
   desc: Allow websites to request persistent storage quota via
     `navigator.webkitPersistentStorage.requestQuota`.
 
@@ -1149,7 +1114,6 @@ content.plugins:
 content.print_element_backgrounds:
   type: Bool
   default: true
-  backend: QtWebEngine
   supports_pattern: true
   desc: >-
     Draw the background color and images also when the page is printed.
@@ -1180,7 +1144,6 @@ content.register_protocol_handler:
   default: ask
   type: BoolAsk
   supports_pattern: true
-  backend: QtWebEngine
   desc: Allow websites to register protocol handlers via
     `navigator.registerProtocolHandler`.
 
@@ -1231,7 +1194,6 @@ content.webrtc_ip_handling_policy:
             servers unless the proxy server supports UDP. This doesn't expose
             any local addresses either.
   default: all-interfaces
-  backend: QtWebEngine
   restart: true
   desc: >-
     Which interfaces to expose via WebRTC.
@@ -1854,17 +1816,10 @@ input.links_included_in_focus_chain:
   desc: Include hyperlinks in the keyboard focus chain when tabbing.
 
 input.mouse.back_forward_buttons:
-  default: true
-  type: Bool
-  desc: Enable back and forward buttons on the mouse.
+  deleted: true
 
 input.mouse.rocker_gestures:
-  default: false
-  type: Bool
-  desc: >-
-    Enable Opera-like mouse rocker gestures.
-
-    This disables the context menu.
+  deleted: true
 
 input.partial_timeout:
   default: 0
@@ -1881,7 +1836,7 @@ input.partial_timeout:
     If set to 0, partially typed bindings are never cleared.
 
 input.rocker_gestures:
-  renamed: input.mouse.rocker_gestures
+  deleted: true
 
 input.spatial_navigation:
   default: false
@@ -1899,7 +1854,6 @@ input.spatial_navigation:
 input.media_keys:
   default: true
   type: Bool
-  backend: QtWebEngine
   restart: true
   desc: >-
     Whether the underlying Chromium should handle media keys.
@@ -2073,7 +2027,6 @@ spellcheck.languages:
 
     You can check for available languages and install dictionaries using
     scripts/dictcli.py. Run the script with -h/--help for instructions.
-  backend: QtWebEngine
 
 ## statusbar
 
@@ -2323,7 +2276,6 @@ tabs.title.format:
     * `{id}`: Internal tab ID of this tab.
     * `{scroll_pos}`: Page scroll position.
     * `{host}`: Host of the current web page.
-    * `{backend}`: Always `webengine`
     * `{private}`: Indicates when private mode is enabled.
     * `{current_url}`: URL of the current web page.
     * `{protocol}`: Protocol (http/https/...) of the current web page.
@@ -2580,7 +2532,6 @@ window.title_format:
       - id
       - scroll_pos
       - host
-      - backend
       - private
       - current_url
       - protocol
@@ -3203,7 +3154,6 @@ colors.webpage.preferred_color_scheme:
       - dark: Force a dark theme.
   desc: >-
     Value to use for `prefers-color-scheme:` for websites.
-  backend: QtWebEngine
   restart: true
 
 ## dark mode
@@ -3222,7 +3172,6 @@ colors.webpage.darkmode.enabled:
 
     - "With selective image inversion": qutebrowser default settings.
   supports_pattern: true
-  backend: QtWebEngine
 
 colors.webpage.darkmode.algorithm:
   default: lightness-cielab
@@ -3244,7 +3193,6 @@ colors.webpage.darkmode.algorithm:
       # kInvertBrightness without gamma correction, and only available for
       # Chromium's automated tests
   restart: true
-  backend: QtWebEngine
 
 colors.webpage.darkmode.contrast:
   default: 0.0
@@ -3258,7 +3206,6 @@ colors.webpage.darkmode.contrast:
     This only has an effect when `colors.webpage.darkmode.algorithm` is set to
     `lightness-hsl` or `brightness-rgb`.
   restart: true
-  backend: QtWebEngine
 
 colors.webpage.darkmode.policy.images:
   default: smart
@@ -3273,7 +3220,6 @@ colors.webpage.darkmode.policy.images:
   desc: >-
       Which images to apply dark mode to.
   restart: true
-  backend: QtWebEngine
 
 colors.webpage.darkmode.policy.page:
   deleted: true
@@ -3294,7 +3240,6 @@ colors.webpage.darkmode.threshold.foreground:
       above it will be left as in the original, non-dark-mode page. Set to 256
       to always invert text color or to 0 to never invert text color.
   restart: true
-  backend: QtWebEngine
 
 colors.webpage.darkmode.threshold.background:
   default: 0
@@ -3312,7 +3257,6 @@ colors.webpage.darkmode.threshold.background:
       Note: This behavior is the opposite of
       `colors.webpage.darkmode.threshold.foreground`!
   restart: true
-  backend: QtWebEngine
 
 # emacs: '
 

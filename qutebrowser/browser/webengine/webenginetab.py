@@ -1279,7 +1279,6 @@ class WebEngineTab(browsertab.AbstractTab):
         self.settings = webenginesettings.WebEngineSettings(settings=None)
         self._set_widget(widget)
         self._connect_signals()
-        self.backend = usertypes.Backend.QtWebEngine
         self._child_event_filter = None
         self._saved_zoom = None
         self._scripts.init()

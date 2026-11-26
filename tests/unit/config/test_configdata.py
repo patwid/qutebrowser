@@ -13,7 +13,6 @@ import pytest
 # To run cmdutils.register decorators
 from qutebrowser import app  # pylint: disable=unused-import
 from qutebrowser.config import configdata, configtypes
-from qutebrowser.utils import usertypes
 
 
 def test_init(config_stub):
@@ -73,14 +72,12 @@ class TestReadYaml:
             test2:
                 type: String
                 default: foo
-                backend: QtWebEngine
                 desc: Hello World 2
         """)
         data, _migrations = configdata._read_yaml(yaml_data)
         assert data.keys() == {'test1', 'test2'}
         assert data['test1'].description == "Hello World"
         assert data['test2'].default == "foo"
-        assert data['test2'].backends == [usertypes.Backend.QtWebEngine]
         assert isinstance(data['test1'].typ, configtypes.Bool)
 
     def test_invalid_keys(self):
@@ -245,55 +242,3 @@ class TestParseYamlType:
         """)
         with pytest.raises(TypeError, match="Error while creating Int"):
             configdata._parse_yaml_type('test', data)
-
-
-class TestParseYamlBackend:
-
-    def _yaml(self, s):
-        """Get the type from parsed YAML data."""
-        return yaml.safe_load(textwrap.dedent(s))['backend']
-
-    @pytest.mark.parametrize('backend, expected', [
-        ('QtWebEngine', [usertypes.Backend.QtWebEngine]),
-        # This is also what _parse_yaml_backends gets when backend: is not
-        # given at all
-        ('null', [usertypes.Backend.QtWebEngine]),
-    ])
-    def test_simple(self, backend, expected):
-        """Check a simple "backend: QtWebEngine"."""
-        data = self._yaml("backend: {}".format(backend))
-        backends = configdata._parse_yaml_backends('test', data)
-        assert backends == expected
-
-    @pytest.mark.parametrize('has_new_version, expected', [
-        (True, [usertypes.Backend.QtWebEngine]),
-        (False, []),
-    ])
-    def test_dict(self, monkeypatch, has_new_version, expected):
-        data = self._yaml("""
-            backend:
-              QtWebEngine: Qt 6.9
-        """)
-        monkeypatch.setattr(configdata.qtutils, 'version_check',
-                            lambda v: has_new_version)
-        backends = configdata._parse_yaml_backends('test', data)
-        assert backends == expected
-
-    @pytest.mark.parametrize('yaml_data', [
-        # Wrong type
-        "backend: 42",
-        # Unknown key
-        """
-        backend:
-          QtWebEngine: true
-          foo: bar
-        """,
-        # Missing key
-        """
-        backend: {}
-        """,
-    ])
-    def test_invalid_backend(self, yaml_data):
-        with pytest.raises(ValueError, match="Invalid node for test while "
-                                             "reading backends:"):
-            configdata._parse_yaml_backends('test', self._yaml(yaml_data))

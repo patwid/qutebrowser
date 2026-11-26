@@ -12,7 +12,6 @@ from unittest.mock import Mock
 
 from qutebrowser.qt.gui import QIcon, QPixmap
 from qutebrowser.mainwindow import tabwidget
-from qutebrowser.utils import usertypes
 
 
 class TestTabWidget:
@@ -23,8 +22,6 @@ class TestTabWidget:
     def widget(self, qtbot, monkeypatch, config_stub):
         w = tabwidget.TabWidget(0)
         qtbot.add_widget(w)
-        monkeypatch.setattr(tabwidget.objects, 'backend',
-                            usertypes.Backend.QtWebEngine)
         w.show()
         return w
 

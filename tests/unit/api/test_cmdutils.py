@@ -460,9 +460,8 @@ class TestArgument:
 class TestRun:
 
     @pytest.fixture(autouse=True)
-    def patch_backend(self, mode_manager, monkeypatch):
-        monkeypatch.setattr(command.objects, 'backend',
-                            usertypes.Backend.QtWebEngine)
+    def _mode_manager(self, mode_manager):
+        """Make sure a mode manager is available."""
 
     def test_no_args(self):
         cmd = _get_cmd()

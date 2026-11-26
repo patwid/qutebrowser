@@ -15,7 +15,6 @@ from qutebrowser.qt.core import pyqtSignal, QObject, QUrl
 from qutebrowser.commands import cmdexc, parser
 from qutebrowser.config import configdata, configexc, configutils
 from qutebrowser.utils import utils, log, urlmatch
-from qutebrowser.misc import objects
 from qutebrowser.keyinput import keyutils
 
 if TYPE_CHECKING:
@@ -322,11 +321,6 @@ class Config(QObject):
                    pattern: urlmatch.UrlPattern | None = None,
                    hide_userconfig: bool = False) -> None:
         """Set the given option to the given value."""
-        if not isinstance(objects.backend, objects.NoBackend):
-            if objects.backend not in opt.backends:
-                raise configexc.BackendError(opt.name, objects.backend,
-                                             opt.raw_backends)
-
         opt.typ.to_py(value)  # for validation
 
         self._values[opt.name].add(opt.typ.from_obj(value),

@@ -29,7 +29,7 @@ from qutebrowser.completion import completer
 from qutebrowser.completion.models import (
     configmodel, listcategory, miscmodels, urlmodel, filepathcategory)
 from qutebrowser.config import configdata, configtypes
-from qutebrowser.utils import usertypes, utils
+from qutebrowser.utils import utils
 from qutebrowser.mainwindow import tabbedbrowser
 
 
@@ -89,9 +89,7 @@ def configdata_stub(config_stub, monkeypatch, configdata_init):
                 keytype=configtypes.String(),
                 valtype=configtypes.Command(),
             ),
-            default={'q': 'quit'},
-            backends=[usertypes.Backend.QtWebEngine],
-            raw_backends=None)),
+            default={'q': 'quit'},)),
         ('bindings.default', configdata.Option(
             name='bindings.default',
             description='Default keybindings',
@@ -108,8 +106,6 @@ def configdata_stub(config_stub, monkeypatch, configdata_init):
                     ('d', 'tab-close'),
                 ])
             },
-            backends=[],
-            raw_backends=None,
             no_autoconfig=True)),
         ('bindings.commands', configdata.Option(
             name='bindings.commands',
@@ -128,24 +124,18 @@ def configdata_stub(config_stub, monkeypatch, configdata_init):
                     ('I', 'invalid'),
                     ('d', 'scroll down'),
                 ])
-            },
-            backends=[],
-            raw_backends=None)),
+            },)),
         ('content.javascript.enabled', configdata.Option(
             name='content.javascript.enabled',
             description='Enable/Disable JavaScript',
             typ=configtypes.Bool(),
-            default=True,
-            backends=[],
-            raw_backends=None)),
+            default=True,)),
         ('completion.open_categories', configdata.Option(
             name='completion.open_categories',
             description=('Which categories to show (in which order) in the '
                          ':open completion.'),
             typ=configtypes.FlagList(),
-            default=["searchengines", "quickmarks", "bookmarks", "history"],
-            backends=[],
-            raw_backends=None)),
+            default=["searchengines", "quickmarks", "bookmarks", "history"],)),
         ('url.searchengines', configdata.Option(
             name='url.searchengines',
             description='searchengines list',
@@ -153,9 +143,7 @@ def configdata_stub(config_stub, monkeypatch, configdata_init):
                 keytype=configtypes.String(),
                 valtype=configtypes.String(),
             ),
-            default={"DEFAULT": "https://duckduckgo.com/?q={}", "google": "https://google.com/?q={}"},
-            backends=[],
-            raw_backends=None)),
+            default={"DEFAULT": "https://duckduckgo.com/?q={}", "google": "https://google.com/?q={}"},)),
     ]))
     config_stub._init_values()
 

@@ -290,7 +290,7 @@ class PromptContainer(QWidget):
         Args:
             question: A Question object or None.
         """
-        item = qtutils.add_optional(self._layout.takeAt(0))
+        item = self._layout.takeAt(0)
         if item is None:
             widget = None
         else:

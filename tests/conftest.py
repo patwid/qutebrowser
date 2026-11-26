@@ -21,8 +21,8 @@ from helpers.messagemock import message_mock
 from helpers.fixtures import *  # noqa: F403
 # pylint: enable=wildcard-import,unused-import,unused-wildcard-import
 from helpers import testutils
-from qutebrowser.utils import usertypes, utils, version
-from qutebrowser.misc import objects, earlyinit
+from qutebrowser.utils import utils, version
+from qutebrowser.misc import earlyinit
 
 # To register commands
 import qutebrowser.app  # pylint: disable=unused-import
@@ -114,7 +114,7 @@ def _apply_platform_markers(config, item):
             "qt69_ci_flaky",  # WORKAROUND: https://github.com/qutebrowser/qutebrowser/issues/8444#issuecomment-2569610110
             pytest.mark.flaky(reruns=3),
             (
-                version.qtwebengine_versions(avoid_init=True).webengine
+                version.qtwebengine_versions().webengine
                 > utils.VersionNumber(6, 9)
                 and testutils.ON_CI
             ),
@@ -124,7 +124,7 @@ def _apply_platform_markers(config, item):
             "qt69_ci_skip",  # WORKAROUND: https://github.com/qutebrowser/qutebrowser/issues/8444#issuecomment-2569610110
             pytest.mark.skipif,
             (
-                version.qtwebengine_versions(avoid_init=True).webengine
+                version.qtwebengine_versions().webengine
                 > utils.VersionNumber(6, 9)
                 and testutils.ON_CI
             ),
@@ -252,7 +252,7 @@ def pytest_configure(config):
 
 
 def pytest_report_header(config):
-    backend_version = version.qtwebengine_versions(avoid_init=True)
+    backend_version = version.qtwebengine_versions()
     return f'backend: {backend_version}'
 
 
@@ -269,12 +269,6 @@ def check_display(request):
 def pytest_xvfb_disable() -> bool:
     """Disable Xvfb if the offscreen plugin is in use."""
     return testutils.offscreen_plugin_enabled()
-
-
-@pytest.fixture(autouse=True)
-def set_backend(monkeypatch, request):
-    """Make sure the backend global is set."""
-    monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebEngine)
 
 
 @pytest.fixture(autouse=True)

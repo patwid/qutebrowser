@@ -16,7 +16,7 @@ from qutebrowser.qt.core import pyqtSignal, pyqtSlot, QObject, Qt
 from qutebrowser.qt.network import QLocalSocket, QLocalServer, QAbstractSocket
 
 import qutebrowser
-from qutebrowser.utils import log, usertypes, error, standarddir, utils, debug, qtutils
+from qutebrowser.utils import log, usertypes, error, standarddir, utils, debug
 from qutebrowser.qt import sip
 
 
@@ -248,7 +248,7 @@ class IPCServer(QObject):
                           "still handling another one (0x{:x}).".format(
                               id(self._socket)))
             return
-        socket = qtutils.add_optional(self._server.nextPendingConnection())
+        socket = self._server.nextPendingConnection()
         if socket is None:
             log.ipc.debug("No new connection to handle.")
             return

@@ -16,8 +16,7 @@ from tests.helpers import testutils
 @pytest.fixture
 def opt():
     return configdata.Option(name='example.option', typ=configtypes.String(),
-                             default='default value', backends=None,
-                             raw_backends=None, description=None,
+                             default='default value', description=None,
                              supports_pattern=True)
 
 

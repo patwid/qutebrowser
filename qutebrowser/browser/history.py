@@ -16,7 +16,7 @@ from qutebrowser.qt.widgets import QProgressDialog, QApplication, QPushButton
 
 from qutebrowser.config import config
 from qutebrowser.api import cmdutils
-from qutebrowser.utils import utils, log, usertypes, message, qtutils
+from qutebrowser.utils import utils, log, message, qtutils
 from qutebrowser.misc import objects, sql
 
 
@@ -481,4 +481,3 @@ def init(db_path: pathlib.Path, parent: QObject | None = None) -> None:
     database = sql.Database(str(db_path))
     web_history = WebHistory(database=database, progress=progress, parent=parent)
 
-    assert objects.backend == usertypes.Backend.QtWebEngine, objects.backend

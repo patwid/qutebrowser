@@ -10,11 +10,9 @@ import logging
 import pathlib
 
 import pytest
-from qutebrowser.qt.core import QUrl
 
 from qutebrowser.utils import usertypes
 from qutebrowser.browser import greasemonkey
-from qutebrowser.misc import objects
 
 test_gm_script = r"""
 // ==UserScript==
@@ -181,47 +179,6 @@ def test_load_error(gm_manager, wrong_path_setup):
     assert all_scripts[0].name == name
 
 
-@pytest.mark.parametrize("url, expected_matches", [
-    # included
-    ('http://trolol.com/', 1),
-    # neither included nor excluded
-    ('http://aaaaaaaaaa.com/', 0),
-    # excluded
-    ('https://badhost.xxx/', 0),
-])
-def test_get_scripts_by_url(gm_manager, url, expected_matches):
-    """Check Greasemonkey include/exclude rules work."""
-    _save_script(test_gm_script, 'test.user.js')
-    gm_manager.load_scripts()
-
-    scripts = gm_manager.scripts_for(QUrl(url))
-    assert len(scripts.start + scripts.end + scripts.idle) == expected_matches
-
-
-@pytest.mark.parametrize("url, expected_matches", [
-    # included
-    ('https://github.com/qutebrowser/qutebrowser/', 1),
-    # neither included nor excluded
-    ('http://aaaaaaaaaa.com/', 0),
-    # excluded takes priority
-    ('http://github.com/foo', 0),
-])
-def test_regex_includes_scripts_for(gm_manager, url, expected_matches):
-    """Ensure our GM @*clude support supports regular expressions."""
-    gh_dark_example = textwrap.dedent(r"""
-        // ==UserScript==
-        // @include     /^https?://((gist|guides|help|raw|status|developer)\.)?github\.com/((?!generated_pages\/preview).)*$/
-        // @exclude     /https?://github\.com/foo/
-        // @run-at document-start
-        // ==/UserScript==
-    """)
-    _save_script(gh_dark_example, 'test.user.js')
-    gm_manager.load_scripts()
-
-    scripts = gm_manager.scripts_for(QUrl(url))
-    assert len(scripts.start + scripts.end + scripts.idle) == expected_matches
-
-
 def test_no_metadata(gm_manager, caplog):
     """Run on all sites at document-end is the default."""
     _save_script("var nothing = true;\n", 'nothing.user.js')
@@ -229,9 +186,8 @@ def test_no_metadata(gm_manager, caplog):
     with caplog.at_level(logging.WARNING):
         gm_manager.load_scripts()
 
-    scripts = gm_manager.scripts_for(QUrl('http://notamatch.invalid/'))
-    assert len(scripts.start + scripts.end + scripts.idle) == 1
-    assert len(scripts.end) == 1
+    assert len(gm_manager.all_scripts()) == 1
+    assert len(gm_manager._run_end) == 1
 
 
 def test_no_name():
@@ -261,17 +217,6 @@ def test_full_name(properties, inc_counter, expected):
     if inc_counter:
         script.dedup_suffix += 1
     assert script.full_name() == expected
-
-
-def test_bad_scheme(gm_manager, caplog):
-    """qute:// isn't in the list of allowed schemes."""
-    _save_script("var nothing = true;\n", 'nothing.user.js')
-
-    with caplog.at_level(logging.WARNING):
-        gm_manager.load_scripts()
-
-    scripts = gm_manager.scripts_for(QUrl('qute://settings'))
-    assert len(scripts.start + scripts.end + scripts.idle) == 0
 
 
 def test_load_emits_signal(gm_manager, qtbot):
@@ -326,7 +271,6 @@ class TestForceDocumentEnd:
     ])
     def test_matching(self, monkeypatch, namespace, name, force):
         """Test matching based on namespace/name."""
-        monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebEngine)
         script = self._get_script(namespace=namespace, name=name)
         assert script.needs_document_end_workaround() == force
 

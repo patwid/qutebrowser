@@ -15,7 +15,7 @@ from collections.abc import Mapping, Sequence
 from qutebrowser.qt.core import (pyqtSlot, pyqtSignal, QObject, QProcess,
                           QProcessEnvironment, QByteArray, QUrl, Qt)
 
-from qutebrowser.utils import message, log, utils, usertypes, version, qtutils
+from qutebrowser.utils import message, log, utils, usertypes, version
 from qutebrowser.api import cmdutils, apitypes
 from qutebrowser.completion.models import miscmodels
 
@@ -383,7 +383,7 @@ class GUIProcess(QObject):
         log.procs.debug("Starting process.")
         self._pre_start(cmd, args)
         self._proc.start(
-            qtutils.remove_optional(self.resolved_cmd),
+            self.resolved_cmd,
             args,
         )
         self._post_start()

@@ -115,8 +115,8 @@ def test_autoescape(escape):
 
 
 @pytest.mark.parametrize('template, expected', [
-    ('{{ func1(conf.aliases) }} {{ func2(conf.backend) }}',
-     ['aliases', 'backend']),
+    ('{{ func1(conf.aliases) }} {{ func2(conf.confirm_quit) }}',
+     ['aliases', 'confirm_quit']),
     ('{{ conf.aliases["a"].propname }}', ['aliases']),
     ('{{ conf.auto_save.interval + conf.hints.min_chars }}',
      ['auto_save.interval', 'hints.min_chars']),

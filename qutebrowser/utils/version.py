@@ -637,15 +637,16 @@ class WebEngineVersions:
     @classmethod
     def from_webengine(
         cls,
-        pyqt_webengine_qt_version: str,
+        qtwe_version: str,
         source: str,
     ) -> 'WebEngineVersions':
         """Get the versions based on a QtWebEngine version only.
 
         The Chromium version is inferred from our table of known versions. This is
-        used for the version of a previous run stored in the state file.
+        used for the version of a previous run stored in the state file, and for the
+        QUTE_QTWEBENGINE_VERSION_OVERRIDE environment variable.
         """
-        parsed = utils.VersionNumber.parse(pyqt_webengine_qt_version)
+        parsed = utils.VersionNumber.parse(qtwe_version)
         chromium, chromium_security = cls._infer_chromium_version(parsed)
         return cls(
             webengine=parsed,
@@ -654,30 +655,11 @@ class WebEngineVersions:
             source=source,
         )
 
-    @classmethod
-    def from_pyqt(cls, pyqt_webengine_version: str, source: str = "PyQt") -> 'WebEngineVersions':
-        """Get the versions based on a given version string.
 
-        The Chromium version is inferred from our table of known versions. This is
-        used for the QUTE_QTWEBENGINE_VERSION_OVERRIDE environment variable (and in
-        tests).
-        """
-        parsed = utils.VersionNumber.parse(pyqt_webengine_version)
-        chromium, chromium_security = cls._infer_chromium_version(parsed)
-
-        return cls(
-            webengine=parsed,
-            chromium=chromium,
-            chromium_security=chromium_security,
-            source=source,
-        )
-
-
-def qtwebengine_versions(*, avoid_init: bool = False) -> WebEngineVersions:
+def qtwebengine_versions() -> WebEngineVersions:
     """Get the QtWebEngine and Chromium version numbers.
 
-    This uses Qt's API, which doesn't need QtWebEngine to be initialized. Thus, the
-    avoid_init argument isn't needed anymore and only kept for existing callers.
+    This uses Qt's API, which doesn't need QtWebEngine to be initialized.
 
     See WebEngineVersions above for a quick reference of versions.
 
@@ -687,11 +669,9 @@ def qtwebengine_versions(*, avoid_init: bool = False) -> WebEngineVersions:
     - https://www.chromium.org/developers/calendar
     - https://chromereleases.googleblog.com/
     """
-    utils.unused(avoid_init)
-
     override = os.environ.get('QUTE_QTWEBENGINE_VERSION_OVERRIDE')
     if override is not None:
-        return WebEngineVersions.from_pyqt(override, source='override')
+        return WebEngineVersions.from_webengine(override, source='override')
 
     from qutebrowser.qt.webenginecore import (
         qWebEngineVersion,
@@ -708,52 +688,42 @@ def qtwebengine_versions(*, avoid_init: bool = False) -> WebEngineVersions:
     )
 
 
-def _backend() -> str:
-    """Get the backend line with relevant information."""
-    if objects.backend == usertypes.Backend.QtWebEngine:
-        return str(qtwebengine_versions(
-            avoid_init='avoid-chromium-init' in objects.debug_flags))
-    raise utils.Unreachable(objects.backend)
-
-
 def _webengine_extensions() -> Sequence[str]:
     """Get a list of WebExtensions enabled in QtWebEngine."""
-    lines: list[str] = []
-    if objects.backend == usertypes.Backend.QtWebEngine:
-        from qutebrowser.browser.webengine import webenginesettings
-        lines.append("WebExtensions:")
+    from qutebrowser.browser.webengine import webenginesettings
+    lines = ["WebExtensions:"]
 
-        if webenginesettings.default_profile:
-            profile = webenginesettings.default_profile
-        elif "avoid-chromium-init" in objects.debug_flags:
-            lines[0] += " unknown (avoiding init)"
-            return lines
-        else:
-            profile = webenginesettings.default_qt_profile()
+    if webenginesettings.default_profile:
+        profile = webenginesettings.default_profile
+    elif "avoid-chromium-init" in objects.debug_flags:
+        lines[0] += " unknown (avoiding init)"
+        return lines
+    else:
+        profile = webenginesettings.default_qt_profile()
 
-        try:
-            ext_manager = profile.extensionManager()
-        except AttributeError:
-            # Added in QtWebEngine 6.10
-            return []
-        assert ext_manager is not None  # mypy
+    try:
+        ext_manager = profile.extensionManager()
+    except AttributeError:
+        # Added in QtWebEngine 6.10
+        return []
+    assert ext_manager is not None  # mypy
 
-        if not ext_manager.extensions():
-            lines[0] += " none"
+    if not ext_manager.extensions():
+        lines[0] += " none"
 
-        for info in ext_manager.extensions():
-            tags = [
-                ("[x]" if info.isEnabled() else "[ ]") + " enabled",
-                ("[x]" if info.isLoaded() else "[ ]") + " loaded",
-                ("[x]" if info.isInstalled() else "[ ]") + " installed",
-            ]
-            lines.append(f"  {info.name()} ({info.id()})")
-            lines.append(f"  {'  '.join(tags)}")
-            lines.append(f"  {info.path()}")
-            url = info.actionPopupUrl()
-            if url.isValid():
-                lines.append(f"  {url.toDisplayString()}")
-            lines.append("")
+    for info in ext_manager.extensions():
+        tags = [
+            ("[x]" if info.isEnabled() else "[ ]") + " enabled",
+            ("[x]" if info.isLoaded() else "[ ]") + " loaded",
+            ("[x]" if info.isInstalled() else "[ ]") + " installed",
+        ]
+        lines.append(f"  {info.name()} ({info.id()})")
+        lines.append(f"  {'  '.join(tags)}")
+        lines.append(f"  {info.path()}")
+        url = info.actionPopupUrl()
+        if url.isValid():
+            lines.append(f"  {url.toDisplayString()}")
+        lines.append("")
 
     return lines
 
@@ -785,7 +755,7 @@ def version_info() -> str:
     if gitver is not None:
         lines.append("Git commit: {}".format(gitver))
 
-    lines.append('Backend: {}'.format(_backend()))
+    lines.append('Backend: {}'.format(qtwebengine_versions()))
     lines.append('Qt: {}'.format(earlyinit.qt_version()))
 
     lines += [

@@ -406,7 +406,7 @@ def _init_profile(profile: QWebEngineProfile) -> None:
 
 def _maybe_disable_hangouts_extension(profile: QWebEngineProfile) -> None:
     """Disable the Hangouts extension for Qt 6.10+."""
-    qtwe_versions = version.qtwebengine_versions(avoid_init=True)
+    qtwe_versions = version.qtwebengine_versions()
     if not (
         config.val.qt.workarounds.disable_hangouts_extension
         # https://qt-project.atlassian.net/browse/QTBUG-145467

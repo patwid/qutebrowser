@@ -9,19 +9,17 @@ Module attributes:
 DATA: A dict of Option objects after init() has been called.
 """
 
-from typing import (Any, NoReturn, TypeAlias, cast)
-from collections.abc import Iterable, Mapping, MutableMapping, Sequence
+from typing import Any, NoReturn, cast
+from collections.abc import Mapping, MutableMapping
 import functools
 import dataclasses
 
 from qutebrowser.config import configtypes
-from qutebrowser.utils import usertypes, qtutils, utils, resources
+from qutebrowser.utils import utils, resources
 from qutebrowser.misc import debugcachestats
 
 DATA = cast(Mapping[str, 'Option'], None)
 MIGRATIONS = cast('Migrations', None)
-
-_BackendDict: TypeAlias = Mapping[str, str | bool]
 
 
 @dataclasses.dataclass(order=True)
@@ -35,8 +33,6 @@ class Option:
     name: str
     typ: configtypes.BaseType
     default: Any
-    backends: Iterable[usertypes.Backend]
-    raw_backends: Mapping[str, bool] | None
     description: str
     supports_pattern: bool = False
     restart: bool = False
@@ -116,65 +112,6 @@ def _parse_yaml_type(
             type_name, node, e))
 
 
-def _parse_yaml_backends_dict(
-        name: str,
-        node: _BackendDict,
-) -> Sequence[usertypes.Backend]:
-    """Parse a dict definition for backends.
-
-    Example:
-
-    backends:
-      QtWebEngine: Qt 6.9
-    """
-    str_to_backend = {
-        'QtWebEngine': usertypes.Backend.QtWebEngine,
-    }
-
-    if node.keys() != str_to_backend.keys():
-        _raise_invalid_node(name, 'backends', node)
-
-    backends = []
-
-    # The value associated to the key, and whether we should add that backend
-    # or not.
-
-    conditionals = {
-        True: True,
-        False: False,
-        'Qt 6.9': qtutils.version_check('6.9'),
-        'Qt 6.10': qtutils.version_check('6.10'),
-    }
-    for key in sorted(node.keys()):
-        if conditionals[node[key]]:
-            backends.append(str_to_backend[key])
-
-    return backends
-
-
-def _parse_yaml_backends(
-        name: str,
-        node: None | str | _BackendDict,
-) -> Sequence[usertypes.Backend]:
-    """Parse a backend node in the yaml.
-
-    It can have one of those three forms:
-    - Not present -> setting is always available.
-    - backend: QtWebEngine -> same as not present (QtWebEngine is the only backend).
-    - backend:
-       QtWebEngine: Qt 6.9
-      -> setting available based on the given conditional.
-
-    Return:
-        A list of backends.
-    """
-    if node is None or node == 'QtWebEngine':
-        return [usertypes.Backend.QtWebEngine]
-    elif isinstance(node, dict):
-        return _parse_yaml_backends_dict(name, node)
-    _raise_invalid_node(name, 'backends', node)
-
-
 def _read_yaml(
         yaml_data: str,
 ) -> tuple[Mapping[str, Option], Migrations]:
@@ -192,7 +129,7 @@ def _read_yaml(
     migrations = Migrations()
     data = utils.yaml_load(yaml_data)
 
-    keys = {'type', 'default', 'desc', 'backend', 'restart',
+    keys = {'type', 'default', 'desc', 'restart',
             'supports_pattern', 'no_autoconfig'}
 
     for name, option in data.items():
@@ -210,14 +147,10 @@ def _read_yaml(
             raise ValueError("Invalid keys {} for {}".format(
                 option.keys(), name))
 
-        backends = option.get('backend', None)
-
         parsed[name] = Option(
             name=name,
             typ=_parse_yaml_type(name, option['type']),
             default=option['default'],
-            backends=_parse_yaml_backends(name, backends),
-            raw_backends=backends if isinstance(backends, dict) else None,
             description=option['desc'],
             restart=option.get('restart', False),
             supports_pattern=option.get('supports_pattern', False),

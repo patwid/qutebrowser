@@ -15,7 +15,7 @@ from qutebrowser.qt.gui import QCloseEvent
 
 from qutebrowser.browser import eventfilter
 from qutebrowser.config import configfiles, config
-from qutebrowser.utils import log, usertypes, qtutils
+from qutebrowser.utils import log, usertypes
 from qutebrowser.keyinput import modeman
 from qutebrowser.misc import miscwidgets
 
@@ -145,7 +145,7 @@ class AbstractWebInspector(QWidget):
             self.shutdown()
             return
         elif position == Position.window:
-            self.setParent(qtutils.QT_NONE)
+            self.setParent(None)
             self._load_state_geometry()
         else:
             self._splitter.set_inspector(self, position)

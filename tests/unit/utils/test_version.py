@@ -983,14 +983,15 @@ class TestWebEngineVersions:
         ('6.3.0', '94.0.4606.126', '99.0.4844.84'),
         ('6.99.0', None, None),
     ])
-    def test_from_pyqt(self, pyqt_version, chromium_version, security_version):
+    def test_from_webengine(self, pyqt_version, chromium_version, security_version):
         expected = version.WebEngineVersions(
             webengine=utils.VersionNumber.parse(pyqt_version),
             chromium=chromium_version,
             chromium_security=security_version,
-            source='PyQt',
+            source='test',
         )
-        assert version.WebEngineVersions.from_pyqt(pyqt_version) == expected
+        assert version.WebEngineVersions.from_webengine(
+            pyqt_version, source='test') == expected
 
     def test_real_chromium_security_version(self, qapp):
         """Check the API for reading the chromium security patch version."""
@@ -1064,9 +1065,8 @@ class TestChromiumVersion:
     def test_unpatched(self, qapp, cache_tmpdir, data_tmpdir, config_stub):
         assert version.qtwebengine_versions().chromium is not None
 
-    @pytest.mark.parametrize('avoid_init', [True, False])
-    def test_api(self, avoid_init):
-        versions = version.qtwebengine_versions(avoid_init=avoid_init)
+    def test_api(self):
+        versions = version.qtwebengine_versions()
         assert versions.source == 'api'
 
     def test_no_init(self, monkeypatch):
@@ -1078,10 +1078,9 @@ class TestChromiumVersion:
         utils.VersionNumber(6, 8, 1),
         utils.VersionNumber(6, 99, 3),
     ])
-    @pytest.mark.parametrize('avoid_init', [True, False])
-    def test_override(self, monkeypatch, override, avoid_init):
+    def test_override(self, monkeypatch, override):
         monkeypatch.setenv('QUTE_QTWEBENGINE_VERSION_OVERRIDE', str(override))
-        versions = version.qtwebengine_versions(avoid_init=avoid_init)
+        versions = version.qtwebengine_versions()
         assert versions.source == 'override'
         assert versions.webengine == override
 
@@ -1232,7 +1231,7 @@ def test_version_info(params, stubs, monkeypatch, config_stub):
     }
 
     patches['qtwebengine_versions'] = (
-        lambda avoid_init: version.WebEngineVersions(
+        lambda: version.WebEngineVersions(
             webengine=utils.VersionNumber(1, 2, 3),
             chromium=None,
             source='faked',
@@ -1257,7 +1256,6 @@ def test_version_info(params, stubs, monkeypatch, config_stub):
         "  [ ] enabled  [ ] loaded  [ ] installed\n"
         "  ext1-path\n"
     )
-    patches['objects.backend'] = usertypes.Backend.QtWebEngine
     substitutions['backend'] = 'QtWebEngine 1.2.3\n  (source: faked)'
 
     if params.known_distribution:
@@ -1383,7 +1381,6 @@ class TestWebEngineExtensions:
 
     def test_avoid_chromium_init(self, monkeypatch: pytest.MonkeyPatch) -> None:
         assert webenginesettings.default_profile is None  # -> default_qt_profile() used
-        monkeypatch.setattr(version.objects, "backend", usertypes.Backend.QtWebEngine)
         monkeypatch.setattr(objects, "debug_flags", {"avoid-chromium-init"})
         monkeypatch.setattr(webenginesettings, "default_qt_profile", lambda: 1 / 0)
         assert version._webengine_extensions() == [

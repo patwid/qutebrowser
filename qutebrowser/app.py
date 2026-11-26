@@ -97,9 +97,6 @@ def run(args):
         sys.exit(usertypes.Exit.err_ipc)
 
     if server is None:
-        if args.backend is not None:
-            log.init.warning(
-                "Backend from the running instance will be used")
         sys.exit(usertypes.Exit.ok)
 
     init(args=args)

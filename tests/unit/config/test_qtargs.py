@@ -11,8 +11,7 @@ import pytest
 
 from qutebrowser import qutebrowser
 from qutebrowser.config import qtargs, configdata
-from qutebrowser.utils import usertypes, version, utils
-from qutebrowser.misc import objects
+from qutebrowser.utils import version, utils
 
 
 @pytest.fixture
@@ -35,10 +34,8 @@ def version_patcher(monkeypatch):
         Return:
             True if we know the associated Chromium version, False otherwise
         """
-        versions = version.WebEngineVersions.from_pyqt(ver)
-        monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebEngine)
-        monkeypatch.setattr(version, 'qtwebengine_versions',
-                            lambda avoid_init: versions)
+        versions = version.WebEngineVersions.from_webengine(ver, source='test')
+        monkeypatch.setattr(version, 'qtwebengine_versions', lambda: versions)
         return versions.chromium_major is not None
 
     return run
@@ -112,8 +109,6 @@ def test_no_webengine_available(monkeypatch, config_stub, parser, stubs):
     Note this is not inside TestQtArgs because we don't want the reduce_args patching
     here.
     """
-    monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebEngine)
-
     fake = stubs.ImportFake({'qutebrowser.browser.webengine': False}, monkeypatch)
     fake.patch()
 
@@ -137,7 +132,6 @@ class TestWebEngineArgs:
     def ensure_webengine(self, monkeypatch):
         """Skip all tests if QtWebEngine is unavailable."""
         pytest.importorskip("qutebrowser.qt.webenginecore")
-        monkeypatch.setattr(objects, 'backend', usertypes.Backend.QtWebEngine)
 
     @pytest.mark.parametrize("setting, values", qtargs._WEBENGINE_SETTINGS.items())
     def test_settings_exist(self, setting, values, configdata_init):
@@ -145,15 +139,14 @@ class TestWebEngineArgs:
         for value in values:
             option.typ.to_py(value)  # for validation
 
-    @pytest.mark.parametrize('backend, qt_version, debug_flag, expected', [
-        # QtWebEngine: Enable with -D stack, do nothing without it.
-        (usertypes.Backend.QtWebEngine, '6.8.2', True, True),
-        (usertypes.Backend.QtWebEngine, '6.8.2', False, None),
+    @pytest.mark.parametrize('qt_version, debug_flag, expected', [
+        # Enable with -D stack, do nothing without it.
+        ('6.8.2', True, True),
+        ('6.8.2', False, None),
     ])
-    def test_in_process_stack_traces(self, monkeypatch, parser, backend, version_patcher,
+    def test_in_process_stack_traces(self, monkeypatch, parser, version_patcher,
                                      qt_version, debug_flag, expected):
         version_patcher(qt_version)
-        monkeypatch.setattr(objects, 'backend', backend)
         parsed = parser.parse_args(['--debug-flag', 'stack'] if debug_flag
                                    else [])
         args = qtargs.qt_args(parsed)
@@ -530,8 +523,6 @@ class TestEnvVars:
     def test_env_vars(self, monkeypatch, config_stub,
                       config_opt, config_val, envvar, expected):
         """Check settings which set an environment variable."""
-        monkeypatch.setattr(objects, 'backend',
-                            usertypes.Backend.QtWebEngine)
         monkeypatch.setenv(envvar, '')  # to make sure it gets restored
         monkeypatch.delenv(envvar)
 
@@ -583,9 +574,6 @@ class TestEnvVars:
 
     def test_highdpi(self, monkeypatch, config_stub):
         """Test HighDPI environment variables."""
-        monkeypatch.setattr(objects, 'backend',
-                            usertypes.Backend.QtWebEngine)
-
         envvar = 'QT_ENABLE_HIGHDPI_SCALING'
         monkeypatch.setenv(envvar, '')  # to make sure it gets restored
         monkeypatch.delenv(envvar)
@@ -595,14 +583,13 @@ class TestEnvVars:
 
         assert os.environ[envvar] == '1'
 
-    @pytest.mark.parametrize('backend, value, expected', [
-        (usertypes.Backend.QtWebEngine, None, None),
-        (usertypes.Backend.QtWebEngine, '', "''"),
-        (usertypes.Backend.QtWebEngine, '--xyz', "'--xyz'"),
+    @pytest.mark.parametrize('value, expected', [
+        (None, None),
+        ('', "''"),
+        ('--xyz', "'--xyz'"),
     ])
     def test_qtwe_flags_warning(self, monkeypatch, config_stub, caplog,
-                                backend, value, expected):
-        monkeypatch.setattr(objects, 'backend', backend)
+                                value, expected):
         if value is None:
             monkeypatch.delenv('QTWEBENGINE_CHROMIUM_FLAGS', raising=False)
         else:

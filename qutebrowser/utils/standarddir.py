@@ -16,7 +16,7 @@ from collections.abc import Iterator
 from qutebrowser.qt.core import QStandardPaths
 from qutebrowser.qt.widgets import QApplication
 
-from qutebrowser.utils import log, debug, utils, version, qtutils
+from qutebrowser.utils import log, debug, utils, version
 
 # The cached locations
 _locations: dict["_Location", str] = {}
@@ -53,7 +53,7 @@ def _unset_organization() -> Iterator[None]:
     qapp = QApplication.instance()
     if qapp is not None:
         orgname = qapp.organizationName()
-        qapp.setOrganizationName(qtutils.QT_NONE)
+        qapp.setOrganizationName(None)
     try:
         yield
     finally:

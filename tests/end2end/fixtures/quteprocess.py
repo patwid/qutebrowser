@@ -467,7 +467,6 @@ class QuteProc(testprocess.Process):
     def _default_args(self):
         args = ['--debug', '--no-err-windows', '--temp-basedir',
                 '--json-logging', '--loglevel', 'vdebug',
-                '--backend', 'webengine',
                 '--debug-flag', 'no-sql-history',
                 '--debug-flag', 'werror',
                 '--debug-flag', 'test-notification-service',

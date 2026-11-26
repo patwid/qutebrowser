@@ -8,27 +8,13 @@
 # earlyinit.
 
 import argparse
-from typing import TYPE_CHECKING, Any, Union, cast
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from qutebrowser import app
-    from qutebrowser.utils import usertypes
     from qutebrowser.commands import command
 
 
-class NoBackend:
-
-    """Special object when there's no backend set so we notice that."""
-
-    @property
-    def name(self) -> str:
-        raise AssertionError("No backend set!")
-
-    def __eq__(self, other: Any) -> bool:
-        raise AssertionError("No backend set!")
-
-
-backend: Union['usertypes.Backend', NoBackend] = NoBackend()
 commands: dict[str, 'command.Command'] = {}
 debug_flags: set[str] = set()
 args = cast(argparse.Namespace, None)

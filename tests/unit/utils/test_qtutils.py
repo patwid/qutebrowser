@@ -17,7 +17,7 @@ from qutebrowser.qt.core import (QDataStream, QPoint, QUrl, QByteArray, QIODevic
 from qutebrowser.qt.gui import QColor
 from qutebrowser.qt import sip
 
-from qutebrowser.utils import qtutils, utils, usertypes
+from qutebrowser.utils import qtutils, utils
 import overflow_test_cases
 from helpers import testutils
 
@@ -88,14 +88,13 @@ def test_version_check_compiled_and_exact():
         qtutils.version_check('1.2.3', exact=True, compiled=True)
 
 
-@pytest.mark.parametrize('backend, arguments, single_process', [
-    (usertypes.Backend.QtWebEngine, ['--single-process'], True),
-    (usertypes.Backend.QtWebEngine, [], False),
+@pytest.mark.parametrize('arguments, single_process', [
+    (['--single-process'], True),
+    ([], False),
 ])
-def test_is_single_process(monkeypatch, stubs, backend, arguments, single_process):
+def test_is_single_process(monkeypatch, stubs, arguments, single_process):
     qapp = stubs.FakeQApplication(arguments=arguments)
     monkeypatch.setattr(qtutils.objects, 'qapp', qapp)
-    monkeypatch.setattr(qtutils.objects, 'backend', backend)
     assert qtutils.is_single_process() == single_process
 
 

@@ -36,7 +36,6 @@ IS_ARM = platform.machine() == 'aarch64'
 def _base_args(config):
     """Get the arguments to pass with every invocation."""
     args = ['--debug', '--json-logging', '--no-err-windows']
-    args += ['--backend', 'webengine']
 
     if testutils.disable_seccomp_bpf_sandbox():
         args += testutils.DISABLE_SECCOMP_BPF_ARGS
