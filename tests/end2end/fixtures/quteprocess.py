@@ -1030,7 +1030,7 @@ def quteproc(quteproc_process, server, request, take_x11_screenshot):
 
 
 @pytest.fixture
-def quteproc_new(qapp, server, request):
+def quteproc_new(qapp, server, request, take_x11_screenshot):
     """Per-test qutebrowser process to test invocations."""
     proc = QuteProc(request)
     request.node._quteproc_log = proc.captured_log

@@ -150,6 +150,9 @@ python3 -m pytest --lf
 # run only the end2end feature tests:
 python3 -m pytest tests/end2end/features
 
+# run the end2end tests without opening windows:
+QT_QPA_PLATFORM=offscreen python3 -m pytest tests/end2end
+
 # run everything with undo in the generated name, based on the scenario text
 python3 -m pytest tests/end2end/features/test_tabs_bdd.py -k undo
 ----

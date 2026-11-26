@@ -24,13 +24,60 @@
           adblock
         ];
 
+      # The end-to-end tests need pytest-bdd 8 or newer, nixpkgs only has 7.
+      pureWheel =
+        ps:
+        {
+          pname,
+          version,
+          hash,
+          dependencies,
+        }:
+        ps.buildPythonPackage {
+          inherit pname version dependencies;
+          format = "wheel";
+          src = ps.fetchPypi {
+            inherit version hash;
+            pname = builtins.replaceStrings [ "-" ] [ "_" ] pname;
+            format = "wheel";
+            dist = "py3";
+            python = "py3";
+          };
+        };
+
+      gherkinOfficial =
+        ps:
+        pureWheel ps {
+          pname = "gherkin-official";
+          version = "42.0.1";
+          hash = "sha256-a/KRcz0SZxLrFn9vdb5Xkx3YucnrYG3igBPzZpAH7AY=";
+          dependencies = [ ps.typing-extensions ];
+        };
+
+      pytestBdd =
+        ps:
+        pureWheel ps {
+          pname = "pytest-bdd";
+          version = "9.0.0";
+          hash = "sha256-5AejYdige/99N98q4L+T5rNULtV+LGu4m6RreGrHmE4=";
+          dependencies = [
+            ps.mako
+            ps.parse
+            ps.parse-type
+            ps.pytest
+            ps.typing-extensions
+            ps.packaging
+            (gherkinOfficial ps)
+          ];
+        };
+
       # What the test suite and the linters need on top of pythonDeps.
       devDeps =
         ps: with ps; [
           pytest
           pytest-qt
           pytest-mock
-          pytest-bdd
+          (pytestBdd ps)
           pytest-benchmark
           pytest-instafail
           pytest-rerunfailures
