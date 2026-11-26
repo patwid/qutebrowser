@@ -59,15 +59,8 @@ class NoOptionError(Error):
     """Raised when an option was not found."""
 
     def __init__(self, option: str, *,
-                 all_names: list[str] | None = None,
-                 deleted: bool = False,
-                 renamed: str | None = None) -> None:
-        if deleted:
-            assert renamed is None
-            suffix = ' (this option was removed from qutebrowser)'
-        elif renamed is not None:
-            suffix = ' (this option was renamed to {!r})'.format(renamed)
-        elif all_names:
+                 all_names: list[str] | None = None) -> None:
+        if all_names:
             matches = difflib.get_close_matches(option, all_names, n=1)
             if matches:
                 suffix = f' (did you mean {matches[0]!r}?)'

@@ -19,7 +19,6 @@ from qutebrowser.utils import utils, resources
 from qutebrowser.misc import debugcachestats
 
 DATA = cast(Mapping[str, 'Option'], None)
-MIGRATIONS = cast('Migrations', None)
 
 
 @dataclasses.dataclass(order=True)
@@ -37,20 +36,6 @@ class Option:
     supports_pattern: bool = False
     restart: bool = False
     no_autoconfig: bool = False
-
-
-@dataclasses.dataclass
-class Migrations:
-
-    """Migrated options in configdata.yml.
-
-    Attributes:
-        renamed: A dict mapping old option names to new names.
-        deleted: A list of option names which have been removed.
-    """
-
-    renamed: dict[str, str] = dataclasses.field(default_factory=dict)
-    deleted: list[str] = dataclasses.field(default_factory=list)
 
 
 def _raise_invalid_node(name: str, what: str, node: Any) -> NoReturn:
@@ -114,35 +99,22 @@ def _parse_yaml_type(
 
 def _read_yaml(
         yaml_data: str,
-) -> tuple[Mapping[str, Option], Migrations]:
+) -> Mapping[str, Option]:
     """Read config data from a YAML file.
 
     Args:
         yaml_data: The YAML string to parse.
 
     Return:
-        A tuple with two elements:
-            - A dict mapping option names to Option elements.
-            - A Migrations object.
+        A dict mapping option names to Option elements.
     """
     parsed = {}
-    migrations = Migrations()
     data = utils.yaml_load(yaml_data)
 
     keys = {'type', 'default', 'desc', 'restart',
             'supports_pattern', 'no_autoconfig'}
 
     for name, option in data.items():
-        if set(option.keys()) == {'renamed'}:
-            migrations.renamed[name] = option['renamed']
-            continue
-        if set(option.keys()) == {'deleted'}:
-            value = option['deleted']
-            if value is not True:
-                raise ValueError("Invalid deleted value: {}".format(value))
-            migrations.deleted.append(name)
-            continue
-
         if not set(option.keys()).issubset(keys):
             raise ValueError("Invalid keys {} for {}".format(
                 option.keys(), name))
@@ -163,12 +135,7 @@ def _read_yaml(
             if key2.startswith(key1 + '.'):
                 raise ValueError("Shadowing keys {} and {}".format(key1, key2))
 
-    # Make sure rename targets actually exist.
-    for old, new in migrations.renamed.items():
-        if new not in parsed:
-            raise ValueError("Renaming {} to unknown {}".format(old, new))
-
-    return parsed, migrations
+    return parsed
 
 
 @debugcachestats.register()
@@ -180,5 +147,5 @@ def is_valid_prefix(prefix: str) -> bool:
 
 def init() -> None:
     """Initialize configdata from the YAML file."""
-    global DATA, MIGRATIONS
-    DATA, MIGRATIONS = _read_yaml(resources.read_file('config/configdata.yml'))
+    global DATA
+    DATA = _read_yaml(resources.read_file('config/configdata.yml'))

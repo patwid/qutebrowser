@@ -69,6 +69,9 @@ Removed
   * The "auto config" directory (only different from the config directory on
     macOS) is gone from `:version`.
 - The check for a too old Python version at startup was removed.
+- Automatic migrations of `autoconfig.yml` were removed. Settings which were
+  renamed or removed in the past are now unknown options and need to be fixed
+  up by hand.
 - The `input.mouse.back_forward_buttons` and `input.mouse.rocker_gestures`
   settings were removed. With Qt 6, Qt handles the back/forward mouse buttons
   itself, so the former had no effect and the latter only disabled the context

@@ -47,9 +47,6 @@ changelog_after_upgrade:
   default: minor
   desc: When to show a changelog after qutebrowser was upgraded.
 
-ignore_case:
-  renamed: search.ignore_case
-
 search.ignore_case:
   type: IgnoreCase
   default: smart
@@ -112,9 +109,6 @@ new_instance_open_target_window:
 
     When `new_instance_open_target` is set to `window`, this is ignored.
 
-session_default_name:
-  renamed: session.default_name
-
 session.default_name:
   type:
     name: SessionName
@@ -130,14 +124,8 @@ session.lazy_restore:
   default: false
   desc: Load a restored tab as soon as it takes focus.
 
-backend:
-  deleted: true
-
 
 ## qt
-
-qt_args:
-  renamed: qt.args
 
 qt.args:
   type:
@@ -167,9 +155,6 @@ qt.environ:
     Additional environment variables to set.
 
     Setting an environment variable to null/None will unset it.
-
-force_software_rendering:
-  renamed: qt.force_software_rendering
 
 qt.force_software_rendering:
   type:
@@ -215,9 +200,6 @@ qt.force_platformtheme:
     dialogs like the filepicker. By default, Qt determines the platform theme
     based on the desktop environment.
 
-qt.process_model:
-  renamed: qt.chromium.process_model
-
 qt.chromium.process_model:
   type:
     name: String
@@ -245,9 +227,6 @@ qt.chromium.process_model:
 
       - https://www.chromium.org/developers/design-documents/process-models
       - https://doc.qt.io/qt-6/qtwebengine-features.html#process-models
-
-qt.low_end_device_mode:
-  renamed: qt.chromium.low_end_device_mode
 
 qt.chromium.low_end_device_mode:
   type:
@@ -336,9 +315,6 @@ qt.workarounds.remove_service_workers:
 
     Note however that enabling this option *can lead to data loss* on some pages (as
     Service Worker data isn't persisted) and will negatively impact start-up time.
-
-qt.workarounds.locale:
-  deleted: true
 
 qt.workarounds.disable_accelerated_2d_canvas:
   type:
@@ -436,12 +412,6 @@ content.canvas_reading:
 
     Note this is needed for some websites to work properly.
 
-content.cache.maximum_pages:
-  deleted: true
-
-content.cache.appcache:
-  deleted: true
-
 content.cookies.accept:
   default: all
   supports_pattern: true
@@ -506,9 +476,6 @@ content.unknown_url_scheme_policy:
   desc: >-
     How navigation requests to URLs with unknown schemes are handled.
 
-content.windowed_fullscreen:
-  renamed: content.fullscreen.window
-
 content.fullscreen.window:
   type: Bool
   default: false
@@ -532,17 +499,11 @@ content.desktop_capture:
   supports_pattern: true
   desc: Allow websites to share screen content.
 
-content.developer_extras:
-  deleted: true
-
 content.dns_prefetch:
   default: true
   type: Bool
   supports_pattern: true
   desc: Try to pre-fetch DNS entries to speed up browsing.
-
-content.frame_flattening:
-  deleted: true
 
 content.prefers_reduced_motion:
   default: false
@@ -553,9 +514,6 @@ content.prefers_reduced_motion:
 
     This results in the `prefers-reduced-motion` CSS media query to evaluate to
     `reduce` (rather than `no-preference`).
-
-content.site_specific_quirks:
-  renamed: content.site_specific_quirks.enabled
 
 content.site_specific_quirks.enabled:
   default: true
@@ -710,15 +668,6 @@ content.headers.user_agent:
 
     Note that the value read from JavaScript is always the global value.
 
-content.host_blocking.enabled:
-  renamed: content.blocking.enabled
-
-content.host_blocking.lists:
-  renamed: content.blocking.hosts.lists
-
-content.host_blocking.whitelist:
-  renamed: content.blocking.whitelist
-
 content.blocking.enabled:
   default: true
   supports_pattern: true
@@ -845,9 +794,6 @@ content.javascript.clipboard:
     With QtWebEngine, writing the clipboard as response to a user interaction
     is always allowed.
 
-content.javascript.can_close_tabs:
-  deleted: true
-
 content.javascript.can_open_tabs_automatically:
   default: false
   type: Bool
@@ -887,9 +833,6 @@ content.javascript.log:
 
     The following levels are valid: `none`, `debug`, `info`, `warning`,
     `error`.
-
-content.javascript.log_message:
-  renamed: content.javascript.log_message.levels
 
 content.javascript.log_message.levels:
   type:
@@ -1020,9 +963,6 @@ content.netrc_file:
 
     If unset, `~/.netrc` is used.
 
-content.notifications:
-  renamed: content.notifications.enabled
-
 content.notifications.enabled:
   default: ask
   type: BoolAsk
@@ -1123,9 +1063,6 @@ content.proxy:
     Note that with QtWebEngine, it will take a couple of seconds until the
     change is applied, if this value is changed at runtime. Authentication for
     SOCKS proxies isn't supported due to Chromium limitations.
-
-content.proxy_dns_requests:
-  deleted: true
 
 content.register_protocol_handler:
   default: ask
@@ -1298,9 +1235,6 @@ completion.web_history.exclude:
 
     Changing this setting will cause the completion history to be regenerated
     on the next start, which will take a short while.
-
-completion.web_history_max_items:
-  renamed: completion.web_history.max_items
 
 completion.web_history.max_items:
   default: -1
@@ -1599,9 +1533,6 @@ hints.dictionary:
     required: false
   desc: Dictionary file to be used by the word hints.
 
-hints.find_implementation:
-  deleted: true
-
 hints.hide_unmatched_rapid_hints:
   default: true
   type: Bool
@@ -1802,12 +1733,6 @@ input.links_included_in_focus_chain:
   supports_pattern: true
   desc: Include hyperlinks in the keyboard focus chain when tabbing.
 
-input.mouse.back_forward_buttons:
-  deleted: true
-
-input.mouse.rocker_gestures:
-  deleted: true
-
 input.partial_timeout:
   default: 0
   type:
@@ -1821,9 +1746,6 @@ input.partial_timeout:
     cleared after this time.
 
     If set to 0, partially typed bindings are never cleared.
-
-input.rocker_gestures:
-  deleted: true
 
 input.spatial_navigation:
   default: false
@@ -1913,9 +1835,6 @@ messages.timeout:
     Duration (in milliseconds) to show messages in the statusbar for.
 
     Set to 0 to never clear messages.
-
-messages.unfocused:
-  deleted: true
 
 ## prompt
 
@@ -2290,9 +2209,6 @@ tabs.title.format_pinned:
   desc: Format to use for the tab title for pinned tabs. The same placeholders
     like for `tabs.title.format` are defined.
 
-tabs.width.bar:
-  renamed: tabs.width
-
 tabs.width:
   default: 15%
   type:
@@ -2335,18 +2251,12 @@ tabs.max_width:
     This setting may not apply properly if max_width is smaller than the
     minimum size of tab contents, or smaller than tabs.min_width.
 
-tabs.width.indicator:
-  renamed: tabs.indicator.width
-
 tabs.indicator.width:
   default: 3
   type:
     name: Int
     minval: 0
   desc: Width (in pixels) of the progress indicator (0 to disable).
-
-tabs.indicator_padding:
-  renamed: tabs.indicator.padding
 
 tabs.indicator.padding:
   default:
@@ -2356,9 +2266,6 @@ tabs.indicator.padding:
     right: 4
   type: Padding
   desc: Padding (in pixels) for tab indicators.
-
-tabs.width.pinned:
-  deleted: true
 
 tabs.pinned.shrink:
   default: true
@@ -2496,9 +2403,6 @@ url.yank_ignored_parameters:
 
 ## window
 
-window.hide_wayland_decoration:
-  renamed: window.hide_decoration
-
 window.hide_decoration:
   type: Bool
   default: false
@@ -2578,9 +2482,6 @@ zoom.mouse_divider:
     name: Int
     minval: 0
   desc: Number of zoom increments to divide the mouse wheel movements to.
-
-zoom.text_only:
-  deleted: true
 
 ## colors
 
@@ -2665,12 +2566,6 @@ colors.completion.scrollbar.bg:
   default: '#333333'
   type: QssColor
   desc: Color of the scrollbar in the completion view.
-
-colors.contextmenu.bg:
-  renamed: colors.contextmenu.menu.bg
-
-colors.contextmenu.fg:
-  renamed: colors.contextmenu.menu.fg
 
 colors.tooltip.bg:
   type:
@@ -3206,12 +3101,6 @@ colors.webpage.darkmode.policy.images:
   desc: >-
       Which images to apply dark mode to.
   restart: true
-
-colors.webpage.darkmode.policy.page:
-  deleted: true
-
-colors.webpage.darkmode.threshold.text:
-  renamed: colors.webpage.darkmode.threshold.foreground
 
 colors.webpage.darkmode.threshold.foreground:
   default: 256

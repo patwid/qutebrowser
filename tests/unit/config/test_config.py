@@ -788,9 +788,8 @@ class TestContainer:
 
         error2 = configapi.errors[1]
         assert error2.text == "While setting 'content.host_blocking.lists'"
-        assert str(error2.exception) == (
-            "No option 'content.host_blocking.lists' (this option was renamed to "
-            "'content.blocking.hosts.lists')")
+        assert str(error2.exception).startswith(
+            "No option 'content.host_blocking.lists'")
 
     def test_pattern_no_configapi(self, config_stub):
         pattern = urlmatch.UrlPattern('https://example.com/')

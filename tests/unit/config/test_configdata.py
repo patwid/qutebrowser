@@ -74,7 +74,7 @@ class TestReadYaml:
                 default: foo
                 desc: Hello World 2
         """)
-        data, _migrations = configdata._read_yaml(yaml_data)
+        data = configdata._read_yaml(yaml_data)
         assert data.keys() == {'test1', 'test2'}
         assert data['test1'].description == "Hello World"
         assert data['test2'].default == "foo"
@@ -116,45 +116,6 @@ class TestReadYaml:
                 configdata._read_yaml(data)
         else:
             configdata._read_yaml(data)
-
-    def test_rename(self):
-        yaml_data = textwrap.dedent("""
-            test:
-                renamed: test_new
-
-            test_new:
-                type: Bool
-                default: true
-                desc: Hello World
-        """)
-        data, migrations = configdata._read_yaml(yaml_data)
-        assert data.keys() == {'test_new'}
-        assert migrations.renamed == {'test': 'test_new'}
-
-    def test_rename_unknown_target(self):
-        yaml_data = textwrap.dedent("""
-            test:
-                renamed: test2
-        """)
-        with pytest.raises(ValueError, match='Renaming test to unknown test2'):
-            configdata._read_yaml(yaml_data)
-
-    def test_delete(self):
-        yaml_data = textwrap.dedent("""
-            test:
-                deleted: true
-        """)
-        data, migrations = configdata._read_yaml(yaml_data)
-        assert not data.keys()
-        assert migrations.deleted == ['test']
-
-    def test_delete_invalid_value(self):
-        yaml_data = textwrap.dedent("""
-            test:
-                deleted: false
-        """)
-        with pytest.raises(ValueError, match='Invalid deleted value: False'):
-            configdata._read_yaml(yaml_data)
 
 
 class TestParseYamlType:

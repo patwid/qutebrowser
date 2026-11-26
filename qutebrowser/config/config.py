@@ -354,15 +354,8 @@ class Config(QObject):
         try:
             return configdata.DATA[name]
         except KeyError:
-            deleted = name in configdata.MIGRATIONS.deleted
-            renamed = configdata.MIGRATIONS.renamed.get(name)
-            exception = configexc.NoOptionError(
-                name,
-                deleted=deleted,
-                renamed=renamed,
-                all_names=list(configdata.DATA),
-            )
-            raise exception from None
+            raise configexc.NoOptionError(
+                name, all_names=list(configdata.DATA)) from None
 
     def ensure_has_opt(self, name: str) -> None:
         """Raise NoOptionError if the given setting does not exist."""

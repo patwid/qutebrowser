@@ -13,16 +13,14 @@ import textwrap
 import traceback
 import configparser
 import contextlib
-import re
 from typing import (TYPE_CHECKING, Any, TypeAlias, cast)
-from collections.abc import Iterable, Iterator, Mapping, MutableMapping
+from collections.abc import Iterator, Mapping, MutableMapping
 
 import yaml
 from qutebrowser.qt.core import pyqtSignal, pyqtSlot, QObject, QSettings, qVersion
 
 import qutebrowser
-from qutebrowser.config import (configexc, config, configdata, configutils,
-                                configtypes)
+from qutebrowser.config import configexc, config, configdata, configutils
 from qutebrowser.keyinput import keyutils
 from qutebrowser.utils import standarddir, utils, qtutils, log, urlmatch, version
 
@@ -321,35 +319,17 @@ class YamlConfig(QObject):
             raise configexc.ConfigFileErrors('autoconfig.yml', [desc])
 
         config_version = self._pop_object(yaml_data, 'config_version', int)
-        if config_version == 1:
-            settings = self._load_legacy_settings_object(yaml_data)
-            self._mark_changed()
-        elif config_version > self.VERSION:
+        if config_version != self.VERSION:
             desc = configexc.ConfigErrorDesc(
                 "While reading",
-                "Can't read config from incompatible newer version")
+                f"Can't read config from incompatible version {config_version}")
             raise configexc.ConfigFileErrors('autoconfig.yml', [desc])
-        else:
-            settings = self._load_settings_object(yaml_data)
-            self._dirty = False
 
-        migrations = YamlMigrations(settings, parent=self)
-        migrations.changed.connect(self._mark_changed)
-        migrations.migrate()
+        settings = self._pop_object(yaml_data, 'settings', dict)
+        self._dirty = False
 
         self._validate_names(settings)
         self._build_values(settings)
-
-    def _load_settings_object(self, yaml_data: Any) -> _SettingsType:
-        """Load the settings from the settings: key."""
-        return self._pop_object(yaml_data, 'settings', dict)
-
-    def _load_legacy_settings_object(self, yaml_data: Any) -> _SettingsType:
-        data = self._pop_object(yaml_data, 'global', dict)
-        settings = {}
-        for name, value in data.items():
-            settings[name] = {'global': value}
-        return settings
 
     def _build_values(self, settings: Mapping[str, Any]) -> None:
         """Build up self._values from the values in the given dict."""
@@ -414,250 +394,6 @@ class YamlConfig(QObject):
         for values in self._values.values():
             values.clear()
         self._mark_changed()
-
-
-class YamlMigrations(QObject):
-
-    """Automated migrations for autoconfig.yml."""
-
-    changed = pyqtSignal()
-
-    # Note: settings is Any because it's not validated yet.
-    def __init__(self, settings: Any, parent: QObject | None = None) -> None:
-        super().__init__(parent)
-        self._settings = settings
-
-    def migrate(self) -> None:
-        """Migrate older configs to the newest format."""
-        self._migrate_configdata()
-        self._migrate_bindings_default()
-        self._migrate_font_default_family()
-        self._migrate_font_replacements()
-
-        self._migrate_bool('tabs.favicons.show', 'always', 'never')
-        self._migrate_bool('scrolling.bar', 'always', 'overlay')
-        self._migrate_bool('qt.force_software_rendering',
-                           'software-opengl', 'none')
-        self._migrate_renamed_bool(
-            old_name='content.webrtc_public_interfaces_only',
-            new_name='content.webrtc_ip_handling_policy',
-            true_value='default-public-interface-only',
-            false_value='all-interfaces')
-        self._migrate_renamed_bool(
-            old_name='tabs.persist_mode_on_change',
-            new_name='tabs.mode_on_change',
-            true_value='persist',
-            false_value='normal')
-        self._migrate_renamed_bool(
-            old_name='statusbar.hide',
-            new_name='statusbar.show',
-            true_value='never',
-            false_value='always')
-        self._migrate_renamed_bool(
-            old_name='content.ssl_strict',
-            new_name='content.tls.certificate_errors',
-            true_value='block',
-            false_value='load-insecurely',
-            ask_value='ask',
-        )
-        self._migrate_renamed_bool(
-            old_name='content.javascript.can_access_clipboard',
-            new_name='content.javascript.clipboard',
-            true_value='access',
-            false_value='none',
-        )
-
-        for setting in ['colors.webpage.force_dark_color_scheme',
-                        'colors.webpage.prefers_color_scheme_dark']:
-            self._migrate_renamed_bool(
-                old_name=setting,
-                new_name='colors.webpage.preferred_color_scheme',
-                true_value='dark',
-                false_value='auto',
-            )
-
-        for setting in ['tabs.title.format',
-                        'tabs.title.format_pinned',
-                        'window.title_format']:
-            self._migrate_string_value(setting,
-                                       r'(?<!{)\{title\}(?!})',
-                                       r'{current_title}')
-
-        self._migrate_to_multiple('fonts.tabs',
-                                  ('fonts.tabs.selected',
-                                   'fonts.tabs.unselected'))
-
-        self._migrate_to_multiple('content.media_capture',
-                                  ('content.media.audio_capture',
-                                   'content.media.audio_video_capture',
-                                   'content.media.video_capture'))
-
-        # content.headers.user_agent can't be empty to get the default anymore.
-        setting = 'content.headers.user_agent'
-        self._migrate_none(setting, configdata.DATA[setting].default)
-
-        self._remove_empty_patterns()
-
-    def _migrate_configdata(self) -> None:
-        """Migrate simple renamed/deleted options."""
-        for name in list(self._settings):
-            if name in configdata.MIGRATIONS.renamed:
-                new_name = configdata.MIGRATIONS.renamed[name]
-                log.config.debug("Renaming {} to {}".format(name, new_name))
-                self._settings[new_name] = self._settings[name]
-                del self._settings[name]
-                self.changed.emit()
-            elif name in configdata.MIGRATIONS.deleted:
-                log.config.debug("Removing {}".format(name))
-                del self._settings[name]
-                self.changed.emit()
-
-    def _migrate_bindings_default(self) -> None:
-        """bindings.default can't be set in autoconfig.yml anymore.
-
-        => Ignore old values.
-        """
-        if 'bindings.default' not in self._settings:
-            return
-
-        del self._settings['bindings.default']
-        self.changed.emit()
-
-    def _migrate_font_default_family(self) -> None:
-        old_name = 'fonts.monospace'
-        new_name = 'fonts.default_family'
-
-        if old_name not in self._settings:
-            return
-
-        old_default_fonts = (
-            'Monospace, "DejaVu Sans Mono", Monaco, '
-            '"Bitstream Vera Sans Mono", "Andale Mono", "Courier New", '
-            'Courier, "Liberation Mono", monospace, Fixed, Consolas, Terminal'
-        )
-
-        self._settings[new_name] = {}
-
-        for scope, val in self._settings[old_name].items():
-            old_fonts = val.replace(old_default_fonts, '').rstrip(' ,')
-            new_fonts = configutils.FontFamilies.from_str(old_fonts)
-            self._settings[new_name][scope] = list(new_fonts)
-
-        del self._settings[old_name]
-        self.changed.emit()
-
-    def _migrate_font_replacements(self) -> None:
-        """Replace 'monospace' replacements by 'default_family'."""
-        for name, values in self._settings.items():
-            if not isinstance(values, dict):
-                continue
-
-            try:
-                opt = configdata.DATA[name]
-            except KeyError:
-                continue
-
-            if not isinstance(opt.typ, configtypes.FontBase):
-                continue
-
-            for scope, val in values.items():
-                if isinstance(val, str) and val.endswith(' monospace'):
-                    new_val = val.replace('monospace', 'default_family')
-                    self._settings[name][scope] = new_val
-                    self.changed.emit()
-
-    def _migrate_bool(self, name: str,
-                      true_value: str,
-                      false_value: str) -> None:
-        if name not in self._settings:
-            return
-
-        values = self._settings[name]
-        if not isinstance(values, dict):
-            return
-
-        for scope, val in values.items():
-            if isinstance(val, bool):
-                new_value = true_value if val else false_value
-                self._settings[name][scope] = new_value
-                self.changed.emit()
-
-    def _migrate_renamed_bool(self, old_name: str,
-                              new_name: str,
-                              true_value: str,
-                              false_value: str,
-                              ask_value: str | None = None) -> None:
-        if old_name not in self._settings:
-            return
-
-        self._settings[new_name] = {}
-
-        for scope, val in self._settings[old_name].items():
-            if val == 'ask':
-                assert ask_value is not None
-                new_value = ask_value
-            elif val:
-                new_value = true_value
-            else:
-                new_value = false_value
-            self._settings[new_name][scope] = new_value
-
-        del self._settings[old_name]
-        self.changed.emit()
-
-    def _migrate_none(self, name: str, value: str) -> None:
-        if name not in self._settings:
-            return
-
-        values = self._settings[name]
-        if not isinstance(values, dict):
-            return
-
-        for scope, val in values.items():
-            if val is None:
-                self._settings[name][scope] = value
-                self.changed.emit()
-
-    def _migrate_to_multiple(self, old_name: str, new_names: Iterable[str]) -> None:
-        if old_name not in self._settings:
-            return
-
-        for new_name in new_names:
-            self._settings[new_name] = {}
-            for scope, val in self._settings[old_name].items():
-                self._settings[new_name][scope] = val
-
-        del self._settings[old_name]
-        self.changed.emit()
-
-    def _migrate_string_value(self, name: str, source: str, target: str) -> None:
-        if name not in self._settings:
-            return
-
-        values = self._settings[name]
-        if not isinstance(values, dict):
-            return
-
-        for scope, val in values.items():
-            if isinstance(val, str):
-                new_val = re.sub(source, target, val)
-                if new_val != val:
-                    self._settings[name][scope] = new_val
-                    self.changed.emit()
-
-    def _remove_empty_patterns(self) -> None:
-        """Remove *. host patterns from the config.
-
-        Those used to be valid (and could be accidentally produced by using tSH
-        on about:blank), but aren't anymore.
-        """
-        scope = '*://*./*'
-        for name, values in self._settings.items():
-            if not isinstance(values, dict):
-                continue
-            if scope in values:
-                del self._settings[name][scope]
-                self.changed.emit()
 
 
 class ConfigAPI:
