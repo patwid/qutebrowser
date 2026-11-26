@@ -29,7 +29,6 @@ import qutebrowser
 from qutebrowser.config import config
 from qutebrowser.utils import version, usertypes, utils, standarddir
 from qutebrowser.misc import pastebin, objects, wmname
-from qutebrowser.browser import pdfjs
 
 try:
     from qutebrowser.browser.webengine import webenginesettings
@@ -781,53 +780,6 @@ class TestOsInfo:
         version._os_info()
 
 
-class TestPDFJSVersion:
-
-    """Tests for _pdfjs_version."""
-
-    def test_not_found(self, mocker):
-        mocker.patch('qutebrowser.utils.version.pdfjs.get_pdfjs_res_and_path',
-                     side_effect=pdfjs.PDFJSNotFound('/build/pdf.js'))
-        assert version._pdfjs_version() == 'no'
-
-    def test_unknown(self, monkeypatch):
-        monkeypatch.setattr(
-            'qutebrowser.utils.version.pdfjs.get_pdfjs_res_and_path',
-            lambda path: (b'foobar', None))
-        assert version._pdfjs_version() == 'unknown (bundled)'
-
-    @pytest.mark.parametrize('varname', [
-        'PDFJS.version',  # v1.10.100 and older
-        'var pdfjsVersion',  # v2.0.943
-        'const pdfjsVersion',  # v2.5.207
-    ])
-    def test_known(self, monkeypatch, varname):
-        pdfjs_code = textwrap.dedent("""
-            // Initializing PDFJS global object (if still undefined)
-            if (typeof PDFJS === 'undefined') {
-              (typeof window !== 'undefined' ? window : this).PDFJS = {};
-            }
-
-            VARNAME = '1.2.109';
-            PDFJS.build = '875588d';
-
-            (function pdfjsWrapper() {
-              // Use strict in our context only - users might not want it
-              'use strict';
-        """.replace('VARNAME', varname)).strip().encode('utf-8')
-        monkeypatch.setattr(
-            'qutebrowser.utils.version.pdfjs.get_pdfjs_res_and_path',
-            lambda path: (pdfjs_code, '/foo/bar/pdf.js'))
-        assert version._pdfjs_version() == '1.2.109 (/foo/bar/pdf.js)'
-
-    def test_real_file(self, data_tmpdir):
-        """Test against the real file if pdfjs was found."""
-        if not pdfjs.is_available():
-            pytest.skip("No pdfjs found")
-        ver = version._pdfjs_version()
-        assert ver.split()[0] not in ['no', 'unknown'], ver
-
-
 class TestWebEngineVersions:
 
     @pytest.mark.parametrize('version, expected', [
@@ -1058,7 +1010,6 @@ def test_version_info(params, stubs, monkeypatch, config_stub):
         'PYQT_VERSION_STR': 'PYQT VERSION',
         'earlyinit.qt_version': lambda: 'QT VERSION',
         '_module_versions': lambda: ['MODULE VERSION 1', 'MODULE VERSION 2'],
-        '_pdfjs_version': lambda: 'PDFJS VERSION',
         'QSslSocket': FakeQSslSocket('SSL VERSION', params.ssl_support),
         'platform.platform': lambda: 'PLATFORM',
         'platform.architecture': lambda: ('ARCHITECTURE', ''),
@@ -1165,7 +1116,6 @@ def test_version_info(params, stubs, monkeypatch, config_stub):
 
         MODULE VERSION 1
         MODULE VERSION 2
-        pdf.js: PDFJS VERSION
         sqlite: SQLITE VERSION
         QtNetwork SSL: {ssl}
         {webextensions}{style}{platform_plugin}{opengl}

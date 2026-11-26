@@ -78,6 +78,9 @@ Removed
   `adblock` package) is the only ad blocker left. The `content.blocking.method`,
   `content.blocking.hosts.lists` and `content.blocking.hosts.block_subdomains`
   settings and `scripts/hostblock_blame.py` are gone.
+- PDF.js support was removed: The `content.pdfjs` setting, `qute://pdfjs`,
+  `:prompt-open-download --pdfjs` (with its `<Ctrl-P>` binding) and the
+  `no-system-pdfjs` debug flag are gone.
 - The check for a too old Python version at startup was removed.
 - Automatic migrations of `autoconfig.yml` were removed. Settings which were
   renamed or removed in the past are now unknown options and need to be fixed

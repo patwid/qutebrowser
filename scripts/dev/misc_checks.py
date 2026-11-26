@@ -243,7 +243,6 @@ def check_spelling(args: argparse.Namespace) -> bool | None:
     hint_data = pathlib.Path('tests', 'end2end', 'data', 'hints')
     ignored = [
         pathlib.Path('scripts', 'dev', 'misc_checks.py'),
-        pathlib.Path('qutebrowser', '3rdparty', 'pdfjs'),
         pathlib.Path('qutebrowser', 'qt', '_core_pyqtproperty.py'),
         pathlib.Path('qutebrowser', 'javascript', 'caret.js'),
         hint_data / 'ace' / 'ace.js',

@@ -617,18 +617,6 @@ Feature: Downloading things from a website.
         And I run :download foo!
         Then the error "Invalid URL" should be shown
 
-    Scenario: Downloading via pdfjs
-        Given pdfjs is available
-        When I set downloads.location.prompt to false
-        And I set content.pdfjs to true
-        And I open data/misc/test.pdf without waiting
-        And I wait until PDF.js is ready
-        And I run :jseval (document.getElementById("downloadButton") || document.getElementById("download")).click()
-        And I clear the log
-        And I wait until the download is finished
-        # We get viewer.html as name on QtWebKit...
-        # Then the downloaded file test.pdf should exist
-
     Scenario: Answering a question for a cancelled download (#415)
         When I set downloads.location.prompt to true
         And I run :download http://localhost:(port)/data/downloads/download.bin

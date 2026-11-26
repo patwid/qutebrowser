@@ -9,98 +9,11 @@
 
 import argparse
 import urllib.request
-import urllib.error
-import shutil
-import json
 import os
 import sys
 
 sys.path.insert(
     0, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-
-
-def find_pdfjs_asset(assets, legacy):
-    """Find the PDF.js asset to use."""
-    # pylint: disable=broad-exception-raised
-    for asset in assets:
-        name = asset["name"]
-        if (
-            name.startswith("pdfjs-") and
-            name.endswith("-dist.zip") and
-            name.endswith("-legacy-dist.zip") == legacy
-        ):
-            return asset
-    raise Exception(f"No pdfjs found in {assets}")
-
-
-def get_latest_pdfjs_url(gh_token, legacy):
-    """Get the URL of the latest pdf.js prebuilt package.
-
-    Returns a (version, url)-tuple.
-    """
-    # pylint: disable=broad-exception-raised
-    github_api = 'https://api.github.com'
-    endpoint = 'repos/mozilla/pdf.js/releases/latest'
-    request = urllib.request.Request(f'{github_api}/{endpoint}')
-
-    if gh_token is not None:
-        # Without token will work as well, but has a strict rate limit, so we need to
-        # use the token on CI.
-        request.add_header('Authorization', f'token {gh_token}')
-    elif 'CI' in os.environ:
-        raise Exception("No GitHub token given on CI")
-
-    with urllib.request.urlopen(request) as fp:
-        data = json.loads(fp.read().decode('utf-8'))
-
-    asset = find_pdfjs_asset(data["assets"], legacy=legacy)
-
-    download_url = asset['browser_download_url']
-    version_name = data['name']
-    return (version_name, download_url)
-
-
-def update_pdfjs(target_version=None, legacy=True, gh_token=None):
-    """Download and extract the latest pdf.js version.
-
-    If target_version is not None, download the given version instead.
-
-    Args:
-        target_version: None or version string ('x.y.z')
-        legacy: Whether to download the "legacy" build (the normal build only
-                supports the latest Chromium release).
-        gh_token: GitHub token to use for the API. Optional except on CI.
-    """
-    if target_version is None:
-        version, url = get_latest_pdfjs_url(gh_token, legacy=legacy)
-    else:
-        # We need target_version as x.y.z, without the 'v' prefix, though the
-        # user might give it on the command line
-        target_version = target_version.removeprefix('v')
-        # version should have the prefix to be consistent with the return value
-        # of get_latest_pdfjs_url()
-        version = 'v' + target_version
-        suffix = "-legacy" if legacy else ""
-        url = ('https://github.com/mozilla/pdf.js/releases/download/'
-               f'{version}/pdfjs-{target_version}{suffix}-dist.zip')
-
-    os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          '..', '..'))
-    target_path = os.path.join('qutebrowser', '3rdparty', 'pdfjs')
-    version_suffix = '' if legacy else ' (modern browsers version)'
-    print(f"=> Downloading pdf.js {version}{version_suffix}")
-    try:
-        (archive_path, _headers) = urllib.request.urlretrieve(url)
-    except urllib.error.HTTPError as error:
-        print(f"Could not retrieve pdfjs {version} from {url}: {error}")
-        return
-    if os.path.isdir(target_path):
-        print("Removing old version in {}".format(target_path))
-        shutil.rmtree(target_path)
-    os.makedirs(target_path)
-    print("Extracting new version")
-    shutil.unpack_archive(archive_path, target_path, 'zip')
-    urllib.request.urlcleanup()
 
 
 def update_ace():
@@ -132,11 +45,8 @@ def test_dicts():
                 print('ERROR: {}'.format(response.status))
 
 
-def run(*, ace=False, pdfjs=True, modern_pdfjs=False,
-        pdfjs_version=None, dicts=False, gh_token=None):
+def run(*, ace=False, dicts=False):
     """Update components based on the given arguments."""
-    if pdfjs:
-        update_pdfjs(pdfjs_version, legacy=not modern_pdfjs, gh_token=gh_token)
     if ace:
         update_ace()
     if dicts:
@@ -146,24 +56,12 @@ def run(*, ace=False, pdfjs=True, modern_pdfjs=False,
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--pdfjs', '-p',
-        help='Specify pdfjs version. If not given, '
-        'the latest version is used.',
-        required=False, metavar='VERSION')
-    parser.add_argument("--modern-pdfjs",
-                        help="Use PDF.js modern build (only supports latest Chromium)",
-                        action='store_true')
-    parser.add_argument(
         '--dicts', '-d',
         help='Test whether all available dictionaries '
         'can be reached at the remote repository.',
         required=False, action='store_true')
-    parser.add_argument(
-        '--gh-token', help="GitHub token to use.", nargs='?')
     args = parser.parse_args()
-    run(ace=True, pdfjs=True,
-        pdfjs_version=args.pdfjs, modern_pdfjs=args.modern_pdfjs,
-        dicts=args.dicts, gh_token=args.gh_token)
+    run(ace=True, dicts=args.dicts)
 
 
 if __name__ == '__main__':

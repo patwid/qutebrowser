@@ -180,7 +180,6 @@
 |<<content.notifications.enabled,content.notifications.enabled>>|Allow websites to show notifications.
 |<<content.notifications.presenter,content.notifications.presenter>>|What notification presenter to use for web notifications.
 |<<content.notifications.show_origin,content.notifications.show_origin>>|Whether to show the origin URL for notifications.
-|<<content.pdfjs,content.pdfjs>>|Display PDF files via PDF.js in the browser without showing a download prompt.
 |<<content.persistent_storage,content.persistent_storage>>|Allow websites to request persistent storage quota via `navigator.webkitPersistentStorage.requestQuota`.
 |<<content.plugins,content.plugins>>|Enable plugins in Web pages.
 |<<content.prefers_reduced_motion,content.prefers_reduced_motion>>|Request websites to minimize non-essentials animations and motion.
@@ -738,7 +737,6 @@ Default:
 * +pass:[&lt;Ctrl-F&gt;]+: +pass:[rl-forward-char]+
 * +pass:[&lt;Ctrl-H&gt;]+: +pass:[rl-backward-delete-char]+
 * +pass:[&lt;Ctrl-K&gt;]+: +pass:[rl-kill-line]+
-* +pass:[&lt;Ctrl-P&gt;]+: +pass:[prompt-open-download --pdfjs]+
 * +pass:[&lt;Ctrl-Shift-W&gt;]+: +pass:[rl-filename-rubout]+
 * +pass:[&lt;Ctrl-U&gt;]+: +pass:[rl-unix-line-discard]+
 * +pass:[&lt;Ctrl-W&gt;]+: +pass:[rl-rubout &quot; &quot;]+
@@ -2434,17 +2432,6 @@ Type: <<types,Bool>>
 
 Default: +pass:[true]+
 
-[[content.pdfjs]]
-=== content.pdfjs
-Display PDF files via PDF.js in the browser without showing a download prompt.
-Note that the files can still be downloaded by clicking the download button in the pdf.js viewer. With this set to `false`, the `:prompt-open-download --pdfjs` command (bound to `<Ctrl-p>` by default) can be used in the download prompt.
-
-This setting supports link:configuring{outfilesuffix}#patterns[URL patterns].
-
-Type: <<types,Bool>>
-
-Default: +pass:[false]+
-
 [[content.persistent_storage]]
 === content.persistent_storage
 Allow websites to request persistent storage quota via `navigator.webkitPersistentStorage.requestQuota`.
@@ -3709,7 +3696,7 @@ Default: +pass:[false]+
 [[qt.workarounds.disable_accelerated_2d_canvas]]
 === qt.workarounds.disable_accelerated_2d_canvas
 Disable accelerated 2d canvas to avoid graphical glitches.
-On some setups graphical issues can occur on sites like Google sheets and PDF.js. These don't occur when accelerated 2d canvas is turned off, so it can be turned off here.
+On some setups graphical issues can occur on sites like Google sheets. These don't occur when accelerated 2d canvas is turned off, so it can be turned off here.
 So far these glitches only occur on some Intel graphics devices.
 
 This setting requires a restart.

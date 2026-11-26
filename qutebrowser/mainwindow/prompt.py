@@ -399,8 +399,7 @@ class PromptContainer(QWidget):
 
     @cmdutils.register(instance='prompt-container', scope='window',
                        modes=[usertypes.KeyMode.prompt], maxsplit=0)
-    def prompt_open_download(self, cmdline: str | None = None,
-                             pdfjs: bool = False) -> None:
+    def prompt_open_download(self, cmdline: str | None = None) -> None:
         """Immediately open a download.
 
         If no specific command is given, this will use the system's default
@@ -411,11 +410,10 @@ class PromptContainer(QWidget):
                      is expanded to the temporary file name. If no `{}` is
                      present, the filename is automatically appended to the
                      cmdline.
-            pdfjs: Open the download via PDF.js.
         """
         assert self._prompt is not None
         try:
-            self._prompt.download_open(cmdline, pdfjs=pdfjs)
+            self._prompt.download_open(cmdline)
         except UnsupportedOperationError:
             pass
 
@@ -595,10 +593,9 @@ class _BasePrompt(QWidget):
     def accept(self, value=None, save=False):
         raise NotImplementedError
 
-    def download_open(self, cmdline, pdfjs):
+    def download_open(self, cmdline):
         """Open the download directly if this is a download prompt."""
         utils.unused(cmdline)
-        utils.unused(pdfjs)
         raise UnsupportedOperationError
 
     def item_focus(self, _which):
@@ -866,13 +863,8 @@ class DownloadFilenamePrompt(FilenamePrompt):
             self.question.answer = downloads.FileDownloadTarget(answer)
         return done
 
-    def download_open(self, cmdline, pdfjs):
-        if pdfjs:
-            target: 'downloads._DownloadTarget' = downloads.PDFJSDownloadTarget()
-        else:
-            target = downloads.OpenFileDownloadTarget(cmdline)
-
-        self.question.answer = target
+    def download_open(self, cmdline):
+        self.question.answer = downloads.OpenFileDownloadTarget(cmdline)
         self.question.done()
         message.global_bridge.prompt_done.emit(self.KEY_MODE)
 
@@ -882,7 +874,6 @@ class DownloadFilenamePrompt(FilenamePrompt):
             ('mode-leave', 'Abort'),
             ('rl-filename-rubout', "Go to parent directory"),
             ('prompt-open-download', "Open download"),
-            ('prompt-open-download --pdfjs', "Open download via PDF.js"),
             ('prompt-yank', "Yank URL"),
             ('prompt-fileselect-external', "Launch external file selector"),
         ]

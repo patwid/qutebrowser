@@ -23,7 +23,7 @@ from collections.abc import Sequence, Callable
 from qutebrowser.qt.core import QUrlQuery, QUrl
 
 import qutebrowser
-from qutebrowser.browser import pdfjs, downloads, history
+from qutebrowser.browser import history
 from qutebrowser.config import config, configdata, configexc
 from qutebrowser.utils import (version, utils, jinja, log, message, docutils,
                                resources, objreg, standarddir)
@@ -497,65 +497,6 @@ def qute_pastebin_version(_url: QUrl) -> _HandlerRet:
     """Handler that pastebins the version string."""
     version.pastebin_version()
     return 'text/plain', b'Paste called.'
-
-
-def _pdf_path(filename: str) -> str:
-    """Get the path of a temporary PDF file."""
-    return os.path.join(downloads.temp_download_manager.get_tmpdir().name,
-                        filename)
-
-
-@add_handler('pdfjs')
-def qute_pdfjs(url: QUrl) -> _HandlerRet:
-    """Handler for qute://pdfjs.
-
-    Return the pdf.js viewer or redirect to original URL if the file does not
-    exist.
-    """
-    if url.path() == '/file':
-        filename = QUrlQuery(url).queryItemValue('filename')
-        if not filename:
-            raise UrlInvalidError("Missing filename")
-        if '/' in filename or os.sep in filename:
-            raise RequestDeniedError("Path separator in filename.")
-
-        path = _pdf_path(filename)
-        with open(path, 'rb') as f:
-            data = f.read()
-
-        mimetype = utils.guess_mimetype(filename, fallback=True)
-        return mimetype, data
-
-    if url.path() == '/web/viewer.html':
-        query = QUrlQuery(url)
-        filename = query.queryItemValue("filename")
-        if not filename:
-            raise UrlInvalidError("Missing filename")
-
-        path = _pdf_path(filename)
-        if not os.path.isfile(path):
-            source = query.queryItemValue('source')
-            if not source:  # This may happen with old URLs stored in history
-                raise UrlInvalidError("Missing source")
-            raise Redirect(QUrl(source))
-
-        text_data = pdfjs.generate_pdfjs_page(filename, url)
-        return 'text/html', text_data
-    elif url.path() == "/qb.js":
-        text_data = pdfjs.generate_pdfjs_script()
-        return 'text/javascript', text_data
-
-    try:
-        data = pdfjs.get_pdfjs_res(url.path())
-    except pdfjs.PDFJSNotFound as e:
-        # Logging as the error might get lost otherwise since we're not showing
-        # the error page if a single asset is missing. This way we don't lose
-        # information, as the failed pdfjs requests are still in the log.
-        log.misc.warning(
-            "pdfjs resource requested but not found: {}".format(e.path))
-        raise NotFoundError("Can't find pdfjs resource '{}'".format(e.path))
-    mimetype = utils.guess_mimetype(url.fileName(), fallback=True)
-    return mimetype, data
 
 
 @add_handler('warning')

@@ -58,7 +58,6 @@ def whitelist_generator():  # noqa: C901
     yield 'qutebrowser.completion.models.listcategory.ListCategory().lessThan'
     yield 'qutebrowser.utils.jinja.Loader.get_source'
     yield 'qutebrowser.utils.log.QtWarningFilter.filter'
-    yield 'qutebrowser.browser.pdfjs.is_available'
     yield 'qutebrowser.utils.usertypes.ExitStatus.reserved'
     yield 'QEvent.posted'
     yield 'log_stack'  # from message.py

@@ -17,11 +17,10 @@ from collections.abc import MutableSequence
 from qutebrowser.qt.core import (pyqtSlot, pyqtSignal, Qt, QObject, QModelIndex,
                           QTimer, QAbstractListModel, QUrl)
 
-from qutebrowser.browser import pdfjs
 from qutebrowser.api import cmdutils
 from qutebrowser.config import config
 from qutebrowser.utils import (usertypes, standarddir, utils, message, log,
-                               qtutils, objreg)
+                               qtutils)
 from qutebrowser.qt import sip
 
 
@@ -245,17 +244,6 @@ class OpenFileDownloadTarget(_DownloadTarget):
         return 'temporary file'
 
 
-class PDFJSDownloadTarget(_DownloadTarget):
-
-    """Open the download via PDF.js."""
-
-    def suggested_filename(self):
-        raise NoFilenameError
-
-    def __str__(self):
-        return 'temporary PDF.js file'
-
-
 class DownloadItemStats(QObject):
 
     """Statistics (bytes done, total bytes, time, etc.) about a download.
@@ -361,7 +349,6 @@ class AbstractDownloadItem(QObject):
                arg: The error message as string.
         remove_requested: Emitted when the removal of this download was
                           requested.
-        pdfjs_requested: Emitted when PDF.js should be opened.
                          arg 1: The filename of the PDF download.
                          arg 2: The original download URL.
     """
@@ -371,7 +358,6 @@ class AbstractDownloadItem(QObject):
     error = pyqtSignal(str)
     cancelled = pyqtSignal()
     remove_requested = pyqtSignal()
-    pdfjs_requested = pyqtSignal(str, QUrl)
 
     def __init__(self, manager, parent=None):
         super().__init__(parent)
@@ -692,20 +678,6 @@ class AbstractDownloadItem(QObject):
             return
         self.open_file(cmdline)
 
-    def _pdfjs_if_successful(self):
-        """Open the file via PDF.js if downloading was successful."""
-        if not self.successful:
-            log.downloads.debug("{} finished but not successful, not opening!"
-                                .format(self))
-            return
-
-        filename = self._get_open_filename()
-        if filename is None:  # pragma: no cover
-            log.downloads.error("No filename to open the download!")
-            return
-        self.pdfjs_requested.emit(os.path.basename(filename),
-                                  self.url())
-
     def cancel_for_origin(self) -> bool:
         """Cancel the download based on URL/origin.
 
@@ -748,7 +720,7 @@ class AbstractDownloadItem(QObject):
         if isinstance(target, FileDownloadTarget):
             self._set_filename(
                 target.filename, force_overwrite=target.force_overwrite)
-        elif isinstance(target, (OpenFileDownloadTarget, PDFJSDownloadTarget)):
+        elif isinstance(target, OpenFileDownloadTarget):
             try:
                 fobj = temp_download_manager.get_tmpfile(self.basename)
             except OSError as exc:
@@ -757,13 +729,9 @@ class AbstractDownloadItem(QObject):
                 self.cancel()
                 return
 
-            if isinstance(target, OpenFileDownloadTarget):
-                self.finished.connect(functools.partial(
-                    self._open_if_successful, target.cmdline))
-            elif isinstance(target, PDFJSDownloadTarget):
-                self.finished.connect(self._pdfjs_if_successful)
-            else:
-                raise utils.Unreachable
+            assert isinstance(target, OpenFileDownloadTarget), target
+            self.finished.connect(functools.partial(
+                self._open_if_successful, target.cmdline))
 
             self._set_tempfile(fobj)
         else:  # pragma: no cover
@@ -810,15 +778,7 @@ class AbstractDownloadManager(QObject):
             dl.stats.update_speed()
         self.data_changed.emit(-1)
 
-    @pyqtSlot(str, QUrl)
-    def _on_pdfjs_requested(self, filename: str, original_url: QUrl) -> None:
-        """Open PDF.js when a download requests it."""
-        tabbed_browser = objreg.get('tabbed-browser', scope='window',
-                                    window='last-focused')
-        tabbed_browser.tabopen(pdfjs.get_main_url(filename, original_url),
-                               background=False)
-
-    def _init_item(self, download, auto_remove, suggested_filename):
+    def _init_item(self, download, suggested_filename):
         """Initialize a newly created DownloadItem."""
         download.cancelled.connect(download.remove)
         download.remove_requested.connect(functools.partial(
@@ -828,13 +788,10 @@ class AbstractDownloadManager(QObject):
         if delay > -1:
             download.finished.connect(
                 lambda: QTimer.singleShot(delay, download.remove))
-        elif auto_remove:
-            download.finished.connect(download.remove)
 
         download.data_changed.connect(
             functools.partial(self._on_data_changed, download))
         download.error.connect(self._on_error)
-        download.pdfjs_requested.connect(self._on_pdfjs_requested)
 
         download.basename = suggested_filename
         idx = len(self.downloads)

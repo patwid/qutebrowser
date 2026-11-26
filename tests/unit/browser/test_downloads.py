@@ -100,7 +100,7 @@ def test_sanitized_filenames(raw, expected,
     # Don't try to get current window
     monkeypatch.setattr(item, '_get_conflicting_download', list)
 
-    manager._init_item(item, True, raw)
+    manager._init_item(item, raw)
     item.set_target(target)
     assert item._filename.endswith(expected)
 

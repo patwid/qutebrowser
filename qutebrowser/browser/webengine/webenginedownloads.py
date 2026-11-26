@@ -13,7 +13,7 @@ from qutebrowser.qt.core import pyqtSlot, Qt, QUrl, QObject
 from qutebrowser.qt.webenginecore import (QWebEngineDownloadRequest, QWebEnginePage,
                                           QWebEngineProfile)
 
-from qutebrowser.browser import downloads, pdfjs
+from qutebrowser.browser import downloads
 from qutebrowser.utils import debug, usertypes, message, log, urlutils
 
 
@@ -327,19 +327,12 @@ class DownloadManager(downloads.AbstractDownloadManager):
     @pyqtSlot(QWebEngineDownloadRequest)
     def handle_download(self, qt_item):
         """Start a download coming from a QWebEngineProfile."""
-        mime_type = qt_item.mimeType()
-        url = qt_item.url()
-
         page = qt_item.page()
         request = self._requests.pop(page, None)
         suggested_filename = self._suggested_filename(qt_item, request)
 
-        # Downloads we were explicitly asked for are never shown via PDF.js.
-        use_pdfjs = request is None and pdfjs.should_use_pdfjs(mime_type, url)
-
         download = DownloadItem(qt_item, manager=self, request=request)
-        self._init_item(download, auto_remove=use_pdfjs,
-                        suggested_filename=suggested_filename)
+        self._init_item(download, suggested_filename=suggested_filename)
 
         prompt_download_directory = None
         if request is not None:
@@ -354,10 +347,6 @@ class DownloadManager(downloads.AbstractDownloadManager):
             download.set_target(self._mhtml_target)
             self._mhtml_target = None
             return
-        if use_pdfjs:
-            download.set_target(downloads.PDFJSDownloadTarget())
-            return
-
         filename = downloads.immediate_download_path(prompt_download_directory)
         if filename is not None:
             # User doesn't want to be asked, so just use the download_dir

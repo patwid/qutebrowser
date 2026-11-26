@@ -170,32 +170,6 @@ Feature: Special qute:// pages
         Then "RequestDeniedError while handling qute://* URL: Invalid CSRF token!" should be logged
         And the error "Invalid CSRF token for qute://settings!" should be shown
 
-    # pdfjs support
-
-    Scenario: pdfjs is used for pdf files
-        Given pdfjs is available
-        When I set content.pdfjs to true
-        And I open data/misc/test.pdf without waiting
-        And I wait until PDF.js is ready
-        # No "Then"
-
-    Scenario: pdfjs is not used when disabled
-        When I set content.pdfjs to false
-        And I set downloads.location.prompt to false
-        And I open data/misc/test.pdf without waiting
-        Then "Download test.pdf finished" should be logged
-
-    Scenario: Downloading a pdf via pdf.js button (issue 1214)
-        Given pdfjs is available
-        When I set content.pdfjs to true
-        And I set downloads.location.prompt to true
-        And I open data/misc/test.pdf without waiting
-        And I wait until PDF.js is ready
-        And I run :jseval (document.getElementById("downloadButton") || document.getElementById("download")).click()
-        And I wait for "Asking question <qutebrowser.utils.usertypes.Question default=* mode=<PromptMode.download: 5> option=None text=* title='Save file to:'>, *" in the log
-        And I run :mode-leave
-        Then no crash should happen
-
     # :pyeval
 
     Scenario: Running :pyeval

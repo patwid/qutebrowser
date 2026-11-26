@@ -16,7 +16,6 @@ import pytest
 from qutebrowser.misc import objects
 from qutebrowser.commands import cmdexc, argparser, command
 from qutebrowser.api import cmdutils
-from qutebrowser.utils import usertypes
 
 
 @pytest.fixture(autouse=True)

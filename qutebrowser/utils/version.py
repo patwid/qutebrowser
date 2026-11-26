@@ -4,7 +4,6 @@
 
 """Utilities to show various version information."""
 
-import re
 import sys
 import glob
 import os.path
@@ -33,7 +32,6 @@ import qutebrowser
 from qutebrowser.utils import (log, utils, standarddir, message, resources,
                                qtutils)
 from qutebrowser.misc import objects, earlyinit, sql, httpclient, pastebin, wmname
-from qutebrowser.browser import pdfjs
 from qutebrowser.config import config
 
 _LOGO = r'''
@@ -434,30 +432,6 @@ def _os_info() -> Sequence[str]:
     return lines
 
 
-def _pdfjs_version() -> str:
-    """Get the pdf.js version.
-
-    Return:
-        A string with the version number.
-    """
-    try:
-        pdfjs_file, file_path = pdfjs.get_pdfjs_res_and_path(pdfjs.get_pdfjs_js_path())
-    except pdfjs.PDFJSNotFound:
-        return 'no'
-    else:
-        pdfjs_file = pdfjs_file.decode('utf-8')
-        version_re = re.compile(
-            r"""^ *(PDFJS\.version|(var|const|\*) pdfjsVersion) = ['"]?(?P<version>[^'"\n]+)['"]?;?$""",
-            re.MULTILINE)
-
-        match = version_re.search(pdfjs_file)
-        pdfjs_version = 'unknown' if not match else match.group('version')
-        if file_path is None:
-            file_path = 'bundled'
-
-        return '{} ({})'.format(pdfjs_version, file_path)
-
-
 @dataclasses.dataclass
 class WebEngineVersions:
 
@@ -584,7 +558,6 @@ def version_info() -> str:
     lines += _module_versions()
 
     lines += [
-        'pdf.js: {}'.format(_pdfjs_version()),
         'sqlite: {}'.format(sql.version()),
         'QtNetwork SSL: {}\n'.format(QSslSocket.sslLibraryVersionString()
                                      if QSslSocket.supportsSsl() else 'no'),
