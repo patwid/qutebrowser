@@ -14,7 +14,7 @@ from scripts.dev import check_coverage
 
 
 pytest_plugins = 'pytester'
-pytestmark = [pytest.mark.linux, pytest.mark.not_frozen]
+pytestmark = [pytest.mark.not_frozen]
 
 
 class CovtestHelper:
@@ -209,11 +209,6 @@ def test_tested_unlisted(covtest):
 ])
 def test_skipped_args(covtest, args, reason):
     covtest.check_skipped(args, reason)
-
-
-@pytest.mark.fake_os('windows')
-def test_skipped_non_linux(covtest):
-    covtest.check_skipped([], "on non-Linux system.")
 
 
 def _generate_files():

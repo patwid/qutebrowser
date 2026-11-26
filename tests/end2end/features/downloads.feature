@@ -141,34 +141,6 @@ Feature: Downloading things from a website.
         Then the downloaded file ../foo should not exist
         And the downloaded file ..%2Ffoo should exist
 
-    @windows
-    Scenario: Downloading a file to a reserved path
-        When I set downloads.location.prompt to true
-        And I open data/downloads/download.bin without waiting
-        And I wait for "Asking question <qutebrowser.utils.usertypes.Question default='*' mode=<PromptMode.download: 5> option=None text='Please enter a location for <b>http://localhost:*/data/downloads/download.bin</b>' title='Save file to:'>, *" in the log
-        And I run :prompt-accept COM1
-        And I run :mode-leave
-        Then the error "Invalid filename" should be shown
-
-    @windows
-    Scenario: Downloading a file to a drive-relative working directory
-        When I set downloads.location.prompt to true
-        And I open data/downloads/download.bin without waiting
-        And I wait for "Asking question <qutebrowser.utils.usertypes.Question default='*' mode=<PromptMode.download: 5> option=None text='Please enter a location for <b>http://localhost:*/data/downloads/download.bin</b>' title='Save file to:'>, *" in the log
-        And I run :prompt-accept C:foobar
-        And I run :mode-leave
-        Then the error "Invalid filename" should be shown
-
-    @windows
-    Scenario: Downloading a file to a reserved path with :download
-        When I run :download data/downloads/download.bin --dest=COM1
-        Then the error "Invalid target filename" should be shown
-
-    @windows
-    Scenario: Download a file to a drive-relative working directory with :download
-        When I run :download data/downloads/download.bin --dest=C:foobar
-        Then the error "Invalid target filename" should be shown
-
     ## :download-retry
 
     Scenario: Retrying a failed download
@@ -568,7 +540,6 @@ Feature: Downloading things from a website.
         And I wait until the download is finished
         Then the downloaded file download.bin should be 2 bytes big
 
-    @linux
     Scenario: Not overwriting a special file
         When I set downloads.location.prompt to false
         And I run :download http://localhost:(port)/data/downloads/download.bin --dest fifo

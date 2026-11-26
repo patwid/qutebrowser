@@ -16,7 +16,7 @@ from qutebrowser.qt.core import pyqtSignal, pyqtSlot, QObject, Qt
 from qutebrowser.qt.network import QLocalSocket, QLocalServer, QAbstractSocket
 
 import qutebrowser
-from qutebrowser.utils import log, usertypes, error, standarddir, utils, debug
+from qutebrowser.utils import log, usertypes, error, standarddir, debug
 from qutebrowser.qt import sip
 
 
@@ -31,32 +31,8 @@ PROTOCOL_VERSION = 1
 server: Optional["IPCServer"] = None
 
 
-def _get_socketname_windows(basedir):
-    """Get a socketname to use for Windows."""
-    try:
-        username = getpass.getuser()
-    except ImportError:
-        # getpass.getuser() first tries a couple of environment variables. If
-        # none of those are set (i.e., USERNAME is missing), it tries to import
-        # the "pwd" module which is unavailable on Windows.
-        raise Error("Could not find username. This should only happen if "
-                    "there is a bug in the application launching qutebrowser, "
-                    "preventing the USERNAME environment variable from being "
-                    "passed. If you know more about when this happens, please "
-                    "report this to mail@qutebrowser.org.")
-
-    parts = ['qutebrowser', username]
-    if basedir is not None:
-        md5 = hashlib.md5(basedir.encode('utf-8')).hexdigest()
-        parts.append(md5)
-    return '-'.join(parts)
-
-
 def _get_socketname(basedir):
     """Get a socketname to use."""
-    if utils.is_windows:  # pragma: no cover
-        return _get_socketname_windows(basedir)
-
     parts_to_hash = [getpass.getuser()]
     if basedir is not None:
         parts_to_hash.append(basedir)
@@ -64,8 +40,7 @@ def _get_socketname(basedir):
     data_to_hash = '-'.join(parts_to_hash).encode('utf-8')
     md5 = hashlib.md5(data_to_hash).hexdigest()
 
-    prefix = 'i-' if utils.is_mac else 'ipc-'
-    filename = '{}{}'.format(prefix, md5)
+    filename = 'ipc-{}'.format(md5)
     return os.path.join(standarddir.runtime(), filename)
 
 
@@ -168,13 +143,10 @@ class IPCServer(QObject):
         self._timer.setInterval(READ_TIMEOUT)
         self._timer.timeout.connect(self.on_timeout)
 
-        if utils.is_windows:  # pragma: no cover
-            self._atime_timer = None
-        else:
-            self._atime_timer = usertypes.Timer(self, 'ipc-atime')
-            self._atime_timer.setInterval(ATIME_INTERVAL)
-            self._atime_timer.timeout.connect(self.update_atime)
-            self._atime_timer.setTimerType(Qt.TimerType.VeryCoarseTimer)
+        self._atime_timer = usertypes.Timer(self, 'ipc-atime')
+        self._atime_timer.setInterval(ATIME_INTERVAL)
+        self._atime_timer.timeout.connect(self.update_atime)
+        self._atime_timer.setTimerType(Qt.TimerType.VeryCoarseTimer)
 
         self._server: QLocalServer | None = QLocalServer(self)
         self._server.newConnection.connect(self.handle_connection)
@@ -182,17 +154,11 @@ class IPCServer(QObject):
         self._socket = None
         self._old_socket = None
 
-        if utils.is_windows:  # pragma: no cover
-            # As a WORKAROUND for a Qt bug, we can't use UserAccessOption on Unix. If we
-            # do, we don't get an AddressInUseError anymore:
-            # https://bugreports.qt.io/browse/QTBUG-48635
-            #
-            # Thus, we only do so on Windows, and handle permissions manually in
-            # listen() on Linux.
-            log.ipc.debug("Calling setSocketOptions")
-            self._server.setSocketOptions(QLocalServer.SocketOption.UserAccessOption)
-        else:  # pragma: no cover
-            log.ipc.debug("Not calling setSocketOptions")
+        # As a WORKAROUND for a Qt bug, we can't use UserAccessOption. If we do, we
+        # don't get an AddressInUseError anymore:
+        # https://bugreports.qt.io/browse/QTBUG-48635
+        #
+        # Thus, we handle permissions manually in listen().
 
     def _remove_server(self):
         """Remove an existing server."""
@@ -205,8 +171,7 @@ class IPCServer(QObject):
         """Start listening on self._socketname."""
         assert self._server is not None
         log.ipc.debug("Listening as {}".format(self._socketname))
-        if self._atime_timer is not None:  # pragma: no branch
-            self._atime_timer.start()
+        self._atime_timer.start()
         self._remove_server()
         ok = self._server.listen(self._socketname)
         if not ok:
@@ -214,15 +179,14 @@ class IPCServer(QObject):
                 raise AddressInUseError(self._server)
             raise ListenError(self._server)
 
-        if not utils.is_windows:  # pragma: no cover
-            # WORKAROUND for QTBUG-48635, see the comment in __init__ for details.
-            try:
-                os.chmod(self._server.fullServerName(), 0o700)
-            except FileNotFoundError:
-                # https://github.com/qutebrowser/qutebrowser/issues/1530
-                # The server doesn't actually exist even if ok was reported as
-                # True, so report this as an error.
-                raise ListenError(self._server)
+        # WORKAROUND for QTBUG-48635, see the comment in __init__ for details.
+        try:
+            os.chmod(self._server.fullServerName(), 0o700)
+        except FileNotFoundError:
+            # https://github.com/qutebrowser/qutebrowser/issues/1530
+            # The server doesn't actually exist even if ok was reported as
+            # True, so report this as an error.
+            raise ListenError(self._server)
 
     @pyqtSlot('QLocalSocket::LocalSocketError')
     def on_error(self, err):

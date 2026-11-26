@@ -734,12 +734,6 @@ window._qutebrowser.caret = (function() {
     CaretBrowsing.isSelectionCollapsed = false;
 
     /**
-     * Whether we're running on Windows.
-     * @type {boolean}
-     */
-    CaretBrowsing.isWindows = null;
-
-    /**
      * Whether we should log debug outputs.
      * @type {boolean}
      */
@@ -1167,13 +1161,6 @@ window._qutebrowser.caret = (function() {
                     modify(action, direction, granularity);
             }
         }
-
-        if (CaretBrowsing.isWindows &&
-                (direction === "forward" ||
-                    direction === "right") &&
-                granularity === "word") {
-            CaretBrowsing.move("left", "character");
-        }
     };
 
     CaretBrowsing.finishMove = function() {
@@ -1330,7 +1317,6 @@ window._qutebrowser.caret = (function() {
     };
 
     funcs.setFlags = (flags) => {
-        CaretBrowsing.isWindows = flags.includes("windows");
         CaretBrowsing.isDebug = flags.includes("debug");
     };
 

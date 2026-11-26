@@ -47,7 +47,6 @@ Feature: :spawn
         And I wait for "load status for * url='qute://process/*'>: LoadStatus.success" in the log
         Then the page should contain the plaintext "Message 3"
 
-    @posix
     Scenario: Running :spawn with userscript
         Given I clean up open tabs
         When I open data/hello.txt
@@ -59,30 +58,15 @@ Feature: :spawn
             - data/hello.txt (active)
             """
 
-    @posix
     Scenario: Running :spawn with userscript and count
         When I run :spawn -u (testdata)/userscripts/hello_if_count with count 5
         Then the message "Count is five!" should be shown
 
-    @posix
     Scenario: Running :spawn with userscript and no count
         When I run :spawn -u (testdata)/userscripts/hello_if_count
         Then the message "No count!" should be shown
 
 
-    @windows
-    Scenario: Running :spawn with userscript on Windows
-        Given I clean up open tabs
-        When I open data/hello.txt
-        And I run :spawn -u (testdata)/userscripts/open_current_url.bat
-        And I wait until data/hello.txt is loaded
-        Then the following tabs should be open:
-           """
-            - data/hello.txt
-            - data/hello.txt (active)
-           """
-
-    @posix
     Scenario: Running :spawn with userscript that expects the stdin getting closed
         When I run :spawn -u (testdata)/userscripts/stdinclose.py
         Then the message "stdin closed" should be shown

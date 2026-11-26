@@ -10,7 +10,6 @@ from qutebrowser.qt.core import Qt
 from qutebrowser.qt.widgets import QMessageBox, QWidget
 
 from qutebrowser.misc import msgbox
-from qutebrowser.utils import utils
 
 
 @pytest.fixture(autouse=True)
@@ -30,8 +29,7 @@ def test_attributes(qtbot):
     box = msgbox.msgbox(parent=parent, title=title, text=text, icon=icon,
                         buttons=buttons)
     qtbot.add_widget(box)
-    if not utils.is_mac:
-        assert box.windowTitle() == title
+    assert box.windowTitle() == title
     assert box.icon() == icon
     assert box.standardButtons() == buttons
     assert box.text() == text
@@ -72,8 +70,7 @@ def test_finished_signal(qtbot):
 def test_information(qtbot):
     box = msgbox.information(parent=None, title='foo', text='bar')
     qtbot.add_widget(box)
-    if not utils.is_mac:
-        assert box.windowTitle() == 'foo'
+    assert box.windowTitle() == 'foo'
     assert box.text() == 'bar'
     assert box.icon() == QMessageBox.Icon.Information
 

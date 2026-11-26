@@ -19,35 +19,6 @@ sys.path.insert(
     0, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 
 
-def download_nsis_plugins():
-    """Download the plugins required by the NSIS script."""
-    github_url = 'https://raw.githubusercontent.com/Drizin/NsisMultiUser'
-    git_commit = 'master'
-    nsh_files = ('Include/NsisMultiUser.nsh', 'Include/NsisMultiUserLang.nsh',
-                 'Include/UAC.nsh', 'Include/StdUtils.nsh',
-                 'Demos/Common/Utils.nsh')
-    dll_files = ('Plugins/x86-unicode/UAC.dll',
-                 'Plugins/x86-unicode/StdUtils.dll')
-    include_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                               '..', '..', 'misc', 'nsis',
-                               'include')
-    plugins_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                               '..', '..', 'misc', 'nsis',
-                               'plugins', 'x86-unicode')
-    os.makedirs(include_dir, exist_ok=True)
-    os.makedirs(plugins_dir, exist_ok=True)
-    print("=> Downloading NSIS plugins")
-    for nsh_file in nsh_files:
-        target_path = os.path.join(include_dir, os.path.basename(nsh_file))
-        urllib.request.urlretrieve('{}/{}/{}'.format(github_url, git_commit,
-                                                     nsh_file), target_path)
-    for dll_file in dll_files:
-        target_path = os.path.join(plugins_dir, os.path.basename(dll_file))
-        urllib.request.urlretrieve('{}/{}/{}'.format(github_url, git_commit,
-                                                     dll_file), target_path)
-    urllib.request.urlcleanup()
-
-
 def find_pdfjs_asset(assets, legacy):
     """Find the PDF.js asset to use."""
     # pylint: disable=broad-exception-raised
@@ -132,18 +103,6 @@ def update_pdfjs(target_version=None, legacy=True, gh_token=None):
     urllib.request.urlcleanup()
 
 
-def update_dmg_makefile():
-    """Update fancy-dmg Makefile.
-
-    See https://el-tramo.be/blog/fancy-dmg/
-    """
-    print("Updating fancy-dmg Makefile...")
-    url = 'https://raw.githubusercontent.com/remko/fancy-dmg/master/Makefile'
-    target_path = os.path.join('scripts', 'dev', 'Makefile-dmg')
-    urllib.request.urlretrieve(url, target_path)
-    urllib.request.urlcleanup()
-
-
 def update_ace():
     """Update ACE.
 
@@ -173,25 +132,19 @@ def test_dicts():
                 print('ERROR: {}'.format(response.status))
 
 
-def run(*, nsis=False, ace=False, pdfjs=True, modern_pdfjs=False, fancy_dmg=False,
+def run(*, ace=False, pdfjs=True, modern_pdfjs=False,
         pdfjs_version=None, dicts=False, gh_token=None):
     """Update components based on the given arguments."""
-    if nsis:
-        download_nsis_plugins()
     if pdfjs:
         update_pdfjs(pdfjs_version, legacy=not modern_pdfjs, gh_token=gh_token)
     if ace:
         update_ace()
-    if fancy_dmg:
-        update_dmg_makefile()
     if dicts:
         test_dicts()
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--nsis', '-n', help='Download NSIS plugins.',
-                        required=False, action='store_true')
     parser.add_argument(
         '--pdfjs', '-p',
         help='Specify pdfjs version. If not given, '
@@ -199,8 +152,6 @@ def main():
         required=False, metavar='VERSION')
     parser.add_argument("--modern-pdfjs",
                         help="Use PDF.js modern build (only supports latest Chromium)",
-                        action='store_true')
-    parser.add_argument('--fancy-dmg', help="Update fancy-dmg Makefile",
                         action='store_true')
     parser.add_argument(
         '--dicts', '-d',
@@ -210,7 +161,7 @@ def main():
     parser.add_argument(
         '--gh-token', help="GitHub token to use.", nargs='?')
     args = parser.parse_args()
-    run(nsis=False, ace=True, pdfjs=True, fancy_dmg=args.fancy_dmg,
+    run(ace=True, pdfjs=True,
         pdfjs_version=args.pdfjs, modern_pdfjs=args.modern_pdfjs,
         dicts=args.dicts, gh_token=args.gh_token)
 

@@ -125,7 +125,6 @@ Feature: Opening external editors
 
     # Could not get signals working on Windows
     # There's no guarantee that the tab gets deleted...
-    @posix
     Scenario: Spawning an editor and closing the tab
         When I setup a fake editor that writes "foobar" on save
         And I open data/editor.html
@@ -140,7 +139,6 @@ Feature: Opening external editors
         And the message "Editor backup at *" should be shown
 
     # Could not get signals working on Windows
-    @posix
     Scenario: Spawning an editor and saving
         When I setup a fake editor that writes "foobar" on save
         And I open data/editor.html

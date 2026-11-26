@@ -181,7 +181,6 @@ class FakeNotificationAdapter(notification.AbstractNotificationAdapter):
         raise NotImplementedError
 
 
-@pytest.mark.linux
 class TestDBus:
 
     NO_REPLY_ERROR = FakeDBusMessage.create_error("org.freedesktop.DBus.Error.NoReply")

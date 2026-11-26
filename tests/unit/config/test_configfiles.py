@@ -1557,10 +1557,9 @@ def test_init(init_patch, config_tmpdir):
     configfiles.init()
 
     # Make sure qsettings land in a subdir
-    if utils.is_linux:
-        settings = QSettings()
-        settings.setValue("hello", "world")
-        settings.sync()
-        assert (config_tmpdir / 'qsettings').exists()
+    settings = QSettings()
+    settings.setValue("hello", "world")
+    settings.sync()
+    assert (config_tmpdir / 'qsettings').exists()
 
     # Lots of other stuff is tested in test_configinit.py

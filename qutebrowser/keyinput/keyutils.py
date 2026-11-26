@@ -658,22 +658,6 @@ class KeySequence:
                 not ev.text().isupper()):
             modifiers = Qt.KeyboardModifier.NoModifier
 
-        # On macOS, swap Ctrl and Meta back
-        #
-        # We don't use Qt.ApplicationAttribute.AA_MacDontSwapCtrlAndMeta because that also affects
-        # Qt/QtWebEngine's own shortcuts. However, we do want "Ctrl" and "Meta"
-        # (or "Cmd") in a key binding name to actually represent what's on the
-        # keyboard.
-        if utils.is_mac:
-            if modifiers & Qt.KeyboardModifier.ControlModifier and modifiers & Qt.KeyboardModifier.MetaModifier:
-                pass
-            elif modifiers & Qt.KeyboardModifier.ControlModifier:
-                modifiers = _unset_modifier_bits(modifiers, Qt.KeyboardModifier.ControlModifier)
-                modifiers |= Qt.KeyboardModifier.MetaModifier
-            elif modifiers & Qt.KeyboardModifier.MetaModifier:
-                modifiers = _unset_modifier_bits(modifiers, Qt.KeyboardModifier.MetaModifier)
-                modifiers |= Qt.KeyboardModifier.ControlModifier
-
         infos = list(self)
         infos.append(KeyInfo(key, modifiers))
 

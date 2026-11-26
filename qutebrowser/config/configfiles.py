@@ -252,7 +252,7 @@ class YamlConfig(QObject):
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._filename = os.path.join(standarddir.config(auto=True),
+        self._filename = os.path.join(standarddir.config(),
                                       'autoconfig.yml')
         self._dirty = False
 
@@ -1050,6 +1050,6 @@ def init() -> None:
     # This fixes one of the corruption issues here:
     # https://github.com/qutebrowser/qutebrowser/issues/515
 
-    path = os.path.join(standarddir.config(auto=True), 'qsettings')
+    path = os.path.join(standarddir.config(), 'qsettings')
     for fmt in [QSettings.Format.NativeFormat, QSettings.Format.IniFormat]:
         QSettings.setPath(fmt, QSettings.Scope.UserScope, path)

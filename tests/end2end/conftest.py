@@ -152,12 +152,6 @@ def pytest_collection_modifyitems(config, items):
         ('qtwebengine_todo', 'QtWebEngine TODO', pytest.mark.xfail, True),
         ('qtwebengine_skip', 'Skipped with QtWebEngine', pytest.mark.skipif, True),
         ('qtwebengine_flaky', 'Flaky with QtWebEngine', pytest.mark.skipif, True),
-        ('qtwebengine_mac_xfail', 'Fails on macOS with QtWebEngine',
-         pytest.mark.xfail, utils.is_mac),
-        ('windows_skip',
-         'Skipped on Windows',
-         pytest.mark.skipif,
-         utils.is_windows),
     ]
 
     for item in items:

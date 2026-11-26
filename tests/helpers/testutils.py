@@ -284,9 +284,6 @@ def _needs_map_discard_workaround(qtwe_version: utils.VersionNumber) -> bool:
     WORKAROUND for https://bugreports.qt.io/browse/QTBUG-134631
     See https://bugs.gentoo.org/show_bug.cgi?id=949654
     """
-    if not utils.is_posix:
-        return False
-
     libc_name, libc_version_str = platform.libc_ver()
     if libc_name != "glibc":
         return False
@@ -377,9 +374,6 @@ def enum_members(base, enumtype):
 
 
 def is_userns_restricted() -> bool | None:
-    if not utils.is_linux:
-        return None
-
     try:
         proc = subprocess.run(
             ["sysctl", "-n", "kernel.apparmor_restrict_unprivileged_userns"],

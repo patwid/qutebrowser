@@ -22,11 +22,6 @@ To call a userscript, it needs to be stored in your config or data directory und
 `userscripts` (for example: `~/.local/share/qutebrowser/userscripts/myscript`),
 or just use an absolute path.
 
-NOTE: On Windows, only userscripts with `com`, `bat`, or `exe` extensions will
-be launched. As an additional resource, see
-https://www.ii.com/qutebrowser-userscripts-on-windows/[Infinite Ink:
-qutebrowser Userscripts on Windows].
-
 Getting information
 -------------------
 
@@ -71,12 +66,7 @@ Sending commands
 Normal qutebrowser commands can be written to `$QUTE_FIFO` and will be
 executed.
 
-On Unix/macOS, this is a named pipe and commands written to it will get executed
-immediately.
-
-On Windows, this is a regular file, and the commands in it will be executed as
-soon as your userscript terminates. This means when writing multiple commands,
-you should append to the file (`>>` in bash) rather than overwrite it (`>`).
+This is a named pipe and commands written to it will get executed immediately.
 
 Examples
 --------

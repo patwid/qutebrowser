@@ -451,17 +451,9 @@ class TestGitStrSubprocess:
                 'GIT_COMMITTER_EMAIL': 'mail@qutebrowser.org',
                 'GIT_COMMITTER_DATE': 'Thu  1 Jan 01:00:00 CET 1970',
             })
-            if utils.is_windows:
-                # If we don't call this with shell=True it might fail under
-                # some environments on Windows...
-                # https://bugs.python.org/issue24493
-                subprocess.run(
-                    'git -C "{}" {}'.format(tmp_path, ' '.join(args)),
-                    env=env, check=True, shell=True)
-            else:
-                subprocess.run(
-                    ['git', '-C', str(tmp_path)] + list(args),
-                    check=True, env=env)
+            subprocess.run(
+                ['git', '-C', str(tmp_path)] + list(args),
+                check=True, env=env)
 
         (tmp_path / 'file').write_text("Hello World!", encoding='utf-8')
         _git('init')
@@ -592,12 +584,10 @@ def test_path_info(monkeypatch, equal):
     """Test _path_info().
 
     Args:
-        equal: Whether system data / data and system config / config are equal.
+        equal: Whether system data / data are equal.
     """
     patches = {
-        'config': lambda auto=False: (
-            'AUTO CONFIG PATH' if auto and not equal
-            else 'CONFIG PATH'),
+        'config': lambda: 'CONFIG PATH',
         'data': lambda system=False: (
             'SYSTEM DATA PATH' if system and not equal
             else 'DATA PATH'),
@@ -616,10 +606,8 @@ def test_path_info(monkeypatch, equal):
     assert pathinfo['runtime'] == 'RUNTIME PATH'
 
     if equal:
-        assert 'auto config' not in pathinfo
         assert 'system data' not in pathinfo
     else:
-        assert pathinfo['auto config'] == 'AUTO CONFIG PATH'
         assert pathinfo['system data'] == 'SYSTEM DATA PATH'
 
 
@@ -652,7 +640,6 @@ class TestModuleVersions:
         assert version._module_versions() == expected
 
     @pytest.mark.parametrize('module, expected', [
-        ('colorama', 'colorama: no'),
         ('adblock', 'adblock: no'),
     ])
     def test_missing_module(self, module, expected, import_fake):
@@ -713,15 +700,14 @@ class TestModuleVersions:
         assert version._module_versions()[idx] == "jinja2: unknown"
 
     @pytest.mark.parametrize('attribute, expected_modules', [
-        ('VERSION', ['colorama']),
         ('SIP_VERSION_STR', ['PyQt6.sip']),
         (None, []),
     ])
     def test_version_attribute(self, attribute, expected_modules, import_fake):
         """Test with a different version attribute.
 
-        VERSION is tested for old colorama versions, and None to make sure
-        things still work if some package suddenly doesn't have __version__.
+        None is tested to make sure things still work if some package suddenly
+        doesn't have __version__.
 
         Args:
             attribute: The name of the version attribute.
@@ -748,7 +734,6 @@ class TestModuleVersions:
 
     @pytest.mark.parametrize('name, has_version', [
         ('sip', False),
-        ('colorama', True),
         # jinja2: removed in 3.3
         ('pygments', True),
         ('yaml', True),
@@ -782,12 +767,8 @@ class TestOsInfo:
 
     """Tests for _os_info."""
 
-    @pytest.mark.fake_os('linux')
-    def test_linux_fake(self, monkeypatch):
-        """Test with a fake Linux.
-
-        No args because osver is set to '' if the OS is linux.
-        """
+    def test_fake(self, monkeypatch):
+        """Test with fake release info."""
         monkeypatch.setattr(version, '_release_info',
                             lambda: [('releaseinfo', 'Hello World')])
         ret = version._os_info()
@@ -795,67 +776,8 @@ class TestOsInfo:
                     '--- releaseinfo ---', 'Hello World']
         assert ret == expected
 
-    @pytest.mark.fake_os('windows')
-    def test_windows_fake(self, monkeypatch):
-        """Test with a fake Windows."""
-        monkeypatch.setattr(version.platform, 'win32_ver',
-                            lambda: ('eggs', 'bacon', 'ham', 'spam'))
-        ret = version._os_info()
-        expected = ['OS Version: eggs, bacon, ham, spam']
-        assert ret == expected
-
-    @pytest.mark.fake_os('mac')
-    @pytest.mark.parametrize('mac_ver, mac_ver_str', [
-        (('x', ('', '', ''), 'y'), 'x, y'),
-        (('', ('', '', ''), ''), ''),
-        (('x', ('1', '2', '3'), 'y'), 'x, 1.2.3, y'),
-    ])
-    def test_mac_fake(self, monkeypatch, mac_ver, mac_ver_str):
-        """Test with a fake macOS.
-
-        Args:
-            mac_ver: The tuple to set platform.mac_ver() to.
-            mac_ver_str: The expected Mac version string in version._os_info().
-        """
-        monkeypatch.setattr(version.platform, 'mac_ver', lambda: mac_ver)
-        ret = version._os_info()
-        expected = ['OS Version: {}'.format(mac_ver_str)]
-        assert ret == expected
-
-    @pytest.mark.fake_os('posix')
-    def test_posix_fake(self, monkeypatch):
-        """Test with a fake posix platform."""
-        uname_tuple = ('PosixOS', 'localhost', '1.0', '1.0', 'i386', 'i386')
-        monkeypatch.setattr(version.platform, 'uname', lambda: uname_tuple)
-        ret = version._os_info()
-        expected = ['OS Version: PosixOS localhost 1.0 1.0 i386 i386']
-        assert ret == expected
-
-    @pytest.mark.fake_os('unknown')
-    def test_unknown_fake(self):
-        """Test with a fake unknown platform."""
-        ret = version._os_info()
-        expected = ['OS Version: ?']
-        assert ret == expected
-
-    @pytest.mark.linux
-    def test_linux_real(self):
-        """Make sure there are no exceptions with a real Linux."""
-        version._os_info()
-
-    @pytest.mark.windows
-    def test_windows_real(self):
-        """Make sure there are no exceptions with a real Windows."""
-        version._os_info()
-
-    @pytest.mark.mac
-    def test_mac_real(self):
-        """Make sure there are no exceptions with a real macOS."""
-        version._os_info()
-
-    @pytest.mark.posix
-    def test_posix_real(self):
-        """Make sure there are no exceptions with a real posix."""
+    def test_real(self):
+        """Make sure there are no exceptions with the real system."""
         version._os_info()
 
 

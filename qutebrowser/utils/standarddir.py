@@ -6,7 +6,6 @@
 
 import os
 import os.path
-import sys
 import contextlib
 import enum
 import argparse
@@ -16,7 +15,7 @@ from collections.abc import Iterator
 from qutebrowser.qt.core import QStandardPaths
 from qutebrowser.qt.widgets import QApplication
 
-from qutebrowser.utils import log, debug, utils, version
+from qutebrowser.utils import log, debug, version
 
 # The cached locations
 _locations: dict["_Location", str] = {}
@@ -27,7 +26,6 @@ class _Location(enum.Enum):
     """A key for _locations."""
 
     config = enum.auto()
-    auto_config = enum.auto()
     data = enum.auto()
     system_data = enum.auto()
     cache = enum.auto()
@@ -66,24 +64,10 @@ def _init_config(args: argparse.Namespace | None) -> None:
     typ = QStandardPaths.StandardLocation.ConfigLocation
     path = _from_args(typ, args)
     if path is None:
-        if utils.is_windows:
-            app_data_path = _writable_location(
-                QStandardPaths.StandardLocation.AppDataLocation)
-            path = os.path.join(app_data_path, 'config')
-        else:
-            path = _writable_location(typ)
+        path = _writable_location(typ)
 
     _create(path)
     _locations[_Location.config] = path
-    _locations[_Location.auto_config] = path
-
-    # Override the normal (non-auto) config on macOS
-    if utils.is_mac:
-        path = _from_args(typ, args)
-        if path is None:  # pragma: no branch
-            path = os.path.expanduser('~/.' + APPNAME)
-            _create(path)
-            _locations[_Location.config] = path
 
     config_py_file = os.path.join(_locations[_Location.config], 'config.py')
     if getattr(args, 'config_py', None) is not None:
@@ -92,14 +76,8 @@ def _init_config(args: argparse.Namespace | None) -> None:
     _locations[_Location.config_py] = config_py_file
 
 
-def config(auto: bool = False) -> str:
-    """Get the location for the config directory.
-
-    If auto=True is given, get the location for the autoconfig.yml directory,
-    which is different on macOS.
-    """
-    if auto:
-        return _locations[_Location.auto_config]
+def config() -> str:
+    """Get the location for the config directory."""
     return _locations[_Location.config]
 
 
@@ -117,26 +95,17 @@ def _init_data(args: argparse.Namespace | None) -> None:
     typ = QStandardPaths.StandardLocation.AppDataLocation
     path = _from_args(typ, args)
     if path is None:
-        if utils.is_windows:
-            app_data_path = _writable_location(typ)  # same location as config
-            path = os.path.join(app_data_path, 'data')
-        elif sys.platform.startswith('haiku'):
-            # HaikuOS returns an empty value for AppDataLocation
-            config_path = _writable_location(QStandardPaths.StandardLocation.ConfigLocation)
-            path = os.path.join(config_path, 'data')
-        else:
-            path = _writable_location(typ)
+        path = _writable_location(typ)
 
     _create(path)
     _locations[_Location.data] = path
 
     # system_data
     _locations.pop(_Location.system_data, None)  # Remove old state
-    if utils.is_linux:
-        prefix = '/app' if version.is_flatpak() else '/usr'
-        path = f'{prefix}/share/{APPNAME}'
-        if os.path.exists(path):
-            _locations[_Location.system_data] = path
+    prefix = '/app' if version.is_flatpak() else '/usr'
+    path = f'{prefix}/share/{APPNAME}'
+    if os.path.exists(path):
+        _locations[_Location.system_data] = path
 
 
 def data(system: bool = False) -> str:
@@ -158,12 +127,7 @@ def _init_cache(args: argparse.Namespace | None) -> None:
     typ = QStandardPaths.StandardLocation.CacheLocation
     path = _from_args(typ, args)
     if path is None:
-        if utils.is_windows:
-            # Local, not Roaming!
-            data_path = _writable_location(QStandardPaths.StandardLocation.AppLocalDataLocation)
-            path = os.path.join(data_path, 'cache')
-        else:
-            path = _writable_location(typ)
+        path = _writable_location(typ)
 
     _create(path)
     _locations[_Location.cache] = path
@@ -192,11 +156,7 @@ def download() -> str:
 
 def _init_runtime(args: argparse.Namespace | None) -> None:
     """Initialize location for runtime data."""
-    if utils.is_mac or utils.is_windows:
-        # RuntimeLocation is a weird path on macOS and Windows.
-        typ = QStandardPaths.StandardLocation.TempLocation
-    else:
-        typ = QStandardPaths.StandardLocation.RuntimeLocation
+    typ = QStandardPaths.StandardLocation.RuntimeLocation
 
     path = _from_args(typ, args)
     if path is None:

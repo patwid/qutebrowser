@@ -93,36 +93,34 @@ def _qtwebengine_features(  # noqa: C901
         else:
             raise utils.Unreachable(flag)
 
-    if utils.is_linux:
-        # Enable WebRTC PipeWire for screen capturing on Wayland.
-        #
-        # This is disabled in Chromium by default because of the "dialog hell":
-        # https://bugs.chromium.org/p/chromium/issues/detail?id=682122#c50
-        # https://github.com/flatpak/xdg-desktop-portal-gtk/issues/204
-        #
-        # However, we don't have Chromium's confirmation dialog in qutebrowser,
-        # so we should only get qutebrowser's permission dialog.
-        #
-        # This only should be enabled on Wayland, but it's too early to check
-        # that, as we don't have a QApplication available at this point. Thus,
-        # just turn it on unconditionally on Linux, which shouldn't hurt.
-        enabled_features.append('WebRTCPipeWireCapturer')
+    # Enable WebRTC PipeWire for screen capturing on Wayland.
+    #
+    # This is disabled in Chromium by default because of the "dialog hell":
+    # https://bugs.chromium.org/p/chromium/issues/detail?id=682122#c50
+    # https://github.com/flatpak/xdg-desktop-portal-gtk/issues/204
+    #
+    # However, we don't have Chromium's confirmation dialog in qutebrowser,
+    # so we should only get qutebrowser's permission dialog.
+    #
+    # This only should be enabled on Wayland, but it's too early to check
+    # that, as we don't have a QApplication available at this point. Thus,
+    # just turn it on unconditionally, which shouldn't hurt.
+    enabled_features.append('WebRTCPipeWireCapturer')
 
-    if not utils.is_mac:
-        # Enable overlay scrollbars.
-        #
-        # There are two additional flags in Chromium:
-        #
-        # - OverlayScrollbarFlashAfterAnyScrollUpdate
-        # - OverlayScrollbarFlashWhenMouseEnter
-        #
-        # We don't expose/activate those, but the changes they introduce are
-        # quite subtle: The former seems to show the scrollbar handle even if
-        # there was a 0px scroll (though no idea how that can happen...). The
-        # latter flashes *all* scrollbars when a scrollable area was entered,
-        # which doesn't seem to make much sense.
-        if config.val.scrolling.bar == 'overlay':
-            enabled_features.append('OverlayScrollbar')
+    # Enable overlay scrollbars.
+    #
+    # There are two additional flags in Chromium:
+    #
+    # - OverlayScrollbarFlashAfterAnyScrollUpdate
+    # - OverlayScrollbarFlashWhenMouseEnter
+    #
+    # We don't expose/activate those, but the changes they introduce are
+    # quite subtle: The former seems to show the scrollbar handle even if
+    # there was a 0px scroll (though no idea how that can happen...). The
+    # latter flashes *all* scrollbars when a scrollable area was entered,
+    # which doesn't seem to make much sense.
+    if config.val.scrolling.bar == 'overlay':
+        enabled_features.append('OverlayScrollbar')
 
     # WORKAROUND for https://bugreports.qt.io/browse/QTBUG-132681
     # TODO adjust if fixed in Qt 6.9.2+

@@ -35,7 +35,7 @@ from collections.abc import Iterator
 from qutebrowser.config import config
 from qutebrowser.misc import binparsing, objects
 from qutebrowser.qt import core
-from qutebrowser.utils import qtutils, standarddir, utils, log, message
+from qutebrowser.utils import qtutils, standarddir, log, message
 from qutebrowser.qt.webenginecore import QWebEngineProfile
 
 
@@ -52,9 +52,6 @@ HANGOUTS_IDS = [
     32707,  # QtWebEngine 6.4
     27537,  # QtWebEngine 6.3
     23607,  # QtWebEngine 6.2
-
-    248,  # macOS
-    381,  # Windows
 ]
 PAK_VERSION = 5
 RESOURCES_ENV_VAR = "QTWEBENGINE_RESOURCES_PATH"
@@ -181,18 +178,8 @@ def _find_webengine_resources() -> pathlib.Path:
     if RESOURCES_ENV_VAR in os.environ:
         return pathlib.Path(os.environ[RESOURCES_ENV_VAR])
 
-    candidates = []
     qt_data_path = qtutils.library_path(qtutils.LibraryPath.data)
-    if utils.is_mac:  # pragma: no cover
-        # I'm not sure how to arrive at this path without hardcoding it
-        # ourselves. importlib.resources.files("PyQt6.Qt6") can serve as a
-        # replacement for the qtutils bit but it doesn't seem to help find the
-        # actual Resources folder.
-        candidates.append(
-            qt_data_path / "lib" / "QtWebEngineCore.framework" / "Resources"
-        )
-
-    candidates += [
+    candidates = [
         qt_data_path / "resources",
         qt_data_path,
         pathlib.Path(objects.qapp.applicationDirPath()),

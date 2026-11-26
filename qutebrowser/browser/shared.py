@@ -391,9 +391,6 @@ def get_user_stylesheet(searching=False):
             css += f.read()
 
     setting = config.val.scrolling.bar
-    if setting == 'overlay' and utils.is_mac:
-        setting = 'when-searching'
-
     if setting == 'never' or setting == 'when-searching' and not searching:
         css += '\nhtml > ::-webkit-scrollbar { width: 0px; height: 0px; }'
 

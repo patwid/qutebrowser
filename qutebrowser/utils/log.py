@@ -4,7 +4,6 @@
 
 """Loggers and utilities related to logging."""
 
-import os
 import sys
 import html as pyhtml
 import logging
@@ -16,17 +15,11 @@ import json
 import inspect
 import argparse
 from typing import (TYPE_CHECKING, Any,
-                    Optional, Union, TextIO, Literal, cast)
+                    Optional, Union, TextIO, Literal)
 from collections.abc import Iterator, Mapping, MutableSequence
 
 # NOTE: This is a Qt-free zone! All imports related to Qt logging should be done in
 # qutebrowser.utils.qtlog (see https://github.com/qutebrowser/qutebrowser/issues/7769).
-
-# Optional imports
-try:
-    import colorama
-except ImportError:
-    colorama = None  # type: ignore[assignment]
 
 if TYPE_CHECKING:
     from qutebrowser.config import config as configmodule
@@ -252,18 +245,13 @@ def _init_handlers(
     """
     global ram_handler
     global console_handler
-    console_fmt, ram_fmt, html_fmt, use_colorama = _init_formatters(
+    console_fmt, ram_fmt, html_fmt = _init_formatters(
         level, color, force_color, json_logging)
 
     if sys.stderr is None:
         console_handler = None
     else:
-        strip = False if force_color else None
-        if use_colorama:
-            stream = cast(TextIO, colorama.AnsiToWin32(sys.stderr, strip=strip))
-        else:
-            stream = sys.stderr
-        console_handler = logging.StreamHandler(stream)
+        console_handler = logging.StreamHandler(sys.stderr)
         console_handler.setLevel(level)
         console_handler.setFormatter(console_fmt)
 
@@ -299,7 +287,6 @@ def _init_formatters(
     Union['JSONFormatter', 'ColoredFormatter', None],
     'ColoredFormatter',
     'HTMLFormatter',
-    bool,
 ]:
     """Init log formatters.
 
@@ -310,9 +297,7 @@ def _init_formatters(
         json_logging: Format lines as JSON (disables all color).
 
     Return:
-        A (console_formatter, ram_formatter, use_colorama) tuple.
-        console_formatter/ram_formatter: logging.Formatter instances.
-        use_colorama: Whether to use colorama.
+        A (console_formatter, ram_formatter, html_formatter) tuple.
     """
     console_fmt = get_console_format(level)
     ram_formatter = ColoredFormatter(EXTENDED_FMT, DATEFMT, '{',
@@ -320,28 +305,18 @@ def _init_formatters(
     html_formatter = HTMLFormatter(EXTENDED_FMT_HTML, DATEFMT,
                                    log_colors=LOG_COLORS)
 
-    use_colorama = False
-
     if sys.stderr is None:
         console_formatter = None
-        return console_formatter, ram_formatter, html_formatter, use_colorama
+        return console_formatter, ram_formatter, html_formatter
 
     if json_logging:
         json_formatter = JSONFormatter()
-        return json_formatter, ram_formatter, html_formatter, use_colorama
+        return json_formatter, ram_formatter, html_formatter
 
-    color_supported = os.name == 'posix' or colorama
-
-    if color_supported and (sys.stderr.isatty() or force_color) and color:
-        use_colors = True
-        if colorama and os.name != 'posix':
-            use_colorama = True
-    else:
-        use_colors = False
-
+    use_colors = (sys.stderr.isatty() or force_color) and color
     console_formatter = ColoredFormatter(console_fmt, DATEFMT, '{',
                                          use_colors=use_colors)
-    return console_formatter, ram_formatter, html_formatter, use_colorama
+    return console_formatter, ram_formatter, html_formatter
 
 
 def change_console_formatter(level: int) -> None:

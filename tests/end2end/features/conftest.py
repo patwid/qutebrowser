@@ -20,22 +20,10 @@ import pytest
 import pytest_bdd as bdd
 
 import qutebrowser
-from qutebrowser.utils import log, utils, docutils, version
+from qutebrowser.utils import log, docutils, version
 from qutebrowser.browser import pdfjs
 from end2end.fixtures import testprocess
 from helpers import testutils
-
-
-def _get_echo_exe_path():
-    """Return the path to an echo-like command, depending on the system.
-
-    Return:
-        Path to the "echo"-utility.
-    """
-    if utils.is_windows:
-        return str(testutils.abs_datapath() / 'userscripts' / 'echo.bat')
-    else:
-        return shutil.which("echo")
 
 
 @pytest.hookimpl(hookwrapper=True)
@@ -273,8 +261,8 @@ def run_command(quteproc, server, tmpdir, command):
     command = testutils.substitute_testdata(command)
     command = command.replace('(tmpdir)', str(tmpdir))
     command = command.replace('(dirsep)', os.sep)
-    command = command.replace('(rootpath)', 'C:\\' if utils.is_windows else '/')
-    command = command.replace('(echo-exe)', _get_echo_exe_path())
+    command = command.replace('(rootpath)', '/')
+    command = command.replace('(echo-exe)', shutil.which("echo"))
 
     quteproc.send_cmd(command, count=count, invalid=invalid)
 

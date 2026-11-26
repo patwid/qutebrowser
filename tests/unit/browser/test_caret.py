@@ -9,7 +9,7 @@ import textwrap
 import pytest
 from qutebrowser.qt.core import QUrl
 
-from qutebrowser.utils import utils, usertypes
+from qutebrowser.utils import usertypes
 from qutebrowser.browser import browsertab
 
 
@@ -241,13 +241,6 @@ class TestWord:
         caret.move_to_end_of_word()
         selection.check("one")
 
-    @pytest.mark.xfail(
-        utils.is_windows,
-        reason=(
-            "move-to-end-of-word is broken with Qt 6 and Windows: "
-            "https://github.com/qutebrowser/qutebrowser/issues/8146"
-        )
-    )
     def test_moving_to_end_and_selecting_a_word(self, caret, selection):
         caret.move_to_end_of_word()
         selection.toggle()
@@ -485,8 +478,6 @@ class TestLineSelection:
             eins zwei drei
         """, strip=True)
 
-    @pytest.mark.not_mac(
-        reason='https://github.com/qutebrowser/qutebrowser/issues/5459')
     def test_selecting_start_end_document(self, caret, selection):
         selection.toggle(line=True)
         caret.move_to_end_of_document()

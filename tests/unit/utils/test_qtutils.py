@@ -17,22 +17,16 @@ from qutebrowser.qt.core import (QDataStream, QPoint, QUrl, QByteArray, QIODevic
 from qutebrowser.qt.gui import QColor
 from qutebrowser.qt import sip
 
-from qutebrowser.utils import qtutils, utils
+from qutebrowser.utils import qtutils
 import overflow_test_cases
 from helpers import testutils
 
-if utils.is_linux:
-    # Those are not run on macOS because that seems to cause a hang sometimes.
-    # On Windows, we don't run them either because of
-    # https://github.com/pytest-dev/pytest/issues/3650
-    try:
-        # pylint: disable=no-name-in-module,useless-suppression
-        from test import test_file
-        # pylint: enable=no-name-in-module,useless-suppression
-    except ImportError:
-        # Debian patches Python to remove the tests...
-        test_file = None
-else:
+try:
+    # pylint: disable=no-name-in-module,useless-suppression
+    from test import test_file
+    # pylint: enable=no-name-in-module,useless-suppression
+except ImportError:
+    # Debian patches Python to remove the tests...
     test_file = None
 
 
@@ -501,10 +495,7 @@ class TestSavefileOpen:
         with qtutils.savefile_open(str(filename)) as f:
             f.write('foo\nbar\nbaz')
         data = filename.read_bytes()
-        if utils.is_windows:
-            assert data == b'foo\r\nbar\r\nbaz'
-        else:
-            assert data == b'foo\nbar\nbaz'
+        assert data == b'foo\nbar\nbaz'
 
 
 if test_file is not None:  # noqa: C901
@@ -855,7 +846,6 @@ class TestPyQIODevice:
         with pytest.raises(OSError, match="Writing failed"):
             pyqiodev_failing.write(b'x')
 
-    @pytest.mark.posix
     @pytest.mark.skipif(not pathlib.Path('/dev/full').exists(),
                         reason="Needs /dev/full.")
     def test_write_error_real(self):
@@ -1051,8 +1041,6 @@ class TestLibraryPath:
 
     @pytest.mark.parametrize("which", list(qtutils.LibraryPath))
     def test_all(self, which):
-        if utils.is_windows and which == qtutils.LibraryPath.settings:
-            pytest.skip("Settings path not supported on Windows")
         qtutils.library_path(which)
         # The returned path doesn't necessarily exist.
 

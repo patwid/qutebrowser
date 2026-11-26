@@ -14,7 +14,6 @@ import re
 import json
 import platform
 from contextlib import nullcontext as does_not_raise
-from unittest.mock import ANY
 
 import pytest
 from qutebrowser.qt.core import QProcess, QPoint
@@ -85,7 +84,6 @@ def temp_basedir_env(tmp_path, runtime_tmpdir):
     return env
 
 
-@pytest.mark.linux
 def test_misconfigured_user_dirs(request, server, temp_basedir_env,
                                  tmp_path, quteproc_new):
     """Test downloads with a misconfigured XDG_DOWNLOAD_DIR.
@@ -188,7 +186,6 @@ def test_qt_arg(request, quteproc_new, tmp_path):
     quteproc_new.wait_for_quit()
 
 
-@pytest.mark.linux
 def test_webengine_download_suffix(request, quteproc_new, tmp_path):
     """Make sure QtWebEngine does not add a suffix to downloads."""
     download_dir = tmp_path / 'downloads'
@@ -651,10 +648,6 @@ def test_dark_mode_mathml(webengine_versions, quteproc_new, request, qtbot, suff
     ('true', 'Reduced motion'),
     ('false', 'No'),
 ])
-@pytest.mark.skipif(
-    utils.is_windows,
-    reason="Outcome on Windows depends on system settings",
-)
 def test_prefers_reduced_motion(quteproc_new, request, value, preference):
     args = _base_args(request.config) + [
         '--temp-basedir',
@@ -725,78 +718,27 @@ def test_sandboxing(
     bpf_text = "Seccomp-BPF sandbox"
     yama_text = "Ptrace Protection with Yama LSM"
 
-    if not utils.is_windows:
-        header, *lines, empty, result = text.split("\n")
-        assert not empty
+    header, *lines, empty, result = text.split("\n")
+    assert not empty
 
-        expected_status = {
-            "Layer 1 Sandbox": "Namespace" if has_namespaces else "None",
+    expected_status = {
+        "Layer 1 Sandbox": "Namespace" if has_namespaces else "None",
 
-            "PID namespaces": "Yes" if has_namespaces else "No",
-            "Network namespaces": "Yes" if has_namespaces else "No",
+        "PID namespaces": "Yes" if has_namespaces else "No",
+        "Network namespaces": "Yes" if has_namespaces else "No",
 
-            bpf_text: "Yes" if has_seccomp else "No",
-            f"{bpf_text} supports TSYNC": "Yes" if has_seccomp else "No",
+        bpf_text: "Yes" if has_seccomp else "No",
+        f"{bpf_text} supports TSYNC": "Yes" if has_seccomp else "No",
 
-            f"{yama_text} (Broker)": "Yes" if has_yama else "No",
-            f"{yama_text} (Non-broker)": "Yes" if has_yama_non_broker else "No",
-        }
+        f"{yama_text} (Broker)": "Yes" if has_yama else "No",
+        f"{yama_text} (Non-broker)": "Yes" if has_yama_non_broker else "No",
+    }
 
-        assert header == "Sandbox Status"
-        assert result == expected_result
+    assert header == "Sandbox Status"
+    assert result == expected_result
 
-        status = dict(line.split("\t") for line in lines)
-        assert status == expected_status
-
-    else:  # utils.is_windows
-        # The sandbox page on Windows if different that Linux and macOS. It's
-        # a lot more complex. There is a table up top with lots of columns and
-        # a row per tab and helper process then a json object per row down
-        # below with even more detail (which we ignore).
-        # https://www.chromium.org/Home/chromium-security/articles/chrome-sandbox-diagnostics-for-windows/
-
-        # We're not getting full coverage of the table and there doesn't seem
-        # to be a simple summary like for linux. The "Sandbox" and "Lockdown"
-        # column are probably the key ones.
-        # We are looking at all the rows in the table for the sake of
-        # completeness, but I expect there will always be just one row with a
-        # renderer process in it for this test. If other helper processes pop
-        # up we might want to exclude them.
-        lines = text.split("\n")
-        assert lines.pop(0) == "Sandbox Status"
-        header = lines.pop(0).split("\t")
-        rows = []
-        current_line = lines.pop(0)
-        while current_line.strip():
-            if lines[0].startswith("\t"):
-                # Continuation line. Not sure how to 100% identify them
-                # but new rows should start with a process ID.
-                current_line += lines.pop(0)
-                continue
-
-            columns = current_line.split("\t")
-            assert len(header) == len(columns)
-            rows.append(dict(zip(header, columns)))
-            current_line = lines.pop(0)
-
-        assert rows
-
-        # I'm using has_namespaces as a proxy for "should be sandboxed" here,
-        # which is a bit lazy but its either that or match on the text
-        # "sandboxing" arg. The seccomp-bpf arg does nothing on windows, so
-        # we only have the off and on states.
-        for row in rows:
-            assert row == {
-                "Process": ANY,
-                "Type": "Renderer",
-                "Name": "",
-                "Sandbox": "Renderer" if has_namespaces else "Not Sandboxed",
-                "Lockdown": "Lockdown" if has_namespaces else "",
-                "Integrity": ANY if has_namespaces else "",
-                "Mitigations": ANY if has_namespaces else "",
-                "Component Filter": ANY if has_namespaces else "",
-                "Lowbox/AppContainer": "",
-            }
+    status = dict(line.split("\t") for line in lines)
+    assert status == expected_status
 
 
 @pytest.mark.not_frozen
@@ -824,13 +766,10 @@ def test_restart(request, quteproc_new):
     pid = int(line.message.removeprefix(prefix))
     os.kill(pid, signal.SIGTERM)
 
-    # This often hangs on Windows for unknown reasons
-    if not utils.is_windows:
-        try:
-            # If the new process hangs, this will hang too.
-            # Still better than just ignoring it, so we can fix it if something is broken.
-            os.waitpid(pid, 0)  # pid, options... positional-only :(
-        except (ChildProcessError, PermissionError):
-            # Already gone. Even if not documented, Windows seems to raise PermissionError
-            # here...
-            pass
+    try:
+        # If the new process hangs, this will hang too.
+        # Still better than just ignoring it, so we can fix it if something is broken.
+        os.waitpid(pid, 0)  # pid, options... positional-only :(
+    except ChildProcessError:
+        # Already gone.
+        pass

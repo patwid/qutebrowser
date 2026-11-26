@@ -41,11 +41,6 @@ from qutebrowser.utils import log
 fake_clipboard: str | None = None
 log_clipboard = False
 
-is_mac = sys.platform.startswith('darwin')
-is_linux = sys.platform.startswith('linux')
-is_windows = sys.platform.startswith('win')
-is_posix = os.name == 'posix'
-
 _C = TypeVar("_C", bound="Comparable")
 
 
@@ -457,18 +452,7 @@ def sanitize_filename(name: str,
     encoding = sys.getfilesystemencoding()
     name = force_encoding(name, encoding)
 
-    # See also
-    # https://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words
-    if is_windows:
-        bad_chars = '\\/:*?"<>|'
-    elif is_mac:
-        # Colons can be confusing in finder https://superuser.com/a/326627
-        bad_chars = '/:'
-    else:
-        bad_chars = '/'
-
-    for bad_char in bad_chars:
-        name = name.replace(bad_char, replacement)
+    name = name.replace('/', replacement)
 
     if not shorten:
         return name
@@ -625,24 +609,6 @@ def open_file(filename: str, cmdline: str | None = None) -> None:
 
 def unused(_arg: Any) -> None:
     """Function which does nothing to avoid pylint complaining."""
-
-
-def expand_windows_drive(path: str) -> str:
-    r"""Expand a drive-path like E: into E:\.
-
-    Does nothing for other paths.
-
-    Args:
-        path: The path to expand.
-    """
-    # Usually, "E:" on Windows refers to the current working directory on drive
-    # E:\. The correct way to specify drive E: is "E:\", but most users
-    # probably don't use the "multiple working directories" feature and expect
-    # "E:" and "E:\" to be equal.
-    if re.fullmatch(r'[A-Z]:', path, re.IGNORECASE):
-        return path + "\\"
-    else:
-        return path
 
 
 def yaml_load(f: str | IO[str]) -> Any:

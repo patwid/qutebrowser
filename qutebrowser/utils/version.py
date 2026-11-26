@@ -375,7 +375,6 @@ class ModuleInfo:
 
 def _create_module_info() -> dict[str, ModuleInfo]:
     packages = [
-        ('colorama', ['VERSION', '__version__']),
         ('jinja2', []),
         ('pygments', ['__version__']),
         ('yaml', ['__version__']),
@@ -418,8 +417,6 @@ def _path_info() -> Mapping[str, str]:
         'cache': standarddir.cache(),
         'runtime': standarddir.runtime(),
     }
-    if standarddir.config() != standarddir.config(auto=True):
-        info['auto config'] = standarddir.config(auto=True)
     if standarddir.data() != standarddir.data(system=True):
         info['system data'] = standarddir.data(system=True)
     return info
@@ -431,28 +428,9 @@ def _os_info() -> Sequence[str]:
     Return:
         A list of lines with version info.
     """
-    lines = []
-    releaseinfo = None
-    if utils.is_linux:
-        osver = ''
-        releaseinfo = _release_info()
-    elif utils.is_windows:
-        osver = ', '.join(platform.win32_ver())
-    elif utils.is_mac:
-        release, info_tpl, machine = platform.mac_ver()
-        if all(not e for e in info_tpl):
-            versioninfo = ''
-        else:
-            versioninfo = '.'.join(info_tpl)
-        osver = ', '.join(e for e in [release, versioninfo, machine] if e)
-    elif utils.is_posix:
-        osver = ' '.join(platform.uname())
-    else:
-        osver = '?'
-    lines.append('OS Version: {}'.format(osver))
-    if releaseinfo is not None:
-        for (fn, data) in releaseinfo:
-            lines += ['', '--- {} ---'.format(fn), data]
+    lines = ['OS Version: ']
+    for (fn, data) in _release_info():
+        lines += ['', '--- {} ---'.format(fn), data]
     return lines
 
 

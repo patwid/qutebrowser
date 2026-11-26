@@ -1377,9 +1377,6 @@ class CommandDispatcher:
         download_manager = objreg.get('webengine-download-manager')
         target = None
         if dest is not None:
-            dest = downloads.transform_path(dest)
-            if dest is None:
-                raise cmdutils.CommandError("Invalid target filename")
             target = downloads.FileDownloadTarget(dest)
 
         tab = self._current_widget()

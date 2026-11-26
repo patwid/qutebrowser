@@ -234,7 +234,7 @@ class GUIProcess(QObject):
         """
         text = self._decode_data(data)
 
-        if '\r' in text and not utils.is_windows:
+        if '\r' in text:
             # Crude handling of CR for e.g. progress output.
             # Discard everything before the last \r in the new input, then discard
             # everything after the last \n in self.stdout/self.stderr.
@@ -271,7 +271,7 @@ class GUIProcess(QObject):
     @pyqtSlot(QProcess.ProcessError)
     def _on_error(self, error: QProcess.ProcessError) -> None:
         """Show a message if there was an error while spawning."""
-        if error == QProcess.ProcessError.Crashed and not utils.is_windows:
+        if error == QProcess.ProcessError.Crashed:
             # Already handled via ExitStatus in _on_finished
             return
 

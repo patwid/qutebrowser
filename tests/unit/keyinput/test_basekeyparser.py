@@ -13,7 +13,7 @@ from qutebrowser.qt.core import Qt
 import pytest
 
 from qutebrowser.keyinput import basekeyparser, keyutils
-from qutebrowser.utils import utils, usertypes
+from qutebrowser.utils import usertypes
 
 
 # Alias because we need this a lot in here.
@@ -107,7 +107,7 @@ def test_read_config(keyparser, key_config_stub, changed_mode, expected):
 class TestHandle:
 
     def test_valid_key(self, prompt_keyparser, handle_text):
-        modifier = Qt.KeyboardModifier.MetaModifier if utils.is_mac else Qt.KeyboardModifier.ControlModifier
+        modifier = Qt.KeyboardModifier.ControlModifier
 
         infos = [
             keyutils.KeyInfo(Qt.Key.Key_A, modifier),
@@ -121,7 +121,7 @@ class TestHandle:
         assert not prompt_keyparser._sequence
 
     def test_valid_key_count(self, prompt_keyparser):
-        modifier = Qt.KeyboardModifier.MetaModifier if utils.is_mac else Qt.KeyboardModifier.ControlModifier
+        modifier = Qt.KeyboardModifier.ControlModifier
 
         infos = [
             keyutils.KeyInfo(Qt.Key.Key_5, Qt.KeyboardModifier.NoModifier),

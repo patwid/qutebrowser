@@ -293,9 +293,6 @@ qt.chromium.sandboxing:
     See the Chromium documentation for more details:
 
     - https://chromium.googlesource.com/chromium/src/\+/HEAD/sandbox/linux/README.md[Linux]
-    - https://chromium.googlesource.com/chromium/src/\+/HEAD/docs/design/sandbox.md[Windows]
-    - https://chromium.googlesource.com/chromium/src/\+/HEAD/sandbox/mac/README.md[Mac]
-    - https://chromium.googlesource.com/chromium/src/\+/HEAD/docs/design/sandbox_faq.md[FAQ (Windows-centric)]
   # yamllint enable rule:line-length
 
 qt.chromium.experimental_web_platform_features:
@@ -562,9 +559,6 @@ content.prefers_reduced_motion:
 
     This results in the `prefers-reduced-motion` CSS media query to evaluate to
     `reduce` (rather than `no-preference`).
-
-    On Windows, if this setting is set to False, the system-wide animation
-    setting is considered.
 
 content.site_specific_quirks:
   renamed: content.site_specific_quirks.enabled
@@ -1954,8 +1948,7 @@ scrolling.bar:
       - never: Never show the scrollbar.
       - when-searching: Show the scrollbar when searching for text in the
             webpage.
-      - overlay: Show an overlay scrollbar. On macOS, this is
-            unavailable and equal to `when-searching`. Enabling/disabling overlay
+      - overlay: Show an overlay scrollbar. Enabling/disabling overlay
             scrollbars requires a restart.
   default: overlay
   desc: When/how to show the scrollbar.

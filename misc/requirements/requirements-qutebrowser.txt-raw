@@ -3,5 +3,4 @@ PyYAML
 
 ## Optional dependencies
 Pygments  # For :view-source --pygments
-colorama  # Colored log output on Windows
 adblock  # Improved adblocking

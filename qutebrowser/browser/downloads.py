@@ -4,13 +4,11 @@
 
 """Backend-independent code for downloads."""
 
-import re
 import sys
 import html
 import os.path
 import collections
 import functools
-import pathlib
 import tempfile
 import enum
 from typing import Any, IO
@@ -165,34 +163,6 @@ def get_filename_question(*, suggested_filename, url, parent=None):
     q.completed.connect(q.deleteLater)
     q.default = _path_suggestion(suggested_filename)
     return q
-
-
-def transform_path(path):
-    r"""Do platform-specific transformations, like changing E: to E:\.
-
-    Returns None if the path is invalid on the current platform.
-    """
-    if not utils.is_windows:
-        return path
-
-    path = utils.expand_windows_drive(path)
-    # Drive dependent working directories are not supported, e.g.
-    # E:filename is invalid
-    if re.search(r'^[A-Z]:[^\\]', path, re.IGNORECASE):
-        return None
-
-    # Paths like COM1, ...
-    # See https://github.com/qutebrowser/qutebrowser/issues/82
-    if sys.version_info[:2] >= (3, 13):
-        # pylint: disable=no-member,useless-suppression
-        if os.path.isreserved(path):
-            return None
-    else:
-        # pylint: disable-next=else-if-used,deprecated-method,useless-suppression
-        if pathlib.Path(path).is_reserved():
-            return None
-
-    return path
 
 
 def suggested_fn_from_title(url_path, title=None):

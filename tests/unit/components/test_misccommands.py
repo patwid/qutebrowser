@@ -11,7 +11,6 @@ import time
 import pytest
 
 from qutebrowser.api import cmdutils
-from qutebrowser.utils import utils
 from qutebrowser.components import misccommands
 
 
@@ -30,8 +29,6 @@ def test_debug_crash_exception():
         misccommands.debug_crash(typ='exception')
 
 
-@pytest.mark.skipif(utils.is_windows,
-                    reason="current CPython/win can't recover from SIGSEGV")
 def test_debug_crash_segfault():
     """Verify that debug_crash crashes as intended."""
     caught = False

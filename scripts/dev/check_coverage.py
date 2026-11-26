@@ -19,7 +19,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), os.pardir,
                                 os.pardir))
 
 from scripts import utils as scriptutils
-from qutebrowser.utils import utils
 
 
 @dataclasses.dataclass
@@ -231,8 +230,6 @@ def _get_filename(filename):
 
 def check(fileobj, perfect_files):
     """Main entry point which parses/checks coverage.xml if applicable."""
-    if not utils.is_linux:
-        raise Skipped("on non-Linux system.")
     if '-k' in sys.argv[1:]:
         raise Skipped("because -k is given.")
     if '-m' in sys.argv[1:]:

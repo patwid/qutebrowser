@@ -33,7 +33,7 @@ from collections.abc import Iterable
 
 from qutebrowser.qt.widgets import QApplication, QWidget
 from qutebrowser.qt.gui import QDesktopServices, QPixmap, QIcon
-from qutebrowser.qt.core import pyqtSlot, QUrl, QObject, QEvent, pyqtSignal
+from qutebrowser.qt.core import pyqtSlot, QUrl, QObject, pyqtSignal
 
 import qutebrowser
 from qutebrowser.commands import runners
@@ -537,19 +537,6 @@ class Application(QApplication):
         if self._last_focus_object != output:
             log.misc.debug("Focus object changed: {}".format(output))
         self._last_focus_object = output
-
-    def event(self, e):
-        """Handle macOS FileOpen events."""
-        if e.type() != QEvent.Type.FileOpen:
-            return super().event(e)
-
-        url = e.url()
-        if url.isValid():
-            open_url(url, no_raise=True)
-        else:
-            message.error("Invalid URL: {}".format(url.errorString()))
-
-        return True
 
     def __repr__(self):
         return utils.get_repr(self)

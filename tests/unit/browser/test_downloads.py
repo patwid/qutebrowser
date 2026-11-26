@@ -25,28 +25,28 @@ def test_download_model(qapp, qtmodeltester, manager):
 @pytest.mark.parametrize('url, title, out', [
     ('http://qutebrowser.org/INSTALL.html',
      'Installing qutebrowser | qutebrowser',
-     'Installing qutebrowser _ qutebrowser.html'),
+     'Installing qutebrowser | qutebrowser.html'),
     ('http://qutebrowser.org/INSTALL.html',
      'Installing qutebrowser | qutebrowser.html',
-     'Installing qutebrowser _ qutebrowser.html'),
+     'Installing qutebrowser | qutebrowser.html'),
     ('http://qutebrowser.org/INSTALL.HTML',
      'Installing qutebrowser | qutebrowser',
-     'Installing qutebrowser _ qutebrowser.html'),
+     'Installing qutebrowser | qutebrowser.html'),
     ('http://qutebrowser.org/INSTALL.html',
      'Installing qutebrowser | qutebrowser.HTML',
-     'Installing qutebrowser _ qutebrowser.HTML'),
+     'Installing qutebrowser | qutebrowser.HTML'),
     ('http://qutebrowser.org/',
      'qutebrowser | qutebrowser',
-     'qutebrowser _ qutebrowser.html'),
+     'qutebrowser | qutebrowser.html'),
     ('https://github.com/qutebrowser/qutebrowser/releases',
      'Releases · qutebrowser/qutebrowser',
      'Releases · qutebrowser_qutebrowser.html'),
     ('http://qutebrowser.org/index.php',
      'qutebrowser | qutebrowser',
-     'qutebrowser _ qutebrowser.html'),
+     'qutebrowser | qutebrowser.html'),
     ('http://qutebrowser.org/index.php',
      'qutebrowser | qutebrowser - index.php',
-     'qutebrowser _ qutebrowser - index.php.html'),
+     'qutebrowser | qutebrowser - index.php.html'),
     ('https://qutebrowser.org/img/cheatsheet-big.png',
      'cheatsheet-big.png (3342×2060)',
      None),
@@ -54,7 +54,6 @@ def test_download_model(qapp, qtmodeltester, manager):
      '',
      None),
 ])
-@pytest.mark.fake_os('windows')
 def test_page_titles(url, title, out):
     assert downloads.suggested_fn_from_title(url, title) == out
 
@@ -82,12 +81,8 @@ class TestDownloadTarget:
 
 
 @pytest.mark.parametrize('raw, expected', [
-    pytest.param('http://foo/bar', 'bar',
-                 marks=pytest.mark.fake_os('windows')),
-    pytest.param('A *|<>\\: bear!', 'A ______ bear!',
-                 marks=pytest.mark.fake_os('windows')),
-    pytest.param('A *|<>\\: bear!', 'A *|<>\\: bear!',
-                 marks=[pytest.mark.fake_os('posix'), pytest.mark.posix]),
+    ('http://foo/bar', 'bar'),
+    ('A *|<>\\: bear!', 'A *|<>\\: bear!'),
 ])
 def test_sanitized_filenames(raw, expected,
                              config_stub, download_tmpdir, monkeypatch):

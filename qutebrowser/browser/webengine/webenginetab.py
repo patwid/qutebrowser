@@ -280,12 +280,7 @@ class WebEngineCaret(browsertab.AbstractCaret):
 
     def _flags(self):
         """Get flags to pass to JS."""
-        flags = set()
-        if utils.is_windows:
-            flags.add('windows')
-        if 'caret' in objects.debug_flags:
-            flags.add('debug')
-        return list(flags)
+        return ['debug'] if 'caret' in objects.debug_flags else []
 
     @pyqtSlot(usertypes.KeyMode)
     def _on_mode_entered(self, mode):

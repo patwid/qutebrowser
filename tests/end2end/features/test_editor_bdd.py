@@ -14,7 +14,6 @@ import pytest_bdd as bdd
 from qutebrowser.qt.core import pyqtSignal, pyqtSlot, QObject, QFileSystemWatcher
 bdd.scenarios('editor.feature')
 
-from qutebrowser.utils import utils
 
 
 @bdd.when(bdd.parsers.parse('I setup a fake editor replacing "{text}" by '
@@ -96,7 +95,6 @@ def editor_pid_watcher(tmpdir):
                             'save'))
 def set_up_editor_wait(quteproc, tmpdir, text, editor_pid_watcher):
     """Set up editor.command to a small python script inserting a text."""
-    assert not utils.is_windows
     pidfile = tmpdir / 'editor_pid'
     script = tmpdir / 'script.py'
     script.write(textwrap.dedent("""

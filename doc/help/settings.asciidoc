@@ -2536,7 +2536,6 @@ Default: +pass:[false]+
 === content.prefers_reduced_motion
 Request websites to minimize non-essentials animations and motion.
 This results in the `prefers-reduced-motion` CSS media query to evaluate to `reduce` (rather than `no-preference`).
-On Windows, if this setting is set to False, the system-wide animation setting is considered.
 
 This setting requires a restart.
 
@@ -3690,7 +3689,7 @@ Chromium has various sandboxing layers, which should be enabled for normal brows
 Open `chrome://sandbox` to see the current sandbox status.
 Changing this setting is only recommended if you know what you're doing, as it **disables one of Chromium's security layers**. To avoid sandboxing being accidentally disabled persistently, this setting can only be set via `config.py`, not via `:set`.
 See the Chromium documentation for more details:
-- https://chromium.googlesource.com/chromium/src/\+/HEAD/sandbox/linux/README.md[Linux] - https://chromium.googlesource.com/chromium/src/\+/HEAD/docs/design/sandbox.md[Windows] - https://chromium.googlesource.com/chromium/src/\+/HEAD/sandbox/mac/README.md[Mac] - https://chromium.googlesource.com/chromium/src/\+/HEAD/docs/design/sandbox_faq.md[FAQ (Windows-centric)]
+- https://chromium.googlesource.com/chromium/src/\+/HEAD/sandbox/linux/README.md[Linux]
 
 This setting requires a restart.
 
@@ -3837,7 +3836,7 @@ Valid values:
  * +always+: Always show the scrollbar.
  * +never+: Never show the scrollbar.
  * +when-searching+: Show the scrollbar when searching for text in the webpage.
- * +overlay+: Show an overlay scrollbar. On macOS, this is unavailable and equal to `when-searching`. Enabling/disabling overlay scrollbars requires a restart.
+ * +overlay+: Show an overlay scrollbar. Enabling/disabling overlay scrollbars requires a restart.
 
 Default: +pass:[overlay]+
 

@@ -7,6 +7,7 @@
 import os
 import os.path
 import sys
+import fcntl
 import bdb
 import pdb  # noqa: T002
 import types
@@ -26,7 +27,7 @@ from qutebrowser.qt.widgets import QApplication
 from qutebrowser.api import cmdutils
 from qutebrowser.config import configfiles, configexc
 from qutebrowser.misc import earlyinit, crashdialog, ipc, objects
-from qutebrowser.utils import usertypes, standarddir, log, objreg, debug, utils, message
+from qutebrowser.utils import usertypes, standarddir, log, objreg, debug, message
 from qutebrowser.qt import sip
 if TYPE_CHECKING:
     from qutebrowser.misc import quitter
@@ -310,7 +311,6 @@ class SignalHandler(QObject):
         _quitter: The Quitter instance.
         _activated: Whether activate() was called.
         _notifier: A QSocketNotifier used for signals on Unix.
-        _timer: A QTimer used to poll for signals on Windows.
         _orig_handlers: A {signal: handler} dict of original signal handlers.
         _orig_wakeup_fd: The original wakeup filedescriptor.
     """
@@ -320,7 +320,6 @@ class SignalHandler(QObject):
         self._app = app
         self._quitter = quitter
         self._notifier = None
-        self._timer = usertypes.Timer(self, 'python_hacks')
         self._orig_handlers: MutableMapping[int, 'signal._HANDLER'] = {}
         self._activated = False
         self._orig_wakeup_fd: int | None = None
@@ -343,31 +342,20 @@ class SignalHandler(QObject):
     def activate(self):
         """Set up signal handlers.
 
-        On Windows this uses a QTimer to periodically hand control over to
-        Python so it can handle signals.
-
-        On Unix, it uses a QSocketNotifier with os.set_wakeup_fd to get
-        notified.
+        This uses a QSocketNotifier with os.set_wakeup_fd to get notified.
         """
         for sig, handler in self._handlers.items():
             self._orig_handlers[sig] = signal.signal(sig, handler)
 
-        if utils.is_posix:
-            # pylint: disable=import-error,no-member,useless-suppression
-            import fcntl
-            read_fd, write_fd = os.pipe()
-            for fd in [read_fd, write_fd]:
-                flags = fcntl.fcntl(fd, fcntl.F_GETFL)
-                fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-            self._notifier = QSocketNotifier(cast(sip.voidptr, read_fd),
-                                             QSocketNotifier.Type.Read,
-                                             self)
-            self._notifier.activated.connect(self.handle_signal_wakeup)
-            self._orig_wakeup_fd = signal.set_wakeup_fd(write_fd)
-            # pylint: enable=import-error,no-member,useless-suppression
-        else:
-            self._timer.start(1000)
-            self._timer.timeout.connect(lambda: None)
+        read_fd, write_fd = os.pipe()
+        for fd in [read_fd, write_fd]:
+            flags = fcntl.fcntl(fd, fcntl.F_GETFL)
+            fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+        self._notifier = QSocketNotifier(cast(sip.voidptr, read_fd),
+                                         QSocketNotifier.Type.Read,
+                                         self)
+        self._notifier.activated.connect(self.handle_signal_wakeup)
+        self._orig_wakeup_fd = signal.set_wakeup_fd(write_fd)
         self._activated = True
 
     def deactivate(self):
@@ -383,7 +371,6 @@ class SignalHandler(QObject):
             os.close(wfd)
         for sig, handler in self._orig_handlers.items():
             signal.signal(sig, handler)
-        self._timer.stop()
         self._activated = False
 
     @pyqtSlot()

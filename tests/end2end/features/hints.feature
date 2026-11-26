@@ -84,7 +84,6 @@ Feature: Using hints
         And I hint with args "--rapid all spawn -v (python-executable) -c ''" and follow a
         Then the message "Command exited successfully. See :process * for details." should be shown
 
-    @posix
     Scenario: Using :hint spawn with flags passed to the command (issue 797)
         When I open data/hints/html/simple.html
         And I hint with args "--rapid all spawn -v echo -e foo" and follow a
@@ -101,7 +100,6 @@ Feature: Using hints
         And I press the key "<Enter>"
         Then the message "http://localhost:(port)/data/hello.txt" should be shown
 
-    @posix
     Scenario: Using :hint userscript
         When I open data/hints/html/simple.html
         And I hint with args "all userscript (testdata)/userscripts/echo_hint_text" and follow a
@@ -320,7 +318,7 @@ Feature: Using hints
 
     ### hints.auto_follow.timeout
 
-    @not_mac @flaky
+    @flaky
     Scenario: Ignoring key presses after auto-following hints
         When I set hints.auto_follow_timeout to 1000
         And I set hints.mode to number

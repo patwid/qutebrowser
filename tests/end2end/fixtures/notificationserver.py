@@ -11,7 +11,6 @@ from qutebrowser.qt.dbus import QDBusConnection, QDBusMessage
 import pytest
 
 from qutebrowser.browser.webengine import notification
-from qutebrowser.utils import utils
 from tests.helpers import testutils
 
 
@@ -224,18 +223,12 @@ class TestNotificationServer(QObject):
 
 @pytest.fixture(scope='module')
 def notification_server(qapp, quteproc_process):
-    if utils.is_windows:
-        # The QDBusConnection destructor seems to cause error messages (and potentially
-        # segfaults) on Windows, so we bail out early in that case. We still try to get
-        # a connection on macOS, since it's theoretically possible to run DBus there.
-        pytest.skip("Skipping DBus on Windows")
-
     qb_pid = quteproc_process.proc.processId()
     server = TestNotificationServer(
         f"{notification.DBusNotificationAdapter.TEST_SERVICE}{qb_pid}")
     registered = server.register()
     if not registered:
-        assert not (utils.is_linux and testutils.ON_CI), "Expected DBus on Linux CI"
+        assert not testutils.ON_CI, "Expected DBus on CI"
         pytest.skip("No DBus server available")
 
     yield server

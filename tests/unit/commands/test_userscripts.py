@@ -13,10 +13,8 @@ import pytest
 from qutebrowser.qt.core import QFileSystemWatcher
 
 from qutebrowser.commands import userscripts
-from qutebrowser.utils import utils
 
 
-@pytest.mark.posix
 class TestQtFIFOReader:
 
     @pytest.fixture
@@ -42,16 +40,9 @@ class TestQtFIFOReader:
         assert reader._fifo.closed
 
 
-@pytest.fixture(params=[
-    userscripts._POSIXUserscriptRunner,
-    userscripts._WindowsUserscriptRunner,
-])
-def runner(request, runtime_tmpdir):
-    if (not utils.is_posix and
-            request.param is userscripts._POSIXUserscriptRunner):
-        pytest.skip("Requires a POSIX os")
-        raise utils.Unreachable
-    return request.param()
+@pytest.fixture
+def runner(runtime_tmpdir):
+    return userscripts._POSIXUserscriptRunner()
 
 
 def test_command(qtbot, py_proc, runner):
@@ -236,10 +227,3 @@ def test_unicode_error(caplog, qtbot, py_proc, runner):
     assert len(caplog.records) == 1
     expected = "Invalid unicode in userscript output: "
     assert caplog.messages[0].startswith(expected)
-
-
-@pytest.mark.fake_os('unknown')
-def test_unsupported(tabbed_browser_stubs):
-    with pytest.raises(userscripts.UnsupportedError, match="Userscripts are "
-                       "not supported on this platform!"):
-        userscripts.run_async(tab=None, cmd=None, win_id=0, env=None)

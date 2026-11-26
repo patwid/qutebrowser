@@ -794,10 +794,6 @@ class FilenamePrompt(_BasePrompt):
     def accept(self, value=None, save=False):
         self._check_save_support(save)
         text = value if value is not None else self._lineedit.text()
-        text = downloads.transform_path(text)
-        if text is None:
-            message.error("Invalid filename")
-            return False
         self.question.answer = text
         return True
 

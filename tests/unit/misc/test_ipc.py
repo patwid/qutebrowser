@@ -20,7 +20,7 @@ from qutebrowser.qt.test import QSignalSpy
 
 import qutebrowser
 from qutebrowser.misc import ipc
-from qutebrowser.utils import standarddir, utils, version
+from qutebrowser.utils import standarddir, version
 from helpers import stubs, testutils
 
 
@@ -163,46 +163,10 @@ def md5(inp):
 
 class TestSocketName:
 
-    WINDOWS_TESTS = [
-        (None, 'qutebrowser-testusername'),
-        ('/x', 'qutebrowser-testusername-{}'.format(md5('/x'))),
-    ]
-
     @pytest.fixture(autouse=True)
     def patch_user(self, monkeypatch):
         monkeypatch.setattr(ipc.getpass, 'getuser', lambda: 'testusername')
 
-    @pytest.mark.parametrize('basedir, expected', WINDOWS_TESTS)
-    @pytest.mark.windows
-    def test_windows(self, basedir, expected):
-        socketname = ipc._get_socketname(basedir)
-        assert socketname == expected
-
-    @pytest.mark.parametrize('basedir, expected', WINDOWS_TESTS)
-    def test_windows_on_posix(self, basedir, expected):
-        socketname = ipc._get_socketname_windows(basedir)
-        assert socketname == expected
-
-    def test_windows_broken_getpass(self, monkeypatch):
-        def _fake_username():
-            raise ImportError
-        monkeypatch.setattr(ipc.getpass, 'getuser', _fake_username)
-
-        with pytest.raises(ipc.Error, match='USERNAME'):
-            ipc._get_socketname_windows(basedir=None)
-
-    @pytest.mark.mac
-    @pytest.mark.parametrize('basedir, expected', [
-        (None, 'i-{}'.format(md5('testusername'))),
-        ('/x', 'i-{}'.format(md5('testusername-/x'))),
-    ])
-    def test_mac(self, basedir, expected):
-        socketname = ipc._get_socketname(basedir)
-        parts = socketname.split(os.sep)
-        assert parts[-2] == 'qutebrowser'
-        assert parts[-1] == expected
-
-    @pytest.mark.linux
     @pytest.mark.not_flatpak
     @pytest.mark.parametrize('basedir, expected', [
         (None, 'ipc-{}'.format(md5('testusername'))),
@@ -215,7 +179,6 @@ class TestSocketName:
 
     # We can't use the fake_flatpak fixture here, because it conflicts with
     # fake_runtime_dir...
-    @pytest.mark.linux
     @pytest.mark.parametrize('basedir, expected', [
         (None, 'ipc-{}'.format(md5('testusername'))),
         ('/x', 'ipc-{}'.format(md5('testusername-/x'))),
@@ -232,22 +195,6 @@ class TestSocketName:
         expected_path = str(
             fake_runtime_dir / 'app' / 'org.qutebrowser.qutebrowser' / expected)
         assert socketname == expected_path
-
-    def test_other_unix(self):
-        """Fake test for POSIX systems which aren't Linux/macOS.
-
-        We probably would adjust the code first to make it work on that
-        platform.
-        """
-        if utils.is_windows:
-            pass
-        elif utils.is_mac:
-            pass
-        elif utils.is_linux:
-            pass
-        else:
-            raise AssertionError("Unexpected platform!")
-
 
 class TestExceptions:
 
@@ -276,7 +223,6 @@ class TestExceptions:
 
 class TestListen:
 
-    @pytest.mark.posix
     def test_remove_error(self, ipc_server, monkeypatch):
         """Simulate an error in _remove_server."""
         monkeypatch.setattr(ipc_server, '_socketname', None)
@@ -292,7 +238,6 @@ class TestListen:
         with pytest.raises(ipc.ListenError):
             ipc_server.listen()
 
-    @pytest.mark.posix
     def test_in_use(self, qlocalserver, ipc_server, monkeypatch):
         monkeypatch.setattr(ipc.QLocalServer, 'removeServer',
                             lambda self: True)
@@ -303,12 +248,6 @@ class TestListen:
     def test_successful(self, ipc_server):
         ipc_server.listen()
 
-    @pytest.mark.windows
-    def test_permissions_windows(self, ipc_server):
-        opts = ipc_server._server.socketOptions()
-        assert opts == QLocalServer.SocketOption.UserAccessOption
-
-    @pytest.mark.posix
     def test_permissions_posix(self, ipc_server):
         ipc_server.listen()
         sockfile_path = pathlib.Path(ipc_server._server.fullServerName())
@@ -332,7 +271,6 @@ class TestListen:
         assert file_owner_ok or dir_owner_ok
         assert file_mode_ok or dir_mode_ok
 
-    @pytest.mark.posix
     def test_atime_update(self, qtbot, ipc_server):
         ipc_server._atime_timer.setInterval(500)  # We don't want to wait
         ipc_server.listen()
@@ -351,20 +289,17 @@ class TestListen:
 
         assert old_atime != new_atime
 
-    @pytest.mark.posix
     def test_atime_update_no_name(self, qtbot, caplog, ipc_server):
         with caplog.at_level(logging.ERROR):
             ipc_server.update_atime()
 
         assert caplog.messages[-1] == "In update_atime with no server path!"
 
-    @pytest.mark.posix
     def test_atime_shutdown_typeerror(self, qtbot, ipc_server):
         """This should never happen, but let's handle it gracefully."""
         ipc_server._atime_timer.timeout.disconnect(ipc_server.update_atime)
         ipc_server.shutdown()
 
-    @pytest.mark.posix
     def test_vanished_runtime_file(self, qtbot, caplog, ipc_server):
         ipc_server._atime_timer.setInterval(500)  # We don't want to wait
         ipc_server.listen()
@@ -459,9 +394,6 @@ class TestHandleConnection:
 
 @pytest.fixture
 def connected_socket(qtbot, qlocalsocket, ipc_server):
-    if utils.is_mac:
-        pytest.skip("Skipping connected_socket test - "
-                    "https://github.com/qutebrowser/qutebrowser/issues/1045")
     ipc_server.listen()
     with qtbot.wait_signal(ipc_server._server.newConnection):
         qlocalsocket.connectToServer('qute-test')
@@ -540,7 +472,6 @@ class TestSendToRunningInstance:
         assert caplog.messages[-1] == expected
 
     @pytest.mark.parametrize('has_cwd', [True, False])
-    @pytest.mark.linux(reason="Causes random trouble on Windows and macOS")
     def test_normal(self, qtbot, tmp_path, ipc_server, mocker, has_cwd):
         ipc_server.listen()
 
@@ -590,8 +521,6 @@ class TestSendToRunningInstance:
             ipc.send_to_running_instance('qute-test', [], None, socket=socket)
 
 
-@pytest.mark.not_mac(reason="https://github.com/qutebrowser/qutebrowser/"
-                            "issues/975")
 def test_timeout(qtbot, caplog, qlocalsocket, ipc_server):
     ipc_server._timer.setInterval(100)
     ipc_server.listen()
@@ -615,7 +544,6 @@ def test_ipcserver_socket_none_readyread(ipc_server, caplog):
     assert msg in caplog.messages
 
 
-@pytest.mark.posix
 def test_ipcserver_socket_none_error(ipc_server, caplog):
     assert ipc_server._socket is None
     ipc_server.on_error(0)
@@ -654,7 +582,6 @@ class TestSendOrListen:
         m.LocalSocketState = QLocalSocket.LocalSocketState
         return m
 
-    @pytest.mark.linux(reason="Flaky on Windows and macOS")
     def test_normal_connection(self, caplog, qtbot, args):
         ret_server = ipc.send_or_listen(args)
         assert isinstance(ret_server, ipc.IPCServer)
@@ -666,7 +593,6 @@ class TestSendOrListen:
 
         assert ret_client is None
 
-    @pytest.mark.posix(reason="Unneeded on Windows")
     def test_correct_socket_name(self, args):
         server = ipc.send_or_listen(args)
         expected_dir = ipc._get_socketname(args.basedir)
@@ -749,7 +675,6 @@ class TestSendOrListen:
         ]
         assert caplog.messages == ['\n'.join(error_msgs)]
 
-    @pytest.mark.posix(reason="Flaky on Windows")
     def test_error_while_listening(self, qlocalserver_mock, caplog, args):
         """Test an error with the first listen call."""
         qlocalserver_mock().listen.return_value = False
@@ -772,23 +697,6 @@ class TestSendOrListen:
         assert caplog.messages[-1] == '\n'.join(error_msgs)
 
 
-@pytest.mark.windows
-@pytest.mark.mac
-def test_long_username(monkeypatch):
-    """See https://github.com/qutebrowser/qutebrowser/issues/888."""
-    username = 'alexandercogneau'
-    basedir = '/this_is_a_long_basedir'
-    monkeypatch.setattr(getpass, 'getuser', lambda: username)
-    name = ipc._get_socketname(basedir=basedir)
-    server = ipc.IPCServer(name)
-    expected_md5 = md5('{}-{}'.format(username, basedir))
-    assert expected_md5 in server._socketname
-    try:
-        server.listen()
-    finally:
-        server.shutdown()
-
-
 def test_connect_inexistent(qlocalsocket):
     """Make sure connecting to an inexistent server fails immediately.
 
@@ -799,7 +707,6 @@ def test_connect_inexistent(qlocalsocket):
     assert qlocalsocket.error() == QLocalSocket.LocalSocketError.ServerNotFoundError
 
 
-@pytest.mark.posix
 def test_socket_options_address_in_use_problem(qlocalserver, short_tmpdir):
     """Qt seems to ignore AddressInUseError when using socketOptions.
 

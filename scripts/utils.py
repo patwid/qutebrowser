@@ -11,17 +11,7 @@ import sys
 import contextlib
 
 
-# Import side-effects are an evil thing, but here it's okay so scripts using
-# colors work on Windows as well.
-try:
-    import colorama
-except ImportError:
-    colorama = None
-else:
-    colorama.init()
-
-
-use_color = os.name != 'nt' or colorama
+use_color = True
 
 
 fg_colors = {

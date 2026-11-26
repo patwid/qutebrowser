@@ -604,16 +604,9 @@ class TestSanitizeFilename:
     LONG_4BYTE_EXT_SHORTENED = f"{U10K}.{U10K * 59}"
 
     @pytest.mark.parametrize('inp, expected', [
-        pytest.param('normal.txt', 'normal.txt',
-                     marks=pytest.mark.fake_os('windows')),
-        pytest.param('user/repo issues.mht', 'user_repo issues.mht',
-                     marks=pytest.mark.fake_os('windows')),
-        pytest.param('<Test\\File> - "*?:|', '_Test_File_ - _____',
-                     marks=pytest.mark.fake_os('windows')),
-        pytest.param('<Test\\File> - "*?:|', '<Test\\File> - "*?_|',
-                     marks=pytest.mark.fake_os('mac')),
-        pytest.param('<Test\\File> - "*?:|', '<Test\\File> - "*?:|',
-                     marks=pytest.mark.fake_os('posix')),
+        ('normal.txt', 'normal.txt'),
+        ('user/repo issues.mht', 'user_repo issues.mht'),
+        ('<Test\\File> - "*?:|', '<Test\\File> - "*?:|'),
         (LONG_FILENAME, LONG_FILENAME),  # no shortening
     ])
     def test_special_chars(self, inp, expected):
@@ -638,13 +631,11 @@ class TestSanitizeFilename:
             LONG_4BYTE_EXT_SHORTENED,
         )
     ])
-    @pytest.mark.linux
     def test_shorten(self, inp, expected):
         assert utils.sanitize_filename(inp, shorten=True) == expected
 
-    @pytest.mark.fake_os('windows')
     def test_empty_replacement(self):
-        name = '/<Bad File>/'
+        name = '/Bad File/'
         assert utils.sanitize_filename(name, replacement=None) == 'Bad File'
 
     @hypothesis.given(filename=strategies.text(min_size=100))
@@ -799,17 +790,6 @@ def test_unused():
     utils.unused(None)
 
 
-@pytest.mark.parametrize('path, expected', [
-    ('E:', 'E:\\'),
-    ('e:', 'e:\\'),
-    ('E:foo', 'E:foo'),
-    ('E:\\', 'E:\\'),
-    ('E:\\foo', 'E:\\foo'),
-    ('foo:', 'foo:'),
-    ('foo:bar', 'foo:bar'),
-])
-def test_expand_windows_drive(path, expected):
-    assert utils.expand_windows_drive(path) == expected
 
 
 class TestYaml:

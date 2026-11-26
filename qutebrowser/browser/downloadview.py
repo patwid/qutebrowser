@@ -44,8 +44,7 @@ class DownloadView(QListView):
 
     def __init__(self, model, parent=None):
         super().__init__(parent)
-        if not utils.is_mac:
-            self.setStyle(QStyleFactory.create('Fusion'))
+        self.setStyle(QStyleFactory.create('Fusion'))
         stylesheet.set_register(self)
         self.setResizeMode(QListView.ResizeMode.Adjust)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)

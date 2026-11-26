@@ -295,10 +295,7 @@ class Process(QObject):
         if not self.is_running():
             return
 
-        if quteutils.is_windows:
-            self.proc.kill()
-        else:
-            self.proc.terminate()
+        self.proc.terminate()
 
         ok = self.proc.waitForFinished(5000)
         if not ok:

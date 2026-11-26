@@ -62,26 +62,6 @@ hypothesis.settings.load_profile('ci' if testutils.ON_CI else 'default')
 def _apply_platform_markers(config, item):
     """Apply a skip marker to a given item."""
     markers = [
-        ('posix',
-         pytest.mark.skipif,
-         not utils.is_posix,
-         "Requires a POSIX os"),
-        ('windows',
-         pytest.mark.skipif,
-         not utils.is_windows,
-         "Requires Windows"),
-        ('linux',
-         pytest.mark.skipif,
-         not utils.is_linux,
-         "Requires Linux"),
-        ('mac',
-         pytest.mark.skipif,
-         not utils.is_mac,
-         "Requires macOS"),
-        ('not_mac',
-         pytest.mark.skipif,
-         utils.is_mac,
-         "Skipped on macOS"),
         ('not_frozen',
          pytest.mark.skipif,
          getattr(sys, 'frozen', False),
@@ -259,8 +239,7 @@ def pytest_report_header(config):
 @pytest.fixture(scope='session', autouse=True)
 def check_display(request):
     if (
-        utils.is_linux
-        and not os.environ.get("DISPLAY", "")
+        not os.environ.get("DISPLAY", "")
         and not testutils.offscreen_plugin_enabled()
     ):
         raise RuntimeError("No display and no Xvfb available!")
@@ -269,39 +248,6 @@ def check_display(request):
 def pytest_xvfb_disable() -> bool:
     """Disable Xvfb if the offscreen plugin is in use."""
     return testutils.offscreen_plugin_enabled()
-
-
-@pytest.fixture(autouse=True)
-def apply_fake_os(monkeypatch, request):
-    fake_os = request.node.get_closest_marker('fake_os')
-    if not fake_os:
-        return
-
-    name = fake_os.args[0]
-    mac = False
-    windows = False
-    linux = False
-    posix = False
-
-    if name == 'unknown':
-        pass
-    elif name == 'mac':
-        mac = True
-        posix = True
-    elif name == 'windows':
-        windows = True
-    elif name == 'linux':
-        linux = True
-        posix = True
-    elif name == 'posix':
-        posix = True
-    else:
-        raise ValueError("Invalid fake_os {}".format(name))
-
-    monkeypatch.setattr(utils, 'is_mac', mac)
-    monkeypatch.setattr(utils, 'is_linux', linux)
-    monkeypatch.setattr(utils, 'is_windows', windows)
-    monkeypatch.setattr(utils, 'is_posix', posix)
 
 
 @pytest.fixture(scope='session', autouse=True)

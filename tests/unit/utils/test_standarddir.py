@@ -16,7 +16,7 @@ import subprocess
 from qutebrowser.qt.core import QStandardPaths
 import pytest
 
-from qutebrowser.utils import standarddir, utils, version
+from qutebrowser.utils import standarddir, version
 
 
 # Use a different application name for tests to make sure we don't change real
@@ -70,46 +70,6 @@ def test_unset_organization_no_qapp(monkeypatch):
         pass
 
 
-@pytest.mark.fake_os('mac')
-@pytest.mark.posix
-def test_fake_mac_config(tmp_path, fake_home_envvar):
-    """Test standardir.config on a fake Mac."""
-    expected = str(tmp_path) + '/.qute_test'  # always with /
-    standarddir._init_config(args=None)
-    assert standarddir.config() == expected
-
-
-@pytest.mark.parametrize('what', ['data', 'config', 'cache'])
-@pytest.mark.not_mac
-@pytest.mark.fake_os('windows')
-def test_fake_windows(tmpdir, monkeypatch, what):
-    """Make sure the config/data/cache dirs are correct on a fake Windows."""
-    monkeypatch.setattr(standarddir.QStandardPaths, 'writableLocation',
-                        lambda typ: str(tmpdir / APPNAME))
-
-    standarddir._init_config(args=None)
-    standarddir._init_data(args=None)
-    standarddir._init_cache(args=None)
-
-    func = getattr(standarddir, what)
-    assert func() == str(tmpdir / APPNAME / what)
-
-
-@pytest.mark.posix
-def test_fake_haiku(tmpdir, monkeypatch):
-    """Test getting data dir on HaikuOS."""
-    locations = {
-        QStandardPaths.StandardLocation.AppDataLocation: '',
-        QStandardPaths.StandardLocation.ConfigLocation: str(tmpdir / 'config' / APPNAME),
-    }
-    monkeypatch.setattr(standarddir.QStandardPaths, 'writableLocation',
-                        locations.get)
-    monkeypatch.setattr(standarddir.sys, 'platform', 'haiku1')
-
-    standarddir._init_data(args=None)
-    assert standarddir.data() == str(tmpdir / 'config' / APPNAME / 'data')
-
-
 class TestWritableLocation:
 
     """Tests for _writable_location."""
@@ -137,8 +97,6 @@ class TestStandardDir:
     @pytest.mark.parametrize('func, init_func, varname', [
         (standarddir.data, standarddir._init_data, 'XDG_DATA_HOME'),
         (standarddir.config, standarddir._init_config, 'XDG_CONFIG_HOME'),
-        (lambda: standarddir.config(auto=True),
-         standarddir._init_config, 'XDG_CONFIG_HOME'),
         (standarddir.cache, standarddir._init_cache, 'XDG_CACHE_HOME'),
         pytest.param(
             standarddir.runtime,
@@ -147,7 +105,6 @@ class TestStandardDir:
             marks=pytest.mark.not_flatpak,
         ),
     ])
-    @pytest.mark.linux
     def test_linux_explicit(self, monkeypatch, tmpdir,
                             func, init_func, varname):
         """Test dirs with XDG environment variables explicitly set.
@@ -167,17 +124,14 @@ class TestStandardDir:
     @pytest.mark.parametrize('func, subdirs', [
         (standarddir.data, ['.local', 'share', APPNAME]),
         (standarddir.config, ['.config', APPNAME]),
-        (lambda: standarddir.config(auto=True), ['.config', APPNAME]),
         (standarddir.cache, ['.cache', APPNAME]),
         (standarddir.download, ['Downloads']),
     ])
-    @pytest.mark.linux
     def test_linux_normal(self, fake_home_envvar, tmp_path, func, subdirs):
         """Test dirs with XDG_*_HOME not set."""
         standarddir._init_dirs()
         assert func() == str(tmp_path.joinpath(*subdirs))
 
-    @pytest.mark.linux
     @pytest.mark.parametrize('args_basedir', [True, False])
     def test_flatpak_runtimedir(self, fake_flatpak, monkeypatch, tmp_path,
                                 args_basedir):
@@ -196,51 +150,17 @@ class TestStandardDir:
         standarddir._init_runtime(args=init_args)
         assert standarddir.runtime() == str(expected)
 
-    @pytest.mark.fake_os('windows')
-    def test_runtimedir_empty_tempdir(self, monkeypatch, tmpdir):
-        """With an empty tempdir on non-Linux, we should raise."""
-        monkeypatch.setattr(standarddir.QStandardPaths, 'writableLocation',
-                            lambda typ: '')
-        with pytest.raises(standarddir.EmptyValueError):
-            standarddir._init_runtime(args=None)
-
-    @pytest.mark.parametrize('func, elems, expected', [
-        (standarddir.data, 2, [APPNAME, 'data']),
-        (standarddir.config, 2, [APPNAME, 'config']),
-        (lambda: standarddir.config(auto=True), 2, [APPNAME, 'config']),
-        (standarddir.cache, 2, [APPNAME, 'cache']),
-        (standarddir.download, 1, ['Downloads']),
-    ])
-    @pytest.mark.windows
-    def test_windows(self, func, elems, expected):
-        standarddir._init_dirs()
-        assert func().split(os.sep)[-elems:] == expected
-
-    @pytest.mark.parametrize('func, elems, expected', [
-        (standarddir.data, 2, ['Application Support', APPNAME]),
-        (lambda: standarddir.config(auto=True), 1, [APPNAME]),
-        (standarddir.config, 0,
-         os.path.expanduser('~').split(os.sep) + ['.qute_test']),
-        (standarddir.cache, 2, ['Caches', APPNAME]),
-        (standarddir.download, 1, ['Downloads']),
-    ])
-    @pytest.mark.mac
-    def test_mac(self, func, elems, expected):
-        standarddir._init_dirs()
-        assert func().split(os.sep)[-elems:] == expected
-
-
 class TestArguments:
 
     """Tests the --basedir argument."""
 
     @pytest.mark.parametrize('typ, args', [
         ('config', []),
-        ('config', [True]),  # user config
         ('data', []),
         ('cache', []),
         ('download', []),
-        pytest.param('runtime', [], marks=pytest.mark.linux)])
+        ('runtime', []),
+    ])
     def test_basedir(self, tmpdir, typ, args):
         """Test --basedir."""
         expected = str(tmpdir / typ)
@@ -333,13 +253,11 @@ class TestCreatingDir:
 
         assert basedir.exists()
 
-        if typ == 'download' or (typ == 'runtime' and not utils.is_linux):
+        if typ == 'download':
             assert not (basedir / typ).exists()
         else:
             assert (basedir / typ).exists()
-
-            if utils.is_posix:
-                assert (basedir / typ).stat().mode & 0o777 == 0o700
+            assert (basedir / typ).stat().mode & 0o777 == 0o700
 
     @pytest.mark.parametrize('typ', DIR_TYPES)
     def test_exists_race_condition(self, mocker, tmpdir, typ):
@@ -368,7 +286,6 @@ class TestSystemData:
 
     """Test system data path."""
 
-    @pytest.mark.linux
     @pytest.mark.parametrize("is_flatpak, expected", [
         (True, "/app/share/qute_test"),
         (False, "/usr/share/qute_test"),
@@ -382,7 +299,6 @@ class TestSystemData:
         standarddir._init_data(args=None)
         assert standarddir.data(system=True) == expected
 
-    @pytest.mark.linux
     def test_system_datadir_not_exist_linux(self, monkeypatch, tmpdir,
                                             fake_args):
         """Test that system-wide path isn't used on linux if path not exist."""
@@ -421,7 +337,6 @@ def test_init(tmp_path, args_kind, fake_home_envvar):
     assert standarddir._locations != {}
 
 
-@pytest.mark.linux
 def test_downloads_dir_not_created(monkeypatch, tmpdir):
     """Make sure ~/Downloads is not created."""
     download_dir = tmpdir / 'Downloads'

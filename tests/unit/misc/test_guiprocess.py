@@ -12,7 +12,7 @@ import pytest
 from qutebrowser.qt.core import QProcess, QUrl, Qt
 
 from qutebrowser.misc import guiprocess
-from qutebrowser.utils import usertypes, utils, version
+from qutebrowser.utils import usertypes, version
 from qutebrowser.api import cmdutils
 from qutebrowser.qt import sip
 
@@ -187,10 +187,6 @@ def test_start_output_message(proc, qtbot, caplog, message_mock, py_proc,
         assert proc.stderr.strip() == "stderr text", proc.stderr
 
 
-cr_skip = pytest.mark.skipif(
-    utils.is_windows, reason='CR handling not implemented on Windows')
-
-
 @pytest.mark.parametrize('line1, line2, expected1, expected2', [
     pytest.param(
         'First line\n',
@@ -205,7 +201,6 @@ cr_skip = pytest.mark.skipif(
         'First line',
         'Second line',
         id='simple-cr',
-        marks=cr_skip,
     ),
     pytest.param(
         'First line\n',
@@ -213,7 +208,6 @@ cr_skip = pytest.mark.skipif(
         'First line',
         'First line\nSecond line',
         id='cr-after-newline',
-        marks=cr_skip,
     ),
     pytest.param(
         'First line\nSecond line\nThird line',
@@ -221,7 +215,6 @@ cr_skip = pytest.mark.skipif(
         'First line\nSecond line\nThird line',
         'First line\nSecond line\nNew line',
         id='cr-multiple-lines',
-        marks=cr_skip,
     ),
     pytest.param(
         'First line',
@@ -229,7 +222,6 @@ cr_skip = pytest.mark.skipif(
         'First line',
         'Third line',
         id='cr-middle-of-string',
-        marks=cr_skip,
     ),
 ])
 def test_live_messages_output(qtbot, proc, py_proc, message_mock,
@@ -246,10 +238,6 @@ def test_live_messages_output(qtbot, proc, py_proc, message_mock,
 
     with qtbot.wait_signal(proc.finished, timeout=5000):
         proc.start(cmd, args)
-
-    if utils.is_windows:
-        expected1 = expected1.replace('\n', '\r\n')
-        expected2 = expected2.replace('\n', '\r\n')
 
     assert len(message_mock.messages) == 3
     assert all(msg.level == usertypes.MessageLevel.info
@@ -428,7 +416,6 @@ def test_exit_unsuccessful(qtbot, proc, message_mock, py_proc, caplog):
     assert not proc.outcome.was_successful()
 
 
-@pytest.mark.posix  # Seems to be a normal exit on Windows
 @pytest.mark.parametrize("signal, message, state_str, verbose", [
     (
         signal.SIGSEGV,

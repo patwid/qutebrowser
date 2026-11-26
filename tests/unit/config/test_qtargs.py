@@ -50,9 +50,6 @@ def reduce_args(config_stub, version_patcher, monkeypatch):
     config_stub.val.qt.chromium.experimental_web_platform_features = 'never'
     config_stub.val.qt.workarounds.disable_accelerated_2d_canvas = 'never'
     config_stub.val.qt.workarounds.disable_accessibility = 'never'
-    monkeypatch.setattr(qtargs.utils, 'is_mac', False)
-    # Avoid WebRTC pipewire feature
-    monkeypatch.setattr(qtargs.utils, 'is_linux', False)
 
 
 @pytest.mark.usefixtures('reduce_args')
@@ -78,6 +75,7 @@ class TestQtArgs:
         # passed unconditionally
         expected.insert(1, "--webEngineArgs")
         expected += [
+            "--enable-features=WebRTCPipeWireCapturer",
             "--disable-features=DocumentPictureInPictureAPI",
             "--touch-events=disabled",
         ]
@@ -342,38 +340,35 @@ class TestWebEngineArgs:
 
         assert not set(args) & remaining_flags
 
-    @pytest.mark.parametrize('bar, is_mac, added', [
+    @pytest.mark.parametrize('bar, added', [
         # Overlay bar enabled
-        ('overlay', False, True),
-        # No overlay on mac
-        ('overlay', True, False),
+        ('overlay', True),
         # Overlay disabled
-        ('when-searching', False, False),
-        ('always', False, False),
-        ('never', False, False),
+        ('when-searching', False),
+        ('always', False),
+        ('never', False),
     ])
     def test_overlay_scrollbar(self, config_stub, monkeypatch, parser,
-                               bar, is_mac, added):
-        monkeypatch.setattr(qtargs.utils, 'is_mac', is_mac)
-
+                               bar, added):
         config_stub.val.scrolling.bar = bar
 
         parsed = parser.parse_args([])
         args = qtargs.qt_args(parsed)
 
-        assert ('--enable-features=OverlayScrollbar' in args) == added
+        expected = 'WebRTCPipeWireCapturer' + (',OverlayScrollbar' if added else '')
+        assert qtargs._ENABLE_FEATURES + expected in args
 
     @pytest.mark.parametrize('via_commandline', [True, False])
     @pytest.mark.parametrize('overlay, passed_features, expected_features', [
         (True,
          'CustomFeature',
-         'CustomFeature,OverlayScrollbar'),
+         'CustomFeature,WebRTCPipeWireCapturer,OverlayScrollbar'),
         (True,
          'CustomFeature1,CustomFeature2',
-         'CustomFeature1,CustomFeature2,OverlayScrollbar'),
+         'CustomFeature1,CustomFeature2,WebRTCPipeWireCapturer,OverlayScrollbar'),
         (False,
          'CustomFeature',
-         'CustomFeature'),
+         'CustomFeature,WebRTCPipeWireCapturer'),
     ])
     def test_overlay_features_flag(self, config_stub, parser,
                                    via_commandline, overlay, passed_features,

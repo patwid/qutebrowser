@@ -13,7 +13,7 @@ from collections.abc import MutableMapping
 from qutebrowser.qt.core import pyqtSignal, pyqtSlot, QObject, QSocketNotifier
 
 import qutebrowser
-from qutebrowser.utils import message, log, objreg, standarddir, utils
+from qutebrowser.utils import message, log, objreg, standarddir
 from qutebrowser.commands import runners
 from qutebrowser.config import websettings
 from qutebrowser.misc import guiprocess
@@ -79,7 +79,7 @@ class _QtFIFOReader(QObject):
 
 class _BaseUserscriptRunner(QObject):
 
-    """Common part between the Windows and the POSIX userscript runners.
+    """Base class for userscript runners.
 
     Attributes:
         _filepath: The path of the file/FIFO which is being read.
@@ -282,59 +282,6 @@ class _POSIXUserscriptRunner(_BaseUserscriptRunner):
         self.finished.emit(proc)
 
 
-class _WindowsUserscriptRunner(_BaseUserscriptRunner):
-
-    """Userscript runner to be used on Windows.
-
-    This is a much more dumb implementation compared to POSIXUserscriptRunner.
-    It uses a normal flat file for commands and executes them all at once when
-    the process has finished, as Windows doesn't really understand the concept
-    of using files as named pipes.
-
-    This also means the userscript *has* to use >> (append) rather than >
-    (overwrite) to write to the file!
-    """
-
-    def _cleanup(self):
-        """Clean up temporary files after the userscript finished."""
-        if self._cleaned_up:
-            return
-        assert self._filepath is not None
-
-        try:
-            with open(self._filepath, 'r', encoding='utf-8') as f:
-                for line in f:
-                    self.got_cmd.emit(line.rstrip())
-        except OSError:
-            log.procs.exception("Failed to read command file!")
-        except UnicodeDecodeError as e:
-            log.misc.error("Invalid unicode in userscript output: {}"
-                           .format(e))
-
-        proc = self.proc
-        super()._cleanup()
-        self.finished.emit(proc)
-
-    @pyqtSlot()
-    def on_proc_error(self):
-        self._cleanup()
-
-    @pyqtSlot()
-    def on_proc_finished(self):
-        """Read back the commands when the process finished."""
-        self._cleanup()
-
-    def prepare_run(self, *args, **kwargs):
-        self._args = args
-        self._kwargs = kwargs
-
-        try:
-            with tempfile.NamedTemporaryFile(delete=False) as handle:
-                self._filepath = handle.name
-        except OSError as e:
-            message.error("Error while creating tempfile: {}".format(e))
-
-
 class Error(Exception):
 
     """Base class for userscript exceptions."""
@@ -360,14 +307,6 @@ class NotFoundError(Error):
             msg += " in userscript directories {}".format(
                 ', '.join(repr(path) for path in self.paths))
         return msg
-
-
-class UnsupportedError(Error):
-
-    """Raised when userscripts aren't supported on this platform."""
-
-    def __str__(self):
-        return "Userscripts are not supported on this platform!"
 
 
 def _lookup_path(cmd):
@@ -400,8 +339,6 @@ def run_async(tab, cmd, *args, win_id, env, verbose=False,
     """Run a userscript after dumping page html/source.
 
     Raises:
-        UnsupportedError if userscripts are not supported on the current
-        platform.
         NotFoundError if the command could not be found.
 
     Args:
@@ -416,12 +353,7 @@ def run_async(tab, cmd, *args, win_id, env, verbose=False,
     tb = objreg.get('tabbed-browser', scope='window', window=win_id)
     commandrunner = runners.CommandRunner(win_id, parent=tb)
 
-    if utils.is_posix:
-        runner: _BaseUserscriptRunner = _POSIXUserscriptRunner(tb)
-    elif utils.is_windows:  # pragma: no cover
-        runner = _WindowsUserscriptRunner(tb)
-    else:  # pragma: no cover
-        raise UnsupportedError
+    runner = _POSIXUserscriptRunner(tb)
 
     runner.got_cmd.connect(
         lambda cmd:

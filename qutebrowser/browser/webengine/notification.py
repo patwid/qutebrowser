@@ -711,13 +711,6 @@ class DBusNotificationAdapter(AbstractNotificationAdapter):
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
 
-        if utils.is_windows:
-            # The QDBusConnection destructor seems to cause error messages (and
-            # potentially segfaults) on Windows, so we bail out early in that case.
-            # We still try to get a connection on macOS, since it's theoretically
-            # possible to run DBus there.
-            raise Error("libnotify is not supported on Windows")
-
         bus = QDBusConnection.sessionBus()
         if not bus.isConnected():
             raise Error(

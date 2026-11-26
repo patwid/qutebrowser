@@ -8,7 +8,6 @@ import argparse
 import contextlib
 import faulthandler
 import logging
-import sys
 import traceback
 from collections.abc import Iterator
 
@@ -130,15 +129,6 @@ def qt_message_handler(msg_type: qtcore.QtMsgType,
         ("QObject::disconnect: wildcard call disconnects from destroyed signal of "
          "QNativeSocketEngine::unnamed"),
     ]
-    # not using utils.is_mac here, because we can't be sure we can successfully
-    # import the utils module here.
-    if sys.platform == 'darwin':
-        suppressed_msgs += [
-            # https://bugreports.qt.io/browse/QTBUG-47154
-            ('virtual void QSslSocketBackendPrivate::transmit() SSLRead '
-             'failed with: -9805'),
-        ]
-
     if not msg:
         msg = "Logged empty message!"
 

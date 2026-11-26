@@ -44,7 +44,6 @@ def sock() -> Iterator[socket.socket]:
     child_sock.close()
 
 
-@pytest.mark.linux
 def test_pid_from_fd(sock: socket.socket):
     assert wmname._pid_from_fd(sock.fileno()) == os.getpid()
 
@@ -61,7 +60,6 @@ def test_pid_from_fd_invalid():
         wmname._pid_from_fd(-1)
 
 
-@pytest.mark.linux
 def test_pid_from_fd_getsockopt_error(
     sock: socket.socket, mocker: pytest_mock.MockerFixture
 ):
@@ -80,7 +78,6 @@ def test_pid_from_fd_no_so_peercred(monkeypatch: pytest.MonkeyPatch):
         wmname._pid_from_fd(-1)
 
 
-@pytest.mark.linux
 def test_process_name_from_pid():
     """Test getting the process name from a PID."""
     pid = os.getpid()

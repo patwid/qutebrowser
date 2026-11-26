@@ -108,7 +108,6 @@ class TestFileCompletion:
                 visible.append(index.data())
         assert visible == expected
 
-    @pytest.mark.linux
     def test_root_path(self, get_prompt):
         """With / as path, show root contents."""
         prompt = get_prompt('/')

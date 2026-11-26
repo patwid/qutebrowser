@@ -373,15 +373,6 @@ For other distributions, it should be possible to obtain the needed
 widevine files and store them in the correct places, but the details differ
 wildly between various Qt versions.
 
-Unable to use `spawn` on MacOS.::
-    When running qutebrowser from the prebuilt binary (`qutebrowser.app`) it
-    *will not* read any files that would alter your `$PATH` (e.g. `.profile`,
-    `.bashrc`, etc). This is not a bug, just that `.profile` is not propagated
-    to GUI applications in MacOS.
-+
-See https://github.com/qutebrowser/qutebrowser/issues/4273[Issue #4273] for
-details and potential workarounds.
-
 My issue is not listed.::
     If you experience any segfaults or crashes, you can report the issue in
     https://github.com/qutebrowser/qutebrowser/issues[the issue tracker] or

@@ -45,8 +45,7 @@ interface or command line. Changes you make this way are immediately active
 documentation) and are persisted in an `autoconfig.yml` file.
 
 The `autoconfig.yml` file is located in the "config" folder listed on the
-link:qute://version[] page. On macOS, the "auto config" folder is used, which is
-different from where hand-written config files are kept.
+link:qute://version[] page.
 
 However, **do not** edit `autoconfig.yml` by hand. Instead, see the next
 section.
@@ -99,9 +98,7 @@ You can run `:config-edit` inside qutebrowser to open the file in your editor,
 `:config-write-py --defaults` to write a template file to work with.
 
 The file should be located in the "config" location listed on
-link:qute://version[], which is typically `~/.config/qutebrowser/config.py` on
-Linux, `~/.qutebrowser/config.py` on macOS, and
-`%APPDATA%/qutebrowser/config/config.py` on Windows.
+link:qute://version[], which is typically `~/.config/qutebrowser/config.py`.
 
 Two global objects are pre-defined when running `config.py`: `c` and `config`.
 

@@ -10,7 +10,7 @@ import pytest
 from qutebrowser.qt.core import QTimer
 from qutebrowser.qt.widgets import QMessageBox
 
-from qutebrowser.utils import error, utils
+from qutebrowser.utils import error
 from qutebrowser.misc import ipc
 
 
@@ -66,8 +66,7 @@ def test_err_windows(qtbot, qapp, pre_text, post_text, expected, caplog):
         assert w is not None
         try:
             qtbot.add_widget(w)
-            if not utils.is_mac:
-                assert w.windowTitle() == 'title'
+            assert w.windowTitle() == 'title'
             assert w.icon() == QMessageBox.Icon.Critical
             assert w.standardButtons() == QMessageBox.StandardButton.Ok
             assert w.text() == expected
