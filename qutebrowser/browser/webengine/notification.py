@@ -9,8 +9,7 @@ Our notification implementation consists of two different parts:
 - NotificationBridgePresenter, the object we set as notification presenter on
   QWebEngineProfiles on startup.
 - Adapters (subclassing from AbstractNotificationAdapter) which get called by the bridge
-  and contain the code to show notifications using different means (e.g. a systray icon
-  or DBus).
+  and contain the code to show notifications using different means (e.g. DBus).
 
 Adapters are initialized lazily when the bridge gets the first notification. This makes
 sure we don't block while e.g. talking to DBus during startup, but only when needed.
@@ -27,21 +26,17 @@ Useful test pages:
 """
 
 import os
-import signal
 import html
 import dataclasses
 import itertools
 import functools
-import subprocess
 from typing import Any, Optional, TYPE_CHECKING
-from collections.abc import Iterator
 
-from qutebrowser.qt.core import (Qt, QObject, QVariant, QMetaType, QByteArray, pyqtSlot,
-                          pyqtSignal, QTimer, QProcess, QUrl)
-from qutebrowser.qt.gui import QImage, QIcon, QPixmap
+from qutebrowser.qt.core import (QObject, QVariant, QMetaType, QByteArray, pyqtSlot,
+                          pyqtSignal, QTimer, QUrl)
+from qutebrowser.qt.gui import QImage
 from qutebrowser.qt.dbus import (QDBusConnection, QDBusInterface, QDBus, QDBusServiceWatcher,
                           QDBusArgument, QDBusMessage, QDBusError)
-from qutebrowser.qt.widgets import QSystemTrayIcon
 
 if TYPE_CHECKING:
     # putting these behind TYPE_CHECKING also means this module is importable
@@ -53,7 +48,6 @@ from qutebrowser.misc import objects
 from qutebrowser.utils import (
     qtutils, log, utils, debug, message, objreg, resources, urlutils
 )
-from qutebrowser.qt import sip
 
 
 bridge: Optional['NotificationBridgePresenter'] = None
@@ -236,18 +230,6 @@ class NotificationBridgePresenter(QObject):
         candidates: dict[str, list[type[AbstractNotificationAdapter]]] = {
             "libnotify": [
                 DBusNotificationAdapter,
-                SystrayNotificationAdapter,
-                MessagesNotificationAdapter,
-            ],
-            "systray": [
-                SystrayNotificationAdapter,
-                DBusNotificationAdapter,
-                MessagesNotificationAdapter,
-            ],
-            "herbe": [
-                HerbeNotificationAdapter,
-                DBusNotificationAdapter,
-                SystrayNotificationAdapter,
                 MessagesNotificationAdapter,
             ],
             "messages": [MessagesNotificationAdapter],  # always succeeds
@@ -409,78 +391,6 @@ class NotificationBridgePresenter(QObject):
         self._drop_adapter()
 
 
-class SystrayNotificationAdapter(AbstractNotificationAdapter):
-
-    """Shows notifications using QSystemTrayIcon.
-
-    This is essentially a reimplementation of QtWebEngine's default implementation:
-    https://github.com/qt/qtwebengine/blob/v5.15.2/src/webenginewidgets/api/qwebenginenotificationpresenter.cpp
-
-    It exists because QtWebEngine won't allow us to restore its default presenter, so if
-    something goes wrong when trying to e.g. connect to the DBus one, we still want to
-    be able to switch back after our presenter is already installed. Also, it's nice if
-    users can switch presenters in the config live.
-    """
-
-    NAME = "systray"
-    NOTIFICATION_ID = 1  # only one concurrent notification supported
-
-    def __init__(self, parent: QObject | None = None) -> None:
-        super().__init__(parent)
-        if not QSystemTrayIcon.isSystemTrayAvailable():
-            raise Error("No system tray available")
-        if not QSystemTrayIcon.supportsMessages():
-            raise Error("System tray does not support messages")
-
-        self._systray = QSystemTrayIcon(self)
-        self._systray.setIcon(objects.qapp.windowIcon())
-        self._systray.messageClicked.connect(self._on_systray_clicked)
-
-    def present(
-        self,
-        qt_notification: "QWebEngineNotification",
-        *,
-        replaces_id: int | None,
-    ) -> int:
-        utils.unused(replaces_id)  # QSystemTray can only show one message
-        self.close_id.emit(self.NOTIFICATION_ID)
-        self._systray.show()
-
-        icon = self._convert_icon(qt_notification.icon())
-        msg = self._format_message(qt_notification.message(), qt_notification.origin())
-
-        self._systray.showMessage(qt_notification.title(), msg, icon)
-
-        return self.NOTIFICATION_ID
-
-    def _convert_icon(self, image: QImage) -> QIcon:
-        """Convert a QImage to a QIcon."""
-        if image.isNull():
-            return QIcon()
-        pixmap = QPixmap.fromImage(image, Qt.ImageConversionFlag.NoFormatConversion)
-        assert not pixmap.isNull()
-        icon = QIcon(pixmap)
-        assert not icon.isNull()
-        return icon
-
-    def _format_message(self, text: str, origin: QUrl) -> str:
-        """Format the message to display."""
-        if not self._should_include_origin(origin):
-            return text
-        return origin.toDisplayString() + '\n\n' + text
-
-    @pyqtSlot()
-    def _on_systray_clicked(self) -> None:
-        self.click_id.emit(self.NOTIFICATION_ID)
-
-    @pyqtSlot(int)
-    def on_web_closed(self, notification_id: int) -> None:
-        assert notification_id == self.NOTIFICATION_ID, notification_id
-        if not sip.isdeleted(self._systray):
-            # This can get called during shutdown
-            self._systray.hide()
-
-
 class MessagesNotificationAdapter(AbstractNotificationAdapter):
 
     """Shows notifications using qutebrowser messages.
@@ -535,110 +445,6 @@ class MessagesNotificationAdapter(AbstractNotificationAdapter):
             f"<b>{title}</b><br/>"
             f"{body}"
         )
-
-
-class HerbeNotificationAdapter(AbstractNotificationAdapter):
-
-    """Shows notifications using herbe.
-
-    See https://github.com/dudik/herbe
-    """
-
-    NAME = "herbe"
-
-    def __init__(self, parent: QObject | None = None) -> None:
-        super().__init__(parent)
-        # Also cleans up potentially hanging semaphores from herbe.
-        # https://github.com/dudik/herbe#notifications-dont-show-up
-        try:
-            subprocess.run(['herbe'], stderr=subprocess.DEVNULL, check=True)
-        except OSError as e:
-            raise Error(f'herbe error: {e}')
-        except subprocess.CalledProcessError as e:
-            if e.returncode != 1:
-                raise Error(f'herbe exited with status {e.returncode}')
-
-    def present(
-        self,
-        qt_notification: "QWebEngineNotification",
-        *,
-        replaces_id: int | None,
-    ) -> int:
-        if replaces_id is not None:
-            self.on_web_closed(replaces_id)
-
-        proc = QProcess(self)
-        proc.errorOccurred.connect(self._on_error)
-
-        lines = list(self._message_lines(qt_notification))
-        proc.start('herbe', lines)
-
-        pid = proc.processId()
-        assert pid > 1
-        proc.finished.connect(functools.partial(self._on_finished, pid))
-
-        return pid
-
-    def _message_lines(
-        self,
-        qt_notification: "QWebEngineNotification",
-    ) -> Iterator[str]:
-        """Get the lines to display for this notification."""
-        yield qt_notification.title()
-
-        origin = qt_notification.origin()
-        if self._should_include_origin(origin):
-            yield origin.toDisplayString()
-
-        yield qt_notification.message()
-
-        if not qt_notification.icon().isNull():
-            yield "(icon not shown)"
-
-    def _on_finished(self, pid: int, code: int, status: QProcess.ExitStatus) -> None:
-        """Handle a closing herbe process.
-
-        From the GitHub page:
-        - "An accepted notification always returns exit code 0."
-        - "Dismissed notifications return exit code 2."
-
-        Any other exit status should never happen.
-
-        We ignore CrashExit as SIGUSR1/SIGUSR2 are expected "crashes", and for any other
-        signals, we can't do much - emitting self.error would just go use herbe again,
-        so there's no point.
-        """
-        if status == QProcess.ExitStatus.CrashExit:
-            pass
-        elif code == 0:
-            self.click_id.emit(pid)
-        elif code == 2:
-            pass
-        else:
-            proc = self.sender()
-            assert isinstance(proc, QProcess), proc
-            stderr = proc.readAllStandardError()
-            raise Error(f'herbe exited with status {code}: {stderr}')
-
-        self.close_id.emit(pid)
-
-    @pyqtSlot(QProcess.ProcessError)
-    def _on_error(self, error: QProcess.ProcessError) -> None:
-        if error == QProcess.ProcessError.Crashed:
-            return
-        name = debug.qenum_key(QProcess, error)
-        self.error.emit(f'herbe process error: {name}')
-
-    @pyqtSlot(int)
-    def on_web_closed(self, notification_id: int) -> None:
-        """Handle closing the notification from JS.
-
-        From herbe's README:
-        "A notification can be dismissed [...] [by] sending a SIGUSR1 signal to it"
-        """
-        os.kill(notification_id, signal.SIGUSR1)
-        # Make sure we immediately remove it from active notifications
-        self.close_id.emit(notification_id)
 
 
 @dataclasses.dataclass
