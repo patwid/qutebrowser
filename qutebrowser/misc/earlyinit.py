@@ -178,10 +178,10 @@ def check_qt_version():
     from qutebrowser.qt.core import QT_VERSION, PYQT_VERSION, PYQT_VERSION_STR
     from qutebrowser.qt.core import QVersionNumber
     qt_ver = get_qt_version()
-    recent_qt_runtime = qt_ver is not None and qt_ver >= QVersionNumber(6, 8)
+    recent_qt_runtime = qt_ver is not None and qt_ver >= QVersionNumber(6, 12)
 
-    if QT_VERSION < 0x060800 or PYQT_VERSION < 0x060800 or not recent_qt_runtime:
-        text = ("Fatal error: Qt >= 6.8.0 and PyQt >= 6.8.0 are required, "
+    if QT_VERSION < 0x060c00 or PYQT_VERSION < 0x060b00 or not recent_qt_runtime:
+        text = ("Fatal error: Qt >= 6.12.0 and PyQt >= 6.11.0 are required, "
                 "but Qt {} / PyQt {} is installed.".format(qt_version(),
                                                            PYQT_VERSION_STR))
         _die(text)

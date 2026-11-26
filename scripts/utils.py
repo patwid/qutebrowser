@@ -30,9 +30,6 @@ fg_colors = {
 bg_colors = {name: col + 10 for name, col in fg_colors.items()}
 
 
-ON_CI = 'CI' in os.environ
-
-
 def _esc(code):
     """Get an ANSI color code based on a color number."""
     return '\033[{}m'.format(code)

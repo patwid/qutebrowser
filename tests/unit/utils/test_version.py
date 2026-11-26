@@ -899,22 +899,6 @@ class TestWebEngineVersions:
     def test_chromium_major(self, version, expected):
         assert version.chromium_major == expected
 
-    @pytest.mark.parametrize('pyqt_version, chromium_version, security_version', [
-        ('6.2.0', '90.0.4430.228', '93.0.4577.63'),
-        ('6.2.99', '90.0.4430.228', None),
-        ('6.3.0', '94.0.4606.126', '99.0.4844.84'),
-        ('6.99.0', None, None),
-    ])
-    def test_from_webengine(self, pyqt_version, chromium_version, security_version):
-        expected = version.WebEngineVersions(
-            webengine=utils.VersionNumber.parse(pyqt_version),
-            chromium=chromium_version,
-            chromium_security=security_version,
-            source='test',
-        )
-        assert version.WebEngineVersions.from_webengine(
-            pyqt_version, source='test') == expected
-
     def test_real_chromium_security_version(self, qapp):
         """Check the API for reading the chromium security patch version."""
         from qutebrowser.qt.webenginecore import (
@@ -925,26 +909,6 @@ class TestWebEngineVersions:
         base = utils.VersionNumber.parse(qWebEngineChromiumVersion())
         security = utils.VersionNumber.parse(qWebEngineChromiumSecurityPatchVersion())
         assert security >= base
-
-    def test_chromium_version_dict(self, qapp):
-        """Check if we infer the QtWebEngine versions properly.
-
-        Note this test mostly tests that our overview in version.py (also
-        intended for human readers) is accurate. The code we call here is never
-        going to be called in real-life situations, as the API is available.
-        """
-        from qutebrowser.qt.webenginecore import (
-            qWebEngineVersion,
-            qWebEngineChromiumVersion,
-            qWebEngineChromiumSecurityPatchVersion,
-        )
-
-        print(version.qtwebengine_versions())  # useful when adding new versions
-        inferred = version.WebEngineVersions.from_webengine(
-            qWebEngineVersion(), source="API")
-
-        assert inferred.chromium == qWebEngineChromiumVersion()
-        assert inferred.chromium_security == qWebEngineChromiumSecurityPatchVersion()
 
 
 class FakeQSslSocket:
@@ -995,16 +959,6 @@ class TestChromiumVersion:
         """Make sure we don't need to initialize a profile to get the version."""
         monkeypatch.setattr(QWebEngineProfile, "defaultProfile", lambda: 1/0)
         version.qtwebengine_versions()
-
-    @pytest.mark.parametrize('override', [
-        utils.VersionNumber(6, 8, 1),
-        utils.VersionNumber(6, 99, 3),
-    ])
-    def test_override(self, monkeypatch, override):
-        monkeypatch.setenv('QUTE_QTWEBENGINE_VERSION_OVERRIDE', str(override))
-        versions = version.qtwebengine_versions()
-        assert versions.source == 'override'
-        assert versions.webengine == override
 
 
 class FakeExtensionInfo:
@@ -1308,11 +1262,6 @@ class TestWebEngineExtensions:
         assert version._webengine_extensions() == [
             "WebExtensions: unknown (avoiding init)"
         ]
-
-    def test_no_extension_manager(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        assert webenginesettings.default_profile is None  # -> default_qt_profile() used
-        monkeypatch.setattr(webenginesettings, "default_qt_profile", object)
-        assert not version._webengine_extensions()
 
     @pytest.mark.parametrize("avoid_init", [True, False])
     def test_preexisting_profile(self, monkeypatch: pytest.MonkeyPatch, avoid_init: bool) -> None:

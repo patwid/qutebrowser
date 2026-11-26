@@ -11,7 +11,6 @@ import pytest
 
 from qutebrowser import qutebrowser
 from qutebrowser.config import qtargs, configdata
-from qutebrowser.utils import version, utils
 
 
 @pytest.fixture
@@ -26,25 +25,8 @@ def parser(mocker):
 
 
 @pytest.fixture
-def version_patcher(monkeypatch):
-    """Get a patching function to patch the QtWebEngine version."""
-    def run(ver) -> bool:
-        """Run patching.
-
-        Return:
-            True if we know the associated Chromium version, False otherwise
-        """
-        versions = version.WebEngineVersions.from_webengine(ver, source='test')
-        monkeypatch.setattr(version, 'qtwebengine_versions', lambda: versions)
-        return versions.chromium_major is not None
-
-    return run
-
-
-@pytest.fixture
-def reduce_args(config_stub, version_patcher, monkeypatch):
+def reduce_args(config_stub, monkeypatch):
     """Make sure no --disable-shared-workers/referer argument get added."""
-    version_patcher('6.8.2')
     config_stub.val.content.headers.referer = 'always'
     config_stub.val.scrolling.bar = 'never'
     config_stub.val.qt.chromium.experimental_web_platform_features = 'never'
@@ -115,14 +97,6 @@ def test_no_webengine_available(monkeypatch, config_stub, parser, stubs):
     assert args == [sys.argv[0]]
 
 
-_XFAIL_FUTURE_QT = (
-    pytest.mark.xfail(
-        utils.VersionNumber(6, 11) not in version.WebEngineVersions._CHROMIUM_VERSIONS,
-        reason="Unknown security patch version for Qt 6.11 so far",
-    ),
-)
-
-
 @pytest.mark.usefixtures('reduce_args')
 class TestWebEngineArgs:
 
@@ -137,14 +111,13 @@ class TestWebEngineArgs:
         for value in values:
             option.typ.to_py(value)  # for validation
 
-    @pytest.mark.parametrize('qt_version, debug_flag, expected', [
+    @pytest.mark.parametrize('debug_flag, expected', [
         # Enable with -D stack, do nothing without it.
-        ('6.8.2', True, True),
-        ('6.8.2', False, None),
+        (True, True),
+        (False, None),
     ])
-    def test_in_process_stack_traces(self, monkeypatch, parser, version_patcher,
-                                     qt_version, debug_flag, expected):
-        version_patcher(qt_version)
+    def test_in_process_stack_traces(self, monkeypatch, parser,
+                                     debug_flag, expected):
         parsed = parser.parse_args(['--debug-flag', 'stack'] if debug_flag
                                    else [])
         args = qtargs.qt_args(parsed)
@@ -159,59 +132,24 @@ class TestWebEngineArgs:
             assert '--disable-in-process-stack-traces' in args
             assert '--enable-in-process-stack-traces' not in args
 
-    @pytest.mark.parametrize(
-        'qt_version, value, has_arg',
-        [
-            ('6.8.0', 'auto', True),
-            ('6.8.1', 'auto', True),
-            ('6.8.2', 'auto', False),
-            ('6.8.1', 'always', True),
-            ('6.8.1', 'never', False),
-            ('6.8.2', 'always', True),
-        ],
-    )
-    def test_accelerated_2d_canvas(
-        self,
-        parser,
-        version_patcher,
-        config_stub,
-        monkeypatch,
-        qt_version,
-        value,
-        has_arg,
-    ):
-        version_patcher(qt_version)
+    @pytest.mark.parametrize('value, has_arg', [
+        ('auto', False),
+        ('always', True),
+        ('never', False),
+    ])
+    def test_accelerated_2d_canvas(self, parser, config_stub, value, has_arg):
         config_stub.val.qt.workarounds.disable_accelerated_2d_canvas = value
 
         parsed = parser.parse_args([])
         args = qtargs.qt_args(parsed)
         assert ('--disable-accelerated-2d-canvas' in args) == has_arg
 
-    @pytest.mark.parametrize(
-        "qt_version, value, has_arg",
-        [
-            # 6.8.5 is broken too, but commercial-only
-            ("6.10.0", "always", True),
-            ("6.10.0", "auto", False),
-            ("6.10.1", "auto", True),
-            ("6.10.1", "never", False),
-            ("6.10.2", "always", True),
-            ("6.10.2", "auto", False),
-            pytest.param("6.11.0", "always", True, marks=_XFAIL_FUTURE_QT),
-            pytest.param("6.11.0", "auto", False, marks=_XFAIL_FUTURE_QT),
-        ],
-    )
-    def test_disable_accessibility(
-        self,
-        parser,
-        version_patcher,
-        config_stub,
-        monkeypatch,
-        qt_version,
-        value,
-        has_arg,
-    ):
-        version_patcher(qt_version)
+    @pytest.mark.parametrize('value, has_arg', [
+        ('auto', False),
+        ('always', True),
+        ('never', False),
+    ])
+    def test_disable_accessibility(self, parser, config_stub, value, has_arg):
         config_stub.val.qt.workarounds.disable_accessibility = value
 
         parsed = parser.parse_args([])
@@ -429,24 +367,7 @@ class TestWebEngineArgs:
         ]
         assert blink_settings_args == ['--blink-settings=foo=bar']
 
-    @pytest.mark.parametrize('qt_version, disabled', [
-        # Qt 6.8
-        ('6.8.0', "DocumentPictureInPictureAPI"),
-        ('6.8.1', "DocumentPictureInPictureAPI"),
-        ('6.8.2', "DocumentPictureInPictureAPI"),
-        ('6.8.3', "DocumentPictureInPictureAPI"),
-        # Qt 6.9
-        ('6.9.0', "DocumentPictureInPictureAPI,PermissionElement"),
-        ('6.9.1', "DocumentPictureInPictureAPI,PermissionElement"),
-        # Qt 6.10
-        ('6.10.0', "DocumentPictureInPictureAPI,PermissionElement"),
-        ('6.10.1', "DocumentPictureInPictureAPI"),
-    ])
-    def test_disable_feature_workaround(
-        self, parser, version_patcher, qt_version, disabled
-    ):
-        version_patcher(qt_version)
-
+    def test_disable_feature_workaround(self, parser):
         parsed = parser.parse_args([])
         args = qtargs.qt_args(parsed)
         disable_features_args = [
@@ -454,8 +375,7 @@ class TestWebEngineArgs:
             if arg.startswith(qtargs._DISABLE_FEATURES)
         ]
 
-        expected = [f"--disable-features={disabled}"] if disabled else []
-        assert disable_features_args == expected
+        assert disable_features_args == ["--disable-features=DocumentPictureInPictureAPI"]
 
     @pytest.mark.parametrize('enabled', [True, False])
     def test_media_keys(self, config_stub, parser, enabled):

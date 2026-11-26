@@ -51,6 +51,16 @@ Removed
     (the quirk was only needed with QtWebEngine 6.2).
   * `pyobjc-core` and `pyobjc-framework-Cocoa` are not needed on macOS anymore
     (they were only used with Qt older than 6.3).
+- Qt 6.12 (QtWebEngine 6.140) and PyQt 6.11 or newer are now required. As a
+  consequence:
+  * Workarounds for older Qt versions were removed. `auto` for
+    `qt.workarounds.disable_accelerated_2d_canvas` and
+    `qt.workarounds.disable_accessibility` is now the same as `never`.
+  * The `misc-mathml-darkmode` value for `content.site_specific_quirks.skip`
+    was removed.
+  * The `QUTE_QTWEBENGINE_VERSION_OVERRIDE` and `QUTE_DISABLE_PAKJOY`
+    environment variables were removed.
+  * A Chromium upgrade from a Qt 5 profile is no longer detected.
 - Support for Windows and macOS was removed, only Linux is supported. As a
   consequence:
   * The Windows installer, the macOS `.dmg`, the PyInstaller build and the

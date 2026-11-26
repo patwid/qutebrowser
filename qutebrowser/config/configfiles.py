@@ -175,49 +175,26 @@ class StateConfig(configparser.ConfigParser):
         else:
             self.qutebrowser_version_changed = VersionChange.major
 
-    def _set_chromium_changed_attribute(self) -> None:  # noqa: C901
+    def _set_chromium_changed_attribute(self) -> None:
         if not self._has_webengine():
             return
 
         old_chromium_version_str = self['general'].get('chromium_version', None)
         if old_chromium_version_str == "no" or old_chromium_version_str is None:
-            old_qtwe_version = self['general'].get('qtwe_version', None)
-            if old_qtwe_version == "no" or old_qtwe_version is None:
-                return
-
-            try:
-                old_versions = version.WebEngineVersions.from_webengine(
-                    old_qtwe_version, source='config')
-            except ValueError:
-                log.init.warning(
-                    f"Unable to parse old QtWebEngine version {old_qtwe_version}")
-                return
-
-            old_chromium_version = old_versions.chromium_major
-            if (
-                old_chromium_version is None
-                and old_versions.webengine < utils.VersionNumber(6)
-            ):
-                # Qt 5 isn't supported anymore, so we don't know the exact Chromium
-                # version - but we know that the last Qt 5 release was based on 87.
-                old_chromium_version = 87
-        else:
-            try:
-                old_chromium_version = int(old_chromium_version_str)
-            except ValueError:
-                log.init.warning(
-                    f"Unable to parse old Chromium version {old_chromium_version_str}")
-                return
-
-        new_versions = version.qtwebengine_versions()
-        new_chromium_version = new_versions.chromium_major
-
-        if old_chromium_version is None or new_chromium_version is None:
             return
 
-        if old_chromium_version <= 87 and new_chromium_version >= 90:  # Qt 5 -> Qt 6
-            self.chromium_version_changed = VersionChange.major
-        elif old_chromium_version > new_chromium_version:
+        try:
+            old_chromium_version = int(old_chromium_version_str)
+        except ValueError:
+            log.init.warning(
+                f"Unable to parse old Chromium version {old_chromium_version_str}")
+            return
+
+        new_chromium_version = version.qtwebengine_versions().chromium_major
+        if new_chromium_version is None:
+            return
+
+        if old_chromium_version > new_chromium_version:
             self.chromium_version_changed = VersionChange.downgrade
         elif old_chromium_version == new_chromium_version:
             self.chromium_version_changed = VersionChange.equal

@@ -292,7 +292,7 @@
 |<<qt.force_software_rendering,qt.force_software_rendering>>|Force software rendering for QtWebEngine.
 |<<qt.highdpi,qt.highdpi>>|Turn on Qt HighDPI scaling.
 |<<qt.workarounds.disable_accelerated_2d_canvas,qt.workarounds.disable_accelerated_2d_canvas>>|Disable accelerated 2d canvas to avoid graphical glitches.
-|<<qt.workarounds.disable_accessibility,qt.workarounds.disable_accessibility>>|Disable accessibility to avoid crashes on Qt 6.10.1.
+|<<qt.workarounds.disable_accessibility,qt.workarounds.disable_accessibility>>|Disable accessibility to avoid crashes on some Qt versions.
 |<<qt.workarounds.disable_hangouts_extension,qt.workarounds.disable_hangouts_extension>>|Disable the Hangouts extension.
 |<<qt.workarounds.remove_service_workers,qt.workarounds.remove_service_workers>>|Delete the QtWebEngine Service Worker directory on every start.
 |<<scrolling.bar,scrolling.bar>>|When/how to show the scrollbar.
@@ -1997,7 +1997,6 @@ Default: empty
 === content.canvas_reading
 Allow websites to read canvas elements.
 Note this is needed for some websites to work properly.
-On QtWebEngine < 6.6, this setting requires a restart and does not support URL patterns, only the global setting is applied.
 
 This setting supports link:configuring{outfilesuffix}#patterns[URL patterns].
 
@@ -2616,7 +2615,6 @@ Valid values:
  * +js-whatsapp-web+
  * +js-discord+
  * +misc-krunker+
- * +misc-mathml-darkmode+
 
 Default: empty
 
@@ -3771,7 +3769,7 @@ Default: +pass:[false]+
 [[qt.workarounds.disable_accelerated_2d_canvas]]
 === qt.workarounds.disable_accelerated_2d_canvas
 Disable accelerated 2d canvas to avoid graphical glitches.
-On some setups graphical issues can occur on sites like Google sheets and PDF.js. These don't occur when accelerated 2d canvas is turned off, so we do that by default.
+On some setups graphical issues can occur on sites like Google sheets and PDF.js. These don't occur when accelerated 2d canvas is turned off, so it can be turned off here.
 So far these glitches only occur on some Intel graphics devices.
 
 This setting requires a restart.
@@ -3781,14 +3779,14 @@ Type: <<types,String>>
 Valid values:
 
  * +always+: Disable accelerated 2d canvas
- * +auto+: Disable on Qt versions with known issues, enable otherwise
+ * +auto+: Currently the same as `never` (no Qt version with known issues is supported).
  * +never+: Enable accelerated 2d canvas
 
 Default: +pass:[auto]+
 
 [[qt.workarounds.disable_accessibility]]
 === qt.workarounds.disable_accessibility
-Disable accessibility to avoid crashes on Qt 6.10.1.
+Disable accessibility to avoid crashes on some Qt versions.
 
 This setting requires a restart.
 
@@ -3797,7 +3795,7 @@ Type: <<types,String>>
 Valid values:
 
  * +always+: Disable renderer accessibility
- * +auto+: Disable on Qt versions with known issues, enable otherwise
+ * +auto+: Currently the same as `never` (no Qt version with known issues is supported).
  * +never+: Enable renderer accessibility
 
 Default: +pass:[auto]+
@@ -3807,7 +3805,6 @@ Default: +pass:[auto]+
 Disable the Hangouts extension.
 The Hangouts extension provides additional APIs for Google domains only.
 Hangouts has been replaced with Meet, which appears to work without this extension.
-Note this setting gets ignored and the Hangouts extension is always disabled to avoid crashes on Qt 6.11.0.
 
 This setting requires a restart.
 

@@ -19,7 +19,7 @@ from qutebrowser.qt.core import QProcess, QPoint
 
 from helpers import testutils
 from end2end.fixtures import quteprocess
-from qutebrowser.utils import utils, version
+from qutebrowser.utils import version
 
 
 # For some reason (some floating point rounding differences?), color values are
@@ -338,8 +338,7 @@ def test_preferred_colorscheme(request, quteproc_new, value):
     assert content in expected_values[value]
 
 
-def test_preferred_colorscheme_with_dark_mode(
-        request, quteproc_new, webengine_versions):
+def test_preferred_colorscheme_with_dark_mode(request, quteproc_new):
     """Test interaction between preferred-color-scheme and dark mode.
 
     We would actually expect a color of 34, 34, 34 and 'Dark preference detected.'.
@@ -351,10 +350,6 @@ def test_preferred_colorscheme_with_dark_mode(
         '-s', 'colors.webpage.darkmode.enabled', 'true',
         '-s', 'colors.webpage.darkmode.algorithm', 'brightness-rgb',
     ]
-    if webengine_versions.webengine == utils.VersionNumber(6, 9):
-        # WORKAROUND: For unknown reasons, dark mode colors are wrong with
-        # Qt 6.9 + hardware rendering + Xvfb.
-        args += testutils.SOFTWARE_RENDERING_ARGS
     quteproc_new.start(args)
 
     quteproc_new.open_path('data/darkmode/prefers-color-scheme.html')
@@ -425,7 +420,6 @@ def test_service_worker_workaround(
 def test_disable_hangouts_extension_crash(
     quteproc_new: quteprocess.QuteProc,
     request: pytest.FixtureRequest,
-    webengine_versions: version.WebEngineVersions,
 ):
     """Make sure disabling the Hangouts extension doesn't crash."""
     args = _base_args(request.config) + [
@@ -433,13 +427,6 @@ def test_disable_hangouts_extension_crash(
         '-s', 'qt.workarounds.disable_hangouts_extension', 'true',
     ]
     quteproc_new.start(args)
-    if webengine_versions.webengine in [
-        utils.VersionNumber(6, 10, 1),
-        utils.VersionNumber(6, 10, 2),
-    ]:
-        line = quteproc_new.wait_for(message="Not disabling Hangouts extension *")
-        line.expected = True
-
     quteproc_new.send_cmd(':quit')
     quteproc_new.wait_for_quit()
 
@@ -567,10 +554,6 @@ def test_dark_mode(webengine_versions, quteproc_new, request,
         '-s', 'colors.webpage.darkmode.enabled', 'true',
         '-s', 'colors.webpage.darkmode.algorithm', algorithm,
     ]
-    if webengine_versions.webengine == utils.VersionNumber(6, 9):
-        # WORKAROUND: For unknown reasons, dark mode colors are wrong with
-        # Qt 6.9 + hardware rendering + Xvfb.
-        args += testutils.SOFTWARE_RENDERING_ARGS
 
     quteproc_new.start(args)
     minor_version = str(webengine_versions.webengine.strip_patch())
@@ -593,41 +576,6 @@ def test_dark_mode(webengine_versions, quteproc_new, request,
     quteproc_new.get_screenshot(
         probe_pos=QPoint(4, 4),
         probe_color=expected,
-    )
-
-
-@pytest.mark.parametrize("suffix", ["inline", "display"])
-def test_dark_mode_mathml(webengine_versions, quteproc_new, request, qtbot, suffix):
-    args = _base_args(request.config) + [
-        '--temp-basedir',
-        '-s', 'colors.webpage.darkmode.enabled', 'true',
-        '-s', 'colors.webpage.darkmode.algorithm', 'brightness-rgb',
-    ]
-    if webengine_versions.webengine == utils.VersionNumber(6, 9):
-        # WORKAROUND: For unknown reasons, dark mode colors are wrong with
-        # Qt 6.9 + hardware rendering + Xvfb.
-        args += testutils.SOFTWARE_RENDERING_ARGS
-
-    quteproc_new.start(args)
-
-    quteproc_new.open_path(f'data/darkmode/mathml-{suffix}.html')
-    quteproc_new.wait_for_js('Image loaded')
-
-    # First make sure loading finished by looking outside of the image
-    if webengine_versions.webengine >= utils.VersionNumber(6):
-        expected = testutils.Color(0, 0, 214) if IS_ARM else testutils.Color(0, 0, 215)
-    else:
-        expected = testutils.Color(0, 0, 206) if IS_ARM else testutils.Color(0, 0, 204)
-
-    quteproc_new.get_screenshot(
-        probe_pos=QPoint(105, 0),
-        probe_color=expected,
-    )
-
-    # Then get the actual formula color, probing again in case it's not displayed yet...
-    quteproc_new.get_screenshot(
-        probe_pos=QPoint(4, 4),
-        probe_color=testutils.Color(255, 255, 255),
     )
 
 

@@ -123,8 +123,6 @@ def qt_message_handler(msg_type: qtcore.QtMsgType,
         # https://bugreports.qt.io/browse/QTBUG-76391
         "Attribute Qt::AA_ShareOpenGLContexts must be set before "
         "QCoreApplication is created.",
-        # Qt 6.4 beta 1: https://bugreports.qt.io/browse/QTBUG-104741
-        "GL format 0 is not supported",
         # WORKAROUND https://bugreports.qt.io/browse/QTBUG-137424
         ("QObject::disconnect: wildcard call disconnects from destroyed signal of "
          "QNativeSocketEngine::unnamed"),
@@ -133,11 +131,6 @@ def qt_message_handler(msg_type: qtcore.QtMsgType,
         msg = "Logged empty message!"
 
     if any(msg.strip().startswith(pattern) for pattern in suppressed_msgs):
-        level = logging.DEBUG
-    elif context.category == "qt.webenginecontext" and (
-        msg.strip().startswith("GL Type: ") or  # Qt 6.3
-        msg.strip().startswith("GLImplementation:")  # Qt 6.2
-    ):
         level = logging.DEBUG
     else:
         level = qt_to_logging[msg_type]

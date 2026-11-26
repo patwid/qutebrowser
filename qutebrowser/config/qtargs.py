@@ -7,12 +7,12 @@
 import os
 import sys
 import argparse
-from typing import Any, TypeAlias
-from collections.abc import Iterator, Sequence, Callable
+from typing import Any
+from collections.abc import Iterator, Sequence
 
 
 from qutebrowser.config import config
-from qutebrowser.utils import utils, log, version
+from qutebrowser.utils import utils, log
 
 
 _ENABLE_FEATURES = '--enable-features='
@@ -49,35 +49,29 @@ def qt_args(namespace: argparse.Namespace) -> list[str]:
         # backend. Thus, we could end up in a situation where we're here, but
         # QtWebEngine isn't actually available.
         # We shouldn't call _qtwebengine_args() in this case as it relies on
-        # QtWebEngine actually being importable, e.g. in
-        # version.qtwebengine_versions().
+        # QtWebEngine actually being importable.
         log.init.debug("QtWebEngine requested, but unavailable...")
         return argv
 
-    versions = version.qtwebengine_versions()
     # https://codereview.qt-project.org/c/qt/qtwebengine/+/376704
     argv.insert(1, "--webEngineArgs")
 
     special_prefixes = (_ENABLE_FEATURES, _DISABLE_FEATURES, _BLINK_SETTINGS)
     special_flags = [flag for flag in argv if flag.startswith(special_prefixes)]
     argv = [flag for flag in argv if not flag.startswith(special_prefixes)]
-    argv += list(_qtwebengine_args(versions, namespace, special_flags))
+    argv += list(_qtwebengine_args(namespace, special_flags))
 
     return argv
 
 
-def _qtwebengine_features(  # noqa: C901
-        versions: version.WebEngineVersions,
+def _qtwebengine_features(
         special_flags: Sequence[str],
 ) -> tuple[Sequence[str], Sequence[str]]:
     """Get a tuple of --enable-features/--disable-features flags for QtWebEngine.
 
     Args:
-        versions: The WebEngineVersions to get flags for.
         special_flags: Existing flags passed via the commandline.
     """
-    assert versions.chromium_major is not None
-
     enabled_features = []
     disabled_features = []
 
@@ -126,11 +120,6 @@ def _qtwebengine_features(  # noqa: C901
     # TODO adjust if fixed in Qt 6.9.2+
     disabled_features.append('DocumentPictureInPictureAPI')
 
-    if utils.VersionNumber(6, 9) <= versions.webengine < utils.VersionNumber(6, 10, 1):
-        # WORKAROUND for https://bugreports.qt.io/browse/QTBUG-135787
-        # and https://bugreports.qt.io/browse/QTBUG-141096
-        disabled_features.append('PermissionElement')
-
     if not config.val.input.media_keys:
         disabled_features.append('HardwareMediaKeyHandling')
 
@@ -138,7 +127,6 @@ def _qtwebengine_features(  # noqa: C901
 
 
 def _qtwebengine_args(
-        versions: version.WebEngineVersions,
         namespace: argparse.Namespace,
         special_flags: Sequence[str],
 ) -> Iterator[str]:
@@ -163,17 +151,16 @@ def _qtwebengine_args(
         assert switch_name in ['dark-mode-settings', 'blink-settings'], switch_name
         yield f'--{switch_name}=' + ','.join(f'{k}={v}' for k, v in values)
 
-    enabled_features, disabled_features = _qtwebengine_features(versions, special_flags)
+    enabled_features, disabled_features = _qtwebengine_features(special_flags)
     if enabled_features:
         yield _ENABLE_FEATURES + ','.join(enabled_features)
     if disabled_features:
         yield _DISABLE_FEATURES + ','.join(disabled_features)
 
-    yield from _qtwebengine_settings_args(versions)
+    yield from _qtwebengine_settings_args()
 
 
-_SettingValueType: TypeAlias = str | Callable[[version.WebEngineVersions], str | None]
-_WEBENGINE_SETTINGS: dict[str, dict[Any, _SettingValueType | None]] = {
+_WEBENGINE_SETTINGS: dict[str, dict[Any, str | None]] = {
     'qt.force_software_rendering': {
         'software-opengl': None,
         'qt-quick': None,
@@ -229,34 +216,20 @@ _WEBENGINE_SETTINGS: dict[str, dict[Any, _SettingValueType | None]] = {
     'qt.workarounds.disable_accelerated_2d_canvas': {
         'always': '--disable-accelerated-2d-canvas',
         'never': None,
-        'auto': lambda versions: '--disable-accelerated-2d-canvas'
-        if versions.webengine
-        and versions.webengine < utils.VersionNumber(6, 8, 2)
-        else None,
+        'auto': None,
     },
     'qt.workarounds.disable_accessibility': {
         'always': '--disable-renderer-accessibility',
         'never': None,
-        # WORKAROUND for https://qt-project.atlassian.net/browse/QTBUG-142320
-        'auto': lambda versions: '--disable-renderer-accessibility'
-        if versions.webengine
-        and versions.webengine == utils.VersionNumber(6, 10, 1)
-        else None,
+        'auto': None,
     },
 }
 
 
-def _qtwebengine_settings_args(versions: version.WebEngineVersions) -> Iterator[str]:
+def _qtwebengine_settings_args() -> Iterator[str]:
     for setting, args in sorted(_WEBENGINE_SETTINGS.items()):
         arg = args[config.instance.get(setting)]
-        if callable(arg):
-            result = arg(versions)
-            if result is not None:
-                assert isinstance(
-                    result, str
-                ), f"qt.settings feature detection returned an invalid type: {type(result)} for {setting}"
-                yield result
-        elif arg is not None:
+        if arg is not None:
             yield arg
 
 

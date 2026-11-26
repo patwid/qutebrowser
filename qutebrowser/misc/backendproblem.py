@@ -23,7 +23,7 @@ from qutebrowser.qt.network import QSslSocket
 
 from qutebrowser.config import config, configfiles
 from qutebrowser.utils import usertypes, version, log, utils, standarddir
-from qutebrowser.misc import objects, msgbox, savemanager, quitter
+from qutebrowser.misc import msgbox, savemanager, quitter
 
 
 class _Result(enum.IntEnum):
@@ -186,44 +186,29 @@ class _BackendProblemChecker:
         shutil.move(service_worker_dir, bak_dir)
 
     def _confirm_chromium_version_changes(self) -> None:
-        """Ask if there are Chromium downgrades or a Qt 5 -> 6 upgrade."""
+        """Ask if there is a Chromium downgrade."""
         versions = version.qtwebengine_versions()
         change = configfiles.state.chromium_version_changed
         webengine_data_dir = os.path.join(standarddir.data(), "webengine")
 
-        if change == configfiles.VersionChange.major:
-            icon = QMessageBox.Icon.Information
-            text = (
-                "Chromium/QtWebEngine upgrade detected:<br>"
-                f"You are <b>upgrading to QtWebEngine {versions.webengine}</b> but "
-                "used Qt 5 for the last qutebrowser launch.<br><br>"
-                "Data managed by Chromium will be upgraded. This is a <b>one-way "
-                "operation:</b> If you open qutebrowser with Qt 5 again later, any "
-                "Chromium data will be <b>invalid and discarded</b>.<br><br>"
-                "This affects page data such as cookies, but not data managed by "
-                "qutebrowser, such as your configuration or <tt>:open</tt> history.<br>"
-                f"The affected data is in <tt>{webengine_data_dir}</tt>."
-            )
-        elif change == configfiles.VersionChange.downgrade:
-            icon = QMessageBox.Icon.Warning
-            text = (
-                "Chromium/QtWebEngine downgrade detected:<br>"
-                f"You are <b>downgrading to QtWebEngine {versions.webengine}</b>."
-                "<br><br>"
-                "Data managed by Chromium <b>will be discarded</b> if you continue."
-                "<br><br>"
-                "This affects page data such as cookies, but not data managed by "
-                "qutebrowser, such as your configuration or <tt>:open</tt> history.<br>"
-                f"The affected data is in <tt>{webengine_data_dir}</tt>."
-            )
-        else:
+        if change != configfiles.VersionChange.downgrade:
             return
 
+        text = (
+            "Chromium/QtWebEngine downgrade detected:<br>"
+            f"You are <b>downgrading to QtWebEngine {versions.webengine}</b>."
+            "<br><br>"
+            "Data managed by Chromium <b>will be discarded</b> if you continue."
+            "<br><br>"
+            "This affects page data such as cookies, but not data managed by "
+            "qutebrowser, such as your configuration or <tt>:open</tt> history.<br>"
+            f"The affected data is in <tt>{webengine_data_dir}</tt>."
+        )
         box = msgbox.msgbox(
             parent=None,
             title="QtWebEngine version change",
             text=text,
-            icon=icon,
+            icon=QMessageBox.Icon.Warning,
             plain_text=False,
             buttons=QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Abort,
         )
@@ -231,72 +216,11 @@ class _BackendProblemChecker:
         if response != QMessageBox.StandardButton.Ok:
             sys.exit(usertypes.Exit.err_init)
 
-    def _force_wayland_hardware_acceleration(self) -> None:
-        """Set environment variable so hardware acceleration works on Wayland.
-
-        Set EGL_PLATFORM=wayland to force ANGLE to obtain EGL display connection
-        for wayland platform. Otherwise, the display connection for
-        EGL_DEFAULT_DISPLAY may belong to a platform which Nvidia's EGL driver
-        doesn't support. In case of unsupported platform, EGL may fallback to
-        Mesa software renderer (LLVMPipe) disabling hardware acceleration in
-        Chromium.
-
-        Equivalent to:
-        https://codereview.qt-project.org/c/qt/qtwebengine/+/663568
-        """
-        if objects.qapp.platformName() != 'wayland':
-            return
-
-        versions = version.qtwebengine_versions()
-        if versions.webengine >= utils.VersionNumber(6, 10):
-            # Qt workaround is active
-            return
-
-        egl_platform_var = "EGL_PLATFORM"
-        egl_platform = os.environ.get(egl_platform_var)
-        if not egl_platform:
-            os.environ[egl_platform_var] = "wayland"
-        elif egl_platform != "wayland":
-            log.init.warning(
-                f"{egl_platform_var} environment variable is set to {egl_platform!r}. "
-                "This may break hardware rendering on Wayland."
-            )
-
-    def _fix_wayland_amd_gbm(self) -> None:
-        """Force GBM to off with Qt 6.11.0 and AMD GPUs on Wayland."""
-        if objects.qapp.platformName() != "wayland":
-            return
-
-        versions = version.qtwebengine_versions()
-        if versions.webengine != utils.VersionNumber(6, 11):
-            # Older versions are not affected; assuming fixed with Qt 6.11.1
-            return
-
-        opengl_info = version.opengl_info()
-        if opengl_info is None or opengl_info.vendor != "AMD":
-            return
-
-        env_var = "QTWEBENGINE_FORCE_USE_GBM"
-        env_value = os.environ.get(env_var, "0")
-        if env_value != "0":
-            log.init.warning(
-                f"{env_var} environment variable is set to {env_value!r}. "
-                "This may cause issues with AMD GPUs on Wayland with Qt 6.11.0."
-            )
-            return
-
-        log.init.warning(
-            "Disabling GBM support to avoid issues with AMD GPUs on Wayland with "
-            "Qt 6.11.0")
-        os.environ[env_var] = "0"
-
     def check(self) -> None:
         """Run all checks."""
         self._check_backend_modules()
         self._handle_ssl_support()
         self._handle_serviceworker_nuking()
-        self._force_wayland_hardware_acceleration()
-        self._fix_wayland_amd_gbm()
         self._confirm_chromium_version_changes()
 
 

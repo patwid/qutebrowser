@@ -7,12 +7,6 @@ import logging
 import pytest_bdd as bdd
 bdd.scenarios('prompts.feature')
 
-from qutebrowser.utils import qtutils
-try:
-    from qutebrowser.qt.webenginecore import PYQT_WEBENGINE_VERSION
-except ImportError:
-    PYQT_WEBENGINE_VERSION = None
-
 
 @bdd.when("I load an SSL page")
 def load_ssl_page(quteproc, ssl_server):
@@ -46,19 +40,10 @@ def wait_for_prompt(quteproc):
 @bdd.given("I may need a fresh instance")
 def fresh_instance(quteproc):
     """Restart qutebrowser to bypass webengine's permission persistance."""
-    # Qt6.8 by default will remember feature grants or denies. When we are
-    # on PyQt6.8 we disable that with the new API, otherwise restart the
-    # browser to make it forget previous prompts.
-    #
-    # Starting with Qt 6.10, QtWebEngine unconditionally persists some permissions;
-    # see https://bugreports.qt.io/browse/QTBUG-140194
-    if (
-        qtutils.version_check("6.8", compiled=False)
-        and PYQT_WEBENGINE_VERSION
-        and PYQT_WEBENGINE_VERSION < 0x60800
-    ) or qtutils.version_check("6.10", compiled=False):
-        quteproc.terminate()
-        quteproc.start()
+    # QtWebEngine unconditionally persists some permissions, see
+    # https://bugreports.qt.io/browse/QTBUG-140194
+    quteproc.terminate()
+    quteproc.start()
 
 
 @bdd.then("no prompt should be shown")

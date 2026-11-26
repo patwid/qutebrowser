@@ -281,11 +281,7 @@ def test_qutebrowser_version_changed(
 
     ('90', '94', configfiles.VersionChange.minor),
     ('83', '87', configfiles.VersionChange.minor),
-
-    ('83', '90', configfiles.VersionChange.major),
-    ('87', '90', configfiles.VersionChange.major),
-    ('83', '94', configfiles.VersionChange.major),
-    ('87', '94', configfiles.VersionChange.major),
+    ('87', '94', configfiles.VersionChange.minor),
 
     ('94', '90', configfiles.VersionChange.downgrade),
     ('94', '87', configfiles.VersionChange.downgrade),
@@ -303,29 +299,8 @@ def test_chromium_version_changed(
     assert state.chromium_version_changed == expected
 
 
-@pytest.mark.parametrize('old_qtwe_version, new_chromium_version, expected', [
-    (None, '90', configfiles.VersionChange.unknown),
-    ('6.2.0', '90', configfiles.VersionChange.equal),
-    ('6.2.1', '94', configfiles.VersionChange.minor),
-    ('5.15.2', '90', configfiles.VersionChange.major),
-    ('6.3.0', '90', configfiles.VersionChange.downgrade),
-
-])
-def test_chromium_version_changed_inferring(
-        state_writer, qtwe_version_patcher,
-        old_qtwe_version, new_chromium_version, expected):
-    qtwe_version_patcher('6.2', chromium_version=new_chromium_version)
-
-    if old_qtwe_version is not None:
-        state_writer('qtwe_version', old_qtwe_version)
-
-    state = configfiles.StateConfig()
-    assert state.chromium_version_changed == expected
-
-
 @pytest.mark.parametrize("key, msg, attribute", [
     ("version", "old version", "qutebrowser_version_changed"),
-    ("qtwe_version", "old QtWebEngine version", "chromium_version_changed"),
     ("chromium_version", "old Chromium version", "chromium_version_changed"),
 ])
 def test_version_unparsable(state_writer, caplog, key, msg, attribute):

@@ -19,7 +19,7 @@ import getpass
 import functools
 import dataclasses
 import importlib.metadata
-from typing import ClassVar, Any
+from typing import Any
 from collections.abc import Mapping, Sequence
 
 from qutebrowser.qt.core import PYQT_VERSION_STR
@@ -469,90 +469,6 @@ class WebEngineVersions:
     chromium_security: str | None = None
     chromium_major: int | None = dataclasses.field(init=False)
 
-    # Dates based on https://chromium.googlesource.com/chromium/src/+refs
-    # and/or https://chromereleases.googleblog.com/
-
-    _BASES: ClassVar[dict[int, str]] = {
-        90: '90.0.4430.228',  # 2021-06-22, Qt 6.2
-        94: '94.0.4606.126',  # 2021-11-17, Qt 6.3
-        102: '102.0.5005.177',  # 2022-09-01, Qt 6.4
-        # (.220 claimed by code, .181 claimed by CHROMIUM_VERSION)
-        108: '108.0.5359.220',  # 2023-01-27, Qt 6.5
-        112: '112.0.5615.213',  # 2023-05-24, Qt 6.6
-        118: '118.0.5993.220',  # 2024-01-25, Qt 6.7
-        122: '122.0.6261.171',  # 2024-04-15, Qt 6.8
-        130: '130.0.6723.192',  # 2025-01-06, Qt 6.9
-        134: '134.0.6998.208',  # 2025-04-16, Qt 6.10
-        140: '140.0.7339.225',  # 2025-09-24, Qt 6.11
-    }
-
-    _CHROMIUM_VERSIONS: ClassVar[dict[utils.VersionNumber, tuple[str, str | None]]] = {
-        ## Qt 6.2
-        utils.VersionNumber(6, 2): (_BASES[90], '93.0.4577.63'),  # 2021-08-31
-        utils.VersionNumber(6, 2, 1): (_BASES[90], '94.0.4606.61'),  # 2021-09-24
-        utils.VersionNumber(6, 2, 2): (_BASES[90], '96.0.4664.45'),  # 2021-11-15
-        utils.VersionNumber(6, 2, 3): (_BASES[90], '96.0.4664.45'),  # 2021-11-15
-        utils.VersionNumber(6, 2, 4): (_BASES[90], '98.0.4758.102'),  # 2022-02-14
-        # 6.2.5 / 6.2.6: unknown security fixes
-        utils.VersionNumber(6, 2, 7): (_BASES[90], '107.0.5304.110'),  # 2022-11-08
-        utils.VersionNumber(6, 2, 8): (_BASES[90], '111.0.5563.110'),  # 2023-03-21
-
-        ## Qt 6.3
-        utils.VersionNumber(6, 3): (_BASES[94], '99.0.4844.84'),  # 2022-03-25
-        utils.VersionNumber(6, 3, 1): (_BASES[94], '101.0.4951.64'),  # 2022-05-10
-        utils.VersionNumber(6, 3, 2): (_BASES[94], '104.0.5112.81'),  # 2022-08-01
-
-        ## Qt 6.4
-        utils.VersionNumber(6, 4): (_BASES[102], '104.0.5112.102'),  # 2022-08-16
-        utils.VersionNumber(6, 4, 1): (_BASES[102], '107.0.5304.88'),  # 2022-10-27
-        utils.VersionNumber(6, 4, 2): (_BASES[102], '108.0.5359.94'),  # 2022-12-02
-        utils.VersionNumber(6, 4, 3): (_BASES[102], '110.0.5481.78'),  # 2023-02-07
-
-        ## Qt 6.5
-        utils.VersionNumber(6, 5): (_BASES[108], '110.0.5481.104'),  # 2023-02-16
-        utils.VersionNumber(6, 5, 1): (_BASES[108], '112.0.5615.138'),  # 2023-04-18
-        utils.VersionNumber(6, 5, 2): (_BASES[108], '114.0.5735.133'),  # 2023-06-13
-        utils.VersionNumber(6, 5, 3): (_BASES[108], '117.0.5938.63'),  # 2023-09-12
-
-        ## Qt 6.6
-        utils.VersionNumber(6, 6): (_BASES[112], '117.0.5938.63'),  # 2023-09-12
-        utils.VersionNumber(6, 6, 1): (_BASES[112], '119.0.6045.123'),  # 2023-11-07
-        utils.VersionNumber(6, 6, 2): (_BASES[112], '121.0.6167.160'),  # 2024-02-06
-        utils.VersionNumber(6, 6, 3): (_BASES[112], '122.0.6261.128'),  # 2024-03-12
-
-        ## Qt 6.7
-        utils.VersionNumber(6, 7): (_BASES[118], '122.0.6261.128'),  # 2024-03-12
-        utils.VersionNumber(6, 7, 1): (_BASES[118], '124.0.6367.202'),  # 2024-05-09
-        utils.VersionNumber(6, 7, 2): (_BASES[118], '125.0.6422.142'),  # 2024-05-30
-        utils.VersionNumber(6, 7, 3): (_BASES[118], '129.0.6668.58'),  # 2024-09-17
-
-        ## Qt 6.8
-        utils.VersionNumber(6, 8): (_BASES[122], '129.0.6668.70'),  # 2024-09-24
-        utils.VersionNumber(6, 8, 1): (_BASES[122], '131.0.6778.70'),  # 2024-11-12
-        utils.VersionNumber(6, 8, 2): (_BASES[122], '132.0.6834.111'),  # 2025-01-22
-        utils.VersionNumber(6, 8, 3): (_BASES[122], '134.0.6998.89'),  # 2025-03-10
-
-        ## Qt 6.9
-        utils.VersionNumber(6, 9): (_BASES[130], '133.0.6943.141'),  # 2025-02-25
-        utils.VersionNumber(6, 9, 1): (_BASES[130], '136.0.7103.114'),  # 2025-05-13
-        utils.VersionNumber(6, 9, 2): (_BASES[130], '139.0.7258.67'),  # 2025-07-29
-        utils.VersionNumber(6, 9, 3): (_BASES[130], '140.0.7339.207'),  # 2025-09-22
-
-        ## Qt 6.10
-        utils.VersionNumber(6, 10): (_BASES[134], '140.0.7339.207'),  # 2025-09-22
-        utils.VersionNumber(6, 10, 1): (_BASES[134], '142.0.7444.162'),  # 2025-11-11
-        utils.VersionNumber(6, 10, 2): (_BASES[134], '144.0.7559.96'),  # 2026-01-17
-        utils.VersionNumber(6, 10, 3): (_BASES[134], '146.0.7680.164'),  # 2026-03-20
-
-        ## Qt 6.11
-        utils.VersionNumber(6, 11): (_BASES[140], '146.0.7680.80'),  # 2026-03-13
-        utils.VersionNumber(6, 11, 1): (_BASES[140], '148.0.7778.96'),  # 2026-04-28
-        utils.VersionNumber(6, 11, 2): (_BASES[140], '151.0.7922.71'),  # 2026-07-28
-
-        ## Starting with Qt 6.12 Beta 4, QtWebEngine is versioned independently from Qt
-        utils.VersionNumber(6, 140): ('140.0.7339.264', '157.0.8103.50'),
-    }
-
     def __post_init__(self) -> None:
         """Set the major Chromium version."""
         if self.chromium is None:
@@ -569,88 +485,12 @@ class WebEngineVersions:
         lines.append(f'  (source: {self.source})')
         return "\n".join(lines)
 
-    @classmethod
-    def _infer_chromium_version(
-            cls,
-            pyqt_webengine_version: utils.VersionNumber,
-    ) -> tuple[str | None, str | None]:
-        """Infer the Chromium version based on the PyQtWebEngine version.
-
-        Returns:
-            A tuple of the Chromium version and the security patch version.
-        """
-        chromium_version, security_version = cls._CHROMIUM_VERSIONS.get(
-            pyqt_webengine_version, (None, None))
-        if chromium_version is not None:
-            return chromium_version, security_version
-
-        # e.g. 6.5.4 -> 6.5
-        # we ignore the security version as that one will have changed from .0
-        # and is thus unknown.
-        minor_version = pyqt_webengine_version.strip_patch()
-        chromium_ver, _security_ver = cls._CHROMIUM_VERSIONS.get(
-            minor_version, (None, None))
-
-        return chromium_ver, None
-
-    @classmethod
-    def from_api(
-        cls,
-        qtwe_version: str,
-        chromium_version: str | None,
-        chromium_security: str | None = None,
-    ) -> 'WebEngineVersions':
-        """Get the versions based on the exact versions.
-
-        This is the default way to get the versions, via Qt's API.
-        """
-        parsed = utils.VersionNumber.parse(qtwe_version)
-        return cls(
-            webengine=parsed,
-            chromium=chromium_version,
-            chromium_security=chromium_security,
-            source='api',
-        )
-
-    @classmethod
-    def from_webengine(
-        cls,
-        qtwe_version: str,
-        source: str,
-    ) -> 'WebEngineVersions':
-        """Get the versions based on a QtWebEngine version only.
-
-        The Chromium version is inferred from our table of known versions. This is
-        used for the version of a previous run stored in the state file, and for the
-        QUTE_QTWEBENGINE_VERSION_OVERRIDE environment variable.
-        """
-        parsed = utils.VersionNumber.parse(qtwe_version)
-        chromium, chromium_security = cls._infer_chromium_version(parsed)
-        return cls(
-            webengine=parsed,
-            chromium=chromium,
-            chromium_security=chromium_security,
-            source=source,
-        )
-
 
 def qtwebengine_versions() -> WebEngineVersions:
     """Get the QtWebEngine and Chromium version numbers.
 
     This uses Qt's API, which doesn't need QtWebEngine to be initialized.
-
-    See WebEngineVersions above for a quick reference of versions.
-
-    Also see:
-
-    - https://chromiumdash.appspot.com/schedule
-    - https://www.chromium.org/developers/calendar
-    - https://chromereleases.googleblog.com/
     """
-    override = os.environ.get('QUTE_QTWEBENGINE_VERSION_OVERRIDE')
-    if override is not None:
-        return WebEngineVersions.from_webengine(override, source='override')
-
     from qutebrowser.qt.webenginecore import (
         qWebEngineVersion,
         qWebEngineChromiumVersion,
@@ -659,10 +499,11 @@ def qtwebengine_versions() -> WebEngineVersions:
 
     qtwe_version = qWebEngineVersion()
     assert qtwe_version is not None
-    return WebEngineVersions.from_api(
-        qtwe_version=qtwe_version,
-        chromium_version=qWebEngineChromiumVersion(),
+    return WebEngineVersions(
+        webengine=utils.VersionNumber.parse(qtwe_version),
+        chromium=qWebEngineChromiumVersion(),
         chromium_security=qWebEngineChromiumSecurityPatchVersion(),
+        source='api',
     )
 
 
@@ -679,11 +520,7 @@ def _webengine_extensions() -> Sequence[str]:
     else:
         profile = webenginesettings.default_qt_profile()
 
-    try:
-        ext_manager = profile.extensionManager()
-    except AttributeError:
-        # Added in QtWebEngine 6.10
-        return []
+    ext_manager = profile.extensionManager()
     assert ext_manager is not None  # mypy
 
     if not ext_manager.extensions():

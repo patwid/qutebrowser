@@ -16,7 +16,7 @@ from qutebrowser.qt.core import QUrl, pyqtBoundSignal
 
 from qutebrowser.config import config, configtypes
 from qutebrowser.utils import (usertypes, message, log, objreg, jinja, utils,
-                               qtutils, version, urlutils)
+                               qtutils, urlutils)
 from qutebrowser.mainwindow import mainwindow
 from qutebrowser.misc import guiprocess
 
@@ -393,16 +393,6 @@ def get_user_stylesheet(searching=False):
     setting = config.val.scrolling.bar
     if setting == 'never' or setting == 'when-searching' and not searching:
         css += '\nhtml > ::-webkit-scrollbar { width: 0px; height: 0px; }'
-
-    if (version.qtwebengine_versions().chromium_major in [87, 90] and
-            config.val.colors.webpage.darkmode.enabled and
-            config.val.colors.webpage.darkmode.policy.images == 'smart' and
-            config.val.content.site_specific_quirks.enabled and
-            'misc-mathml-darkmode' not in config.val.content.site_specific_quirks.skip):
-        # WORKAROUND for MathML-output on Wikipedia being black on black.
-        # See https://bugs.chromium.org/p/chromium/issues/detail?id=1126606
-        css += ('\nimg.mwe-math-fallback-image-inline, '
-                'img.mwe-math-fallback-image-display { filter: invert(100%); }')
 
     return css
 

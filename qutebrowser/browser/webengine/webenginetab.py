@@ -24,7 +24,7 @@ from qutebrowser.browser.webengine import (webview, webengineelem, tabhistory,
                                            webengineinspector)
 
 from qutebrowser.utils import (usertypes, qtutils, log, javascript, utils,
-                               resources, message, jinja, debug, version, urlutils)
+                               resources, message, jinja, debug, urlutils)
 from qutebrowser.qt import sip
 from qutebrowser.misc import objects, miscwidgets
 
@@ -375,8 +375,8 @@ class WebEngineCaret(browsertab.AbstractCaret):
         # https://bugreports.qt.io/browse/QTBUG-53134
         # Even on Qt 5.10 selectedText() seems to work poorly, see
         # https://github.com/qutebrowser/qutebrowser/issues/3523
-        # With Qt 6.2-6.5, there still seem to be issues (especially with
-        # multi-line text)
+        # With Qt 6, there still seem to be issues (especially with multi-line
+        # text)
         self._tab.run_js_async(javascript.assemble('caret', 'getSelection'),
                                callback)
 
@@ -1573,8 +1573,6 @@ class WebEngineTab(browsertab.AbstractTab):
     def _on_navigation_request(self, navigation):
         super()._on_navigation_request(navigation)
 
-        qtwe_ver = version.qtwebengine_versions().webengine
-
         # WORKAROUND for QtWebEngine not allowing form requests from
         # qute:// to outside domains.
         if (
@@ -1587,21 +1585,6 @@ class WebEngineTab(browsertab.AbstractTab):
             log.webview.debug(
                 "Working around qute://start loading issue for "
                 f"{navigation.url.toDisplayString()}")
-            navigation.accepted = False
-            # Using QTimer.singleShot as WORKAROUND for this crashing otherwise
-            # with QtWebEngine 6.10: https://bugreports.qt.io/browse/QTBUG-140543
-            QTimer.singleShot(0, functools.partial(self.load_url, navigation.url))
-
-        # WORKAROUND for https://bugreports.qt.io/browse/QTBUG-140515
-        ua_setting = "content.headers.user_agent"
-        if (
-            navigation.accepted
-            and config.instance.get(ua_setting, navigation.url, fallback=False)
-            is not usertypes.UNSET
-            and navigation.navigation_type == usertypes.NavigationRequest.Type.redirect
-            and navigation.is_main_frame
-            and qtwe_ver < utils.VersionNumber(6, 10, 1)
-        ):
             navigation.accepted = False
             # Using QTimer.singleShot as WORKAROUND for this crashing otherwise
             # with QtWebEngine 6.10: https://bugreports.qt.io/browse/QTBUG-140543
