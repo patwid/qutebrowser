@@ -174,35 +174,17 @@ def assert_urls(
         assert is_blocked == should_be_blocked
 
 
-@pytest.mark.parametrize(
-    "blocking_enabled, method, should_be_blocked",
-    [
-        (True, "auto", True),
-        (True, "adblock", True),
-        (True, "both", True),
-        (True, "hosts", False),
-        (False, "auto", False),
-        (False, "adblock", False),
-        (False, "both", False),
-        (False, "hosts", False),
-    ],
-)
+@pytest.mark.parametrize("blocking_enabled", [True, False])
 def test_blocking_enabled(
     config_stub,
     easylist_easyprivacy,
     caplog,
     ad_blocker,
     blocking_enabled,
-    method,
-    should_be_blocked,
 ):
     """Tests that the ads are blocked when the adblocker is enabled, and vice versa."""
     config_stub.val.content.blocking.adblock.lists = easylist_easyprivacy
     config_stub.val.content.blocking.enabled = blocking_enabled
-    config_stub.val.content.blocking.method = method
-    # Simulate the method-changed hook being run, since it doesn't execute
-    # with pytest.
-    ad_blocker.enabled = braveadblock._should_be_used()
 
     downloads = ad_blocker.adblock_update()
     while downloads._in_progress:
@@ -210,7 +192,7 @@ def test_blocking_enabled(
         with caplog.at_level(logging.ERROR):
             current_download.successful = True
             current_download.finished.emit()
-    assert_urls(ad_blocker, NOT_OKAY_URLS, should_be_blocked)
+    assert_urls(ad_blocker, NOT_OKAY_URLS, blocking_enabled)
     assert_urls(ad_blocker, OKAY_URLS, False)
 
 

@@ -36,26 +36,9 @@ logger = logging.getLogger("network")
 ad_blocker: Optional["BraveAdBlocker"] = None
 
 
-def _should_be_used() -> bool:
-    """Whether the Brave adblocker should be used or not.
-
-    Here we assume the adblock dependency is satisfied.
-    """
-    return config.val.content.blocking.method in ("auto", "both", "adblock")
-
-
 def _possibly_show_missing_dependency_warning() -> None:
-    """Show missing dependency warning, if appropriate.
-
-    If the adblocking method is configured such that the Brave adblocker
-    should be used, but the optional dependency is not satisfied, we show an
-    error message.
-    """
+    """Show a warning if the optional adblock dependency is not usable."""
     adblock_info = version.MODULE_INFO["adblock"]
-
-    method = config.val.content.blocking.method
-    if method not in ("both", "adblock"):
-        return
 
     if adblock_info.is_outdated():
         message.warning(
@@ -64,13 +47,7 @@ def _possibly_show_missing_dependency_warning() -> None:
         )
     elif not adblock_info.is_installed():
         message.warning(
-            f"Ad blocking method is set to '{method}' but 'adblock' dependency is not "
-            "installed."
-        )
-    else:
-        message.warning(
-            "The 'adblock' dependency was unavailable when qutebrowser was started, "
-            "but now seems to be installed. Please :restart qutebrowser to use it."
+            "The 'adblock' dependency is not installed, ads are not blocked."
         )
 
 
@@ -142,14 +119,12 @@ class BraveAdBlocker:
     """Manage blocked hosts based on Brave's adblocker.
 
     Attributes:
-        enabled: Whether to block ads or not.
         _has_basedir: Whether a custom --basedir is set.
         _cache_path: The path of the adblock engine cache file
         _engine: Brave ad-blocking engine.
     """
 
     def __init__(self, *, data_dir: pathlib.Path, has_basedir: bool = False) -> None:
-        self.enabled = _should_be_used()
         self._has_basedir = has_basedir
         self._cache_path = data_dir / "adblock-cache.dat"
         try:
@@ -178,11 +153,6 @@ class BraveAdBlocker:
         resource_type: interceptor.ResourceType | None = None,
     ) -> bool:
         """Check whether the given request is blocked."""
-        if not self.enabled:
-            # Do nothing if `content.blocking.method` is not set to enable the
-            # use of this adblocking module.
-            return False
-
         if (
             first_party_url is None
             or not first_party_url.isValid()
@@ -261,7 +231,6 @@ class BraveAdBlocker:
             config.val.content.blocking.adblock.lists
             and not self._has_basedir
             and config.val.content.blocking.enabled
-            and self.enabled
         ):
             message.info("Run :adblock-update to get adblock lists.")
 
@@ -320,16 +289,6 @@ def on_lists_changed() -> None:
     """Remove cached blocker from disk when blocklist changes."""
     if ad_blocker is not None:
         ad_blocker.update_files()
-
-
-@hook.config_changed("content.blocking.method")
-def on_method_changed() -> None:
-    """When the adblocking method changes, update blocker accordingly."""
-    if ad_blocker is not None:
-        # This implies the 'adblock' dependency is satisfied
-        ad_blocker.enabled = _should_be_used()
-    else:
-        _possibly_show_missing_dependency_warning()
 
 
 @hook.init()

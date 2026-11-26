@@ -5,12 +5,12 @@
 """Commands relating to ad blocking."""
 
 from qutebrowser.api import cmdutils
-from qutebrowser.components import braveadblock, hostblock
+from qutebrowser.components import braveadblock
 
 
 @cmdutils.register()
 def adblock_update() -> None:
-    """Update block lists for both the host- and the Brave ad blocker."""
-    if braveadblock.ad_blocker is not None:
-        braveadblock.ad_blocker.adblock_update()
-    hostblock.host_blocker.adblock_update()
+    """Update the block lists of the Brave ad blocker."""
+    if braveadblock.ad_blocker is None:
+        raise cmdutils.CommandError("The 'adblock' dependency is not installed.")
+    braveadblock.ad_blocker.adblock_update()
