@@ -8,7 +8,6 @@
 import os
 import os.path
 import sys
-import contextlib
 
 
 use_color = True
@@ -60,36 +59,8 @@ def print_title(text):
               'yellow')
 
 
-def print_subtitle(text):
-    """Print a subtitle."""
-    print_col("------ {} ------".format(text), 'cyan')
-
-
 def change_cwd():
     """Change the scripts cwd if it was started inside the script folder."""
     cwd = os.getcwd()
     if os.path.split(cwd)[1] == 'scripts':
         os.chdir(os.path.join(cwd, os.pardir))
-
-
-@contextlib.contextmanager
-def gha_group(name):
-    """Print a GitHub Actions group.
-
-    Gets ignored if not on CI.
-    """
-    if ON_CI:
-        print('::group::' + name)
-        yield
-        print('::endgroup::')
-    else:
-        yield
-
-
-def gha_error(message):
-    """Print a GitHub Actions error.
-
-    Should only be called on CI.
-    """
-    assert ON_CI
-    print('::error::' + message)
