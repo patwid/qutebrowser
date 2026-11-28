@@ -6,6 +6,7 @@
 
 import os
 import os.path
+import logging
 import sys
 import fcntl
 import bdb
@@ -200,12 +201,18 @@ class CrashHandler(QObject):
         print("\n---- Open pages ----", file=sys.stderr)
         print('\n\n'.join('\n'.join(e) for e in pages), file=sys.stderr)
 
-        # We might risk a segfault here, but that's better than continuing to
-        # run in some undefined state, so we only do the most needed shutdown
-        # here.
+        # We only do the most needed shutdown here, and then leave without
+        # running any Python or Qt cleanup: Tearing down the application from
+        # inside the exception hook segfaults.
         qInstallMessageHandler(None)
         self.destroy_crashlogfile()
-        sys.exit(usertypes.Exit.exception)
+        logging.shutdown()
+        for stream in [sys.stdout, sys.stderr]:
+            try:
+                stream.flush()
+            except (OSError, ValueError, AttributeError):
+                pass
+        os._exit(usertypes.Exit.exception)
 
 
 class SignalHandler(QObject):
