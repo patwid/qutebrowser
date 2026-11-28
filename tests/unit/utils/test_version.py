@@ -16,7 +16,6 @@ import datetime
 import dataclasses
 import importlib.metadata
 import unittest.mock
-from typing import Any
 
 import pytest
 import pytest_mock
@@ -28,7 +27,7 @@ from qutebrowser.qt.webenginecore import QWebEngineProfile
 import qutebrowser
 from qutebrowser.config import config
 from qutebrowser.utils import version, usertypes, utils, standarddir
-from qutebrowser.misc import pastebin, objects, wmname
+from qutebrowser.misc import pastebin, objects
 
 try:
     from qutebrowser.browser.webengine import webenginesettings
@@ -992,8 +991,6 @@ class VersionParams:
     VersionParams('no-ssl', ssl_support=False),
     VersionParams('no-autoconfig-loaded', autoconfig_loaded=False),
     VersionParams('no-config-py-loaded', config_py_loaded=False),
-    VersionParams('xcb-platform', gui_platform='xcb'),
-    VersionParams('wayland-platform', gui_platform='wayland'),
 ], ids=lambda param: param.name)
 def test_version_info(params, stubs, monkeypatch, config_stub):
     """Test version.version_info()."""
@@ -1013,8 +1010,6 @@ def test_version_info(params, stubs, monkeypatch, config_stub):
         'QSslSocket': FakeQSslSocket('SSL VERSION', params.ssl_support),
         'platform.platform': lambda: 'PLATFORM',
         'platform.architecture': lambda: ('ARCHITECTURE', ''),
-        'wmname.x11_wm_name': lambda: 'X11 WM NAME',
-        'wmname.wayland_compositor_name': lambda: 'WAYLAND COMPOSITOR NAME',
         '_os_info': lambda: ['OS INFO 1', 'OS INFO 2'],
         '_path_info': lambda: {'PATH DESC': 'PATH NAME'},
         'objects.qapp': (
@@ -1033,14 +1028,8 @@ def test_version_info(params, stubs, monkeypatch, config_stub):
 
     if not params.qapp:
         expected_gui_platform = None
-    elif params.gui_platform == 'GUI_PLATFORM':
-        expected_gui_platform = 'GUI_PLATFORM'
-    elif params.gui_platform == 'xcb':
-        expected_gui_platform = 'xcb (X11 WM NAME)'
-    elif params.gui_platform == 'wayland':
-        expected_gui_platform = 'wayland (WAYLAND COMPOSITOR NAME)'
     else:
-        raise utils.Unreachable(params.gui_platform)
+        expected_gui_platform = 'GUI_PLATFORM'
 
     substitutions = {
         'git_commit': '\nGit commit: GIT COMMIT' if params.git_commit else '',
@@ -1342,46 +1331,6 @@ def test_pastebin_version_error(pbclient, caplog, message_mock, monkeypatch):
 
     msg = message_mock.getmsg(usertypes.MessageLevel.error)
     assert msg.text == "Failed to pastebin version info: test"
-
-
-@pytest.mark.parametrize("platform, expected", [
-    ("windows", "windows"),
-    ("xcb", "xcb (X11 WM NAME)"),
-    ("wayland", "wayland (WAYLAND COMPOSITOR NAME)"),
-    ("wayland-egl", "wayland-egl (WAYLAND COMPOSITOR NAME)"),
-])
-def test_gui_platform_info(
-    platform: str, expected: str, monkeypatch: pytest.MonkeyPatch, stubs: Any
-) -> None:
-    monkeypatch.setattr(
-        version.objects,
-        "qapp",
-        stubs.FakeQApplication(platform_name=platform, style="STYLE"),
-    )
-    monkeypatch.setattr(version.wmname, "x11_wm_name", lambda: "X11 WM NAME")
-    monkeypatch.setattr(
-        version.wmname, "wayland_compositor_name", lambda: "WAYLAND COMPOSITOR NAME"
-    )
-    assert version.gui_platform_info() == expected
-
-
-@pytest.mark.parametrize("platform", ["xcb", "wayland", "wayland-egl"])
-def test_gui_platform_info_error(
-    platform: str,
-    monkeypatch: pytest.MonkeyPatch,
-    mocker: pytest_mock.MockerFixture,
-    stubs: Any,
-) -> None:
-    monkeypatch.setattr(
-        version.objects,
-        "qapp",
-        stubs.FakeQApplication(platform_name=platform, style="STYLE"),
-    )
-    mocker.patch.object(wmname, "x11_wm_name", side_effect=wmname.Error("fake error"))
-    mocker.patch.object(
-        wmname, "wayland_compositor_name", side_effect=wmname.Error("fake error")
-    )
-    assert version.gui_platform_info() == f"{platform} (Error: fake error)"
 
 
 def test_uptime(monkeypatch, qapp):

@@ -280,7 +280,7 @@ def webengine_early_import():
     We need to ensure that QtWebEngine is imported before a QApplication is created for
     everything to work properly.
 
-    If it's not available, backendproblem.py takes care of showing an error later.
+    If it's not available, importing it later fails with a proper error.
     """
     try:
         from qutebrowser.qt import webenginewidgets  # pylint: disable=unused-import

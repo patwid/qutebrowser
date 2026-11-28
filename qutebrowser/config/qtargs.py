@@ -44,10 +44,9 @@ def qt_args(namespace: argparse.Namespace) -> list[str]:
         # pylint: disable=unused-import
         from qutebrowser.browser.webengine import webenginesettings
     except ImportError:
-        # This code runs before a QApplication is available, so before
-        # backendproblem.py is run to actually inform the user of the missing
-        # backend. Thus, we could end up in a situation where we're here, but
-        # QtWebEngine isn't actually available.
+        # This code runs before anything else imports QtWebEngine, so we could
+        # end up in a situation where we're here, but QtWebEngine isn't
+        # actually available.
         # We shouldn't call _qtwebengine_args() in this case as it relies on
         # QtWebEngine actually being importable.
         log.init.debug("QtWebEngine requested, but unavailable...")

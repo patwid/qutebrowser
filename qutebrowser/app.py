@@ -426,7 +426,7 @@ def _init_modules(*, args):
     configinit.late_init(save_manager)
 
     log.init.debug("Checking backend requirements...")
-    backendproblem.init(args=args, save_manager=save_manager)
+    backendproblem.init()
 
     log.init.debug("Initializing prompts...")
     prompt.init()

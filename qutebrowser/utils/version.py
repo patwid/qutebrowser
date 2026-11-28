@@ -31,7 +31,7 @@ from qutebrowser.qt.widgets import QApplication
 import qutebrowser
 from qutebrowser.utils import (log, utils, standarddir, message, resources,
                                qtutils)
-from qutebrowser.misc import objects, earlyinit, sql, httpclient, pastebin, wmname
+from qutebrowser.misc import objects, earlyinit, sql, httpclient, pastebin
 from qutebrowser.config import config
 
 _LOGO = r'''
@@ -571,7 +571,7 @@ def version_info() -> str:
         metaobj = style.metaObject()
         assert metaobj is not None
         lines.append('Style: {}'.format(metaobj.className()))
-        lines.append('Qt Platform: {}'.format(gui_platform_info()))
+        lines.append('Qt Platform: {}'.format(objects.qapp.platformName()))
         lines.append('OpenGL: {}'.format(opengl_info()))
 
     importpath = os.path.dirname(os.path.abspath(qutebrowser.__file__))
@@ -729,19 +729,6 @@ def opengl_info() -> OpenGLInfo | None:  # pragma: no cover
         ctx.doneCurrent()
         if old_context and old_surface:
             old_context.makeCurrent(old_surface)
-
-
-def gui_platform_info() -> str:
-    """Get the Qt GUI platform name, optionally with the WM/compositor name."""
-    info = objects.qapp.platformName()
-    try:
-        if info == "xcb":
-            info += f" ({wmname.x11_wm_name()})"
-        elif info in ["wayland", "wayland-egl"]:
-            info += f" ({wmname.wayland_compositor_name()})"
-    except wmname.Error as e:
-        info += f" (Error: {e})"
-    return info
 
 
 def pastebin_version(pbclient: pastebin.PastebinClient | None = None) -> None:
