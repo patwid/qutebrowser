@@ -19,7 +19,7 @@ from qutebrowser.qt.webenginecore import QWebEnginePage, QWebEngineScript, QWebE
 
 from qutebrowser.config import config
 from qutebrowser.browser import browsertab, eventfilter, shared, webelem, greasemonkey
-from qutebrowser.browser.webengine import (webview, webengineelem, tabhistory,
+from qutebrowser.browser.webengine import (webview, webengineelem,
                                            webenginesettings, certificateerror,
                                            webengineinspector)
 
@@ -109,10 +109,7 @@ class _FindFlags:
         return any(dataclasses.astuple(self))
 
     def __str__(self):
-        """List all true flags, in Qt enum style.
-
-        This needs to be in the same format as QtWebKit, for tests.
-        """
+        """List all true flags, in Qt enum style (the tests rely on the format)."""
         names = {
             "case_sensitive": "FindCaseSensitively",
             "backward": "FindBackward",
@@ -373,10 +370,8 @@ class WebEngineCaret(browsertab.AbstractCaret):
     def selection(self, callback):
         # Not using selectedText() as WORKAROUND for
         # https://bugreports.qt.io/browse/QTBUG-53134
-        # Even on Qt 5.10 selectedText() seems to work poorly, see
+        # selectedText() works poorly (especially with multi-line text), see
         # https://github.com/qutebrowser/qutebrowser/issues/3523
-        # With Qt 6, there still seem to be issues (especially with multi-line
-        # text)
         self._tab.run_js_async(javascript.assemble('caret', 'getSelection'),
                                callback)
 
@@ -621,10 +616,11 @@ class WebEngineHistoryPrivate(browsertab.AbstractHistoryPrivate):
             log.webview.debug(f"Failed to deserialize history data:\n{dump}")
             raise
 
-    def _load_items_workaround(self, items):
-        """WORKAROUND for session loading not working on Qt 5.15.
+    def load_items(self, items):
+        """Load the current URL of the given items.
 
-        Just load the current URL, see
+        QtWebEngine has no API to restore a tab's history from individual
+        items, so the back/forward history of the session is not restored, see
         https://github.com/qutebrowser/qutebrowser/issues/5359
         """
         if not items:
@@ -640,32 +636,6 @@ class WebEngineHistoryPrivate(browsertab.AbstractHistoryPrivate):
             url = items[cur_idx - 1].url
 
         self._tab.load_url(url)
-
-    def load_items(self, items):
-        self._load_items_workaround(items)
-
-    def _load_items_proper(self, items):
-        """Load session items properly.
-
-        Currently unused, but should be revived.
-        """
-        if items:
-            self._tab.before_load_started.emit(items[-1].url)
-
-        stream, _data, cur_data = tabhistory.serialize(items)
-        qtutils.deserialize_stream(stream, self._history)
-
-        @pyqtSlot()
-        def _on_load_finished():
-            self._tab.scroller.to_point(cur_data['scroll-pos'])
-            self._tab.load_finished.disconnect(_on_load_finished)
-
-        if cur_data is not None:
-            if 'zoom' in cur_data:
-                self._tab.zoom.set_factor(cur_data['zoom'])
-            if ('scroll-pos' in cur_data and
-                    self._tab.scroller.pos_px() == QPoint(0, 0)):
-                self._tab.load_finished.connect(_on_load_finished)
 
 
 class WebEngineHistory(browsertab.AbstractHistory):

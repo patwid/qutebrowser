@@ -334,21 +334,7 @@ def _open_special_pages(args):
          os.path.exists(os.path.join(standarddir.config(),
                                      'qutebrowser.conf')),
          'qute://help/configuring.html'),
-
-        ('session-warning-shown',
-         True,
-         'qute://warning/sessions'),
-
-        ('birthday-2023-shown',
-         datetime.date.today() == datetime.date(2023, 12, 14),
-         'https://qutebrowser.org/birthday.html'),
     ]
-
-    if 'quickstart-done' not in general_sect:
-        # New users aren't going to be affected by the Qt 5.15 session change much, as
-        # they aren't used to qutebrowser saving the full back/forward history in
-        # sessions.
-        general_sect['session-warning-shown'] = '1'
 
     for state, condition, url in pages:
         if general_sect.get(state) != '1' and condition:

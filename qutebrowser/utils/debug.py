@@ -117,7 +117,7 @@ def _qenum_key_qt(
     value: _EnumValueType,
     klass: type[_EnumValueType],
 ) -> str | None:
-    # On PyQt5, or PyQt6 with int passed: Try to ask Qt's introspection.
+    # With an int passed: Try to ask Qt's introspection.
     # However, not every Qt enum value has a staticMetaObject
     try:
         meta_obj = base.staticMetaObject  # type: ignore[attr-defined]
@@ -129,7 +129,7 @@ def _qenum_key_qt(
     except AttributeError:
         pass
 
-    # PyQt5: Try finding value match in class
+    # Try finding value match in class
     for name, obj in vars(base).items():
         if isinstance(obj, klass) and obj == value:
             return name

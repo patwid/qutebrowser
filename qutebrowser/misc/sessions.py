@@ -8,7 +8,6 @@ import os
 import os.path
 import itertools
 import urllib
-import shutil
 import pathlib
 from typing import Any, TypeAlias, cast
 from collections.abc import Iterable, MutableMapping, MutableSequence
@@ -46,14 +45,6 @@ def init(parent=None):
         parent: The parent to use for the SessionManager.
     """
     base_path = pathlib.Path(standarddir.data()) / 'sessions'
-
-    # WORKAROUND for https://github.com/qutebrowser/qutebrowser/issues/5359
-    backup_path = base_path / 'before-qt-515'
-    if base_path.exists() and not backup_path.exists():
-        backup_path.mkdir()
-        for path in base_path.glob('*.yml'):
-            shutil.copy(path, backup_path)
-
     base_path.mkdir(exist_ok=True)
 
     global session_manager

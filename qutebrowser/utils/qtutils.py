@@ -610,7 +610,7 @@ class LibraryPath(enum.Enum):
 
     """A path to be passed to QLibraryInfo.
 
-    Should mirror QLibraryPath (Qt 5) and QLibraryLocation (Qt 6).
+    Should mirror QLibraryInfo.LibraryPath.
     Values are the respective Qt names.
     """
 
@@ -641,9 +641,7 @@ def library_path(which: LibraryPath) -> pathlib.Path:
 def extract_enum_val(val: sip.simplewrapper | int | enum.Enum) -> int:
     """Extract an int value from a Qt enum value.
 
-    For Qt 5, enum values are basically Python integers.
-    For Qt 6, they are usually enum.Enum instances, with the value set to the
-    integer.
+    They are usually enum.Enum instances, with the value set to the integer.
     """
     if isinstance(val, enum.Enum):
         return val.value

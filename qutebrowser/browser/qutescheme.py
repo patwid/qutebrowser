@@ -26,7 +26,7 @@ import qutebrowser
 from qutebrowser.browser import history
 from qutebrowser.config import config, configdata, configexc
 from qutebrowser.utils import (version, utils, jinja, log, message, docutils,
-                               resources, objreg, standarddir)
+                               resources, objreg)
 from qutebrowser.misc import guiprocess, quitter
 from qutebrowser.qt import sip
 
@@ -497,20 +497,6 @@ def qute_pastebin_version(_url: QUrl) -> _HandlerRet:
     """Handler that pastebins the version string."""
     version.pastebin_version()
     return 'text/plain', b'Paste called.'
-
-
-@add_handler('warning')
-def qute_warning(url: QUrl) -> _HandlerRet:
-    """Handler for qute://warning."""
-    path = url.path()
-    if path == '/sessions':
-        src = jinja.render('warning-sessions.html',
-                           title='Qt 5.15 sessions warning',
-                           datadir=standarddir.data(),
-                           sep=os.sep)
-    else:
-        raise NotFoundError("Invalid warning page {}".format(path))
-    return 'text/html', src
 
 
 @add_handler('resource')

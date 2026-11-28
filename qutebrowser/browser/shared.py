@@ -263,7 +263,7 @@ def handle_certificate_error(
         try:
             error.defer()
         except usertypes.UndeferrableError:
-            # QtNetwork and buggy PyQt versions
+            # PyQt can't defer certificate errors
             # Show blocking question prompt
             ignore = message.ask(title=title, text=msg,
                                  mode=usertypes.PromptMode.yesno, default=False,

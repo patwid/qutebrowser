@@ -91,22 +91,15 @@ def qt_message_handler(msg_type: qtcore.QtMsgType,
          '"org.freedesktop.DBus.Properties" doesn\'t exist'),
         ('"Method \\"GetAll\\" with signature \\"s\\" on interface '
          '\\"org.freedesktop.DBus.Properties\\" doesn\'t exist\\n"'),
-        'WOFF support requires QtWebKit to be built with zlib support.',
         # Weird Enlightment/GTK X extensions
         'QXcbWindow: Unhandled client message: "_E_',
         'QXcbWindow: Unhandled client message: "_ECORE_',
         'QXcbWindow: Unhandled client message: "_GTK_',
-        # Happens on AppVeyor CI
-        'SetProcessDpiAwareness failed:',
         # https://bugreports.qt.io/browse/QTBUG-49174
         ('QObject::connect: Cannot connect (null)::stateChanged('
          'QNetworkSession::State) to '
          'QNetworkReplyHttpImpl::_q_networkSessionStateChanged('
          'QNetworkSession::State)'),
-        # https://bugreports.qt.io/browse/QTBUG-53989
-        ("Image of format '' blocked because it is not considered safe. If "
-         "you are sure it is safe to do so, you can white-list the format by "
-         "setting the environment variable QTWEBKIT_IMAGEFORMAT_WHITELIST="),
         # Installing Qt from the installer may cause it looking for SSL3 or
         # OpenSSL 1.0 which may not be available on the system
         "QSslSocket: cannot resolve ",

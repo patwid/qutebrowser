@@ -98,7 +98,6 @@ class DownloadItem(downloads.AbstractDownloadItem):
         elif state == QWebEngineDownloadRequest.DownloadState.DownloadCompleted:
             log.downloads.debug("Download {} finished".format(self.basename))
             if self._is_page_download():
-                # Same logging as QtWebKit mhtml downloads.
                 log.downloads.debug("File successfully written.")
             self.successful = True
             self.done = True
