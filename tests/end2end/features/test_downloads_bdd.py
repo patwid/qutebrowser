@@ -48,6 +48,14 @@ def clean_old_downloads(quteproc):
     quteproc.send_cmd(':download-clear')
 
 
+@bdd.when(bdd.parsers.parse("I set up a netrc file with {user} and {password}"))
+def netrc_file(quteproc, server, tmpdir, user, password):
+    path = tmpdir / 'netrc'
+    path.write(f"machine localhost:{server.port} login {user} password {password}\n")
+    path.chmod(0o600)
+    quteproc.set_setting('content.netrc_file', str(path))
+
+
 @bdd.when("SSL is supported")
 def check_ssl():
     if not QSslSocket.supportsSsl():

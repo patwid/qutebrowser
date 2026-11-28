@@ -141,6 +141,40 @@ Feature: Downloading things from a website.
         Then the downloaded file ../foo should not exist
         And the downloaded file ..%2Ffoo should exist
 
+    ## authentication
+
+    Scenario: Downloading a file needing authentication
+        When I run :download --dest auth1.json http://localhost:(port)/basic-auth/dluser1/dlpass1
+        And I wait for the error "Download error: The server did not authorize access to the resource"
+        And I wait for "Asking question <qutebrowser.utils.usertypes.Question default=None mode=<PromptMode.user_pwd: *" in the log
+        And I run :prompt-accept dluser1:dlpass1
+        And I wait until the download is finished
+        Then the downloaded file auth1.json should contain "user":"dluser1"
+
+    Scenario: Downloading a file with wrong credentials first
+        When I run :download --dest auth2.json http://localhost:(port)/basic-auth/dluser2/dlpass2
+        And I wait for the error "Download error: The server did not authorize access to the resource"
+        And I wait for "Asking question <qutebrowser.utils.usertypes.Question default=None mode=<PromptMode.user_pwd: *" in the log
+        And I run :prompt-accept dluser2:wrong
+        And I wait for the error "Download error: The server did not authorize access to the resource"
+        And I wait for "Asking question <qutebrowser.utils.usertypes.Question default=None mode=<PromptMode.user_pwd: *" in the log
+        And I run :prompt-accept dluser2:dlpass2
+        And I wait until the download is finished
+        Then the downloaded file auth2.json should contain "user":"dluser2"
+
+    Scenario: Cancelling the authentication for a download
+        When I run :download --dest auth3.json http://localhost:(port)/basic-auth/dluser3/dlpass3
+        And I wait for the error "Download error: The server did not authorize access to the resource"
+        And I wait for "Asking question <qutebrowser.utils.usertypes.Question default=None mode=<PromptMode.user_pwd: *" in the log
+        And I run :mode-leave
+        Then the downloaded file auth3.json should not exist
+
+    Scenario: Downloading a file with credentials from netrc
+        When I set up a netrc file with dluser4 and dlpass4
+        And I run :download --dest auth4.json http://localhost:(port)/basic-auth/dluser4/dlpass4
+        And I wait until the download is finished
+        Then the downloaded file auth4.json should contain "user":"dluser4"
+
     ## :download-retry
 
     Scenario: Retrying a failed download

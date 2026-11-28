@@ -5,15 +5,17 @@
 """QtWebEngine specific code for downloads."""
 
 import re
+import html
 import os.path
 import functools
 import dataclasses
 
 from qutebrowser.qt.core import pyqtSlot, Qt, QUrl, QObject
+from qutebrowser.qt.network import QAuthenticator
 from qutebrowser.qt.webenginecore import (QWebEngineDownloadRequest, QWebEnginePage,
                                           QWebEngineProfile)
 
-from qutebrowser.browser import downloads
+from qutebrowser.browser import downloads, shared
 from qutebrowser.utils import debug, usertypes, message, log, urlutils
 
 
@@ -35,6 +37,9 @@ class _Request:
         suggested_fn: The filename to suggest, or None to let QtWebEngine pick.
         prompt_download_directory: Overrides downloads.location.prompt if not
                                    None.
+        user: The username to authenticate with, or None.
+        password: The password to authenticate with, or None.
+        netrc_used: Whether the netrc file was already consulted.
     """
 
     url: QUrl
@@ -42,6 +47,17 @@ class _Request:
     target: downloads._DownloadTarget | None = None
     suggested_fn: str | None = None
     prompt_download_directory: bool | None = None
+    user: str | None = None
+    password: str | None = None
+    netrc_used: bool = False
+
+    def url_with_credentials(self) -> QUrl:
+        """Get the URL to request, including the credentials (if any)."""
+        url = QUrl(self.url)
+        if self.user is not None:
+            url.setUserName(self.user)
+            url.setPassword(self.password)
+        return url
 
 
 class DownloadItem(downloads.AbstractDownloadItem):
@@ -52,6 +68,7 @@ class DownloadItem(downloads.AbstractDownloadItem):
         _qt_item: The wrapped item.
         _request: The _Request this download was started with, or None if it
                   was started by a website.
+        _target: The target this download is saved to, or None if not set yet.
     """
 
     def __init__(self, qt_item: QWebEngineDownloadRequest,
@@ -61,6 +78,7 @@ class DownloadItem(downloads.AbstractDownloadItem):
         super().__init__(manager=manager, parent=manager)
         self._qt_item = qt_item
         self._request = request
+        self._target: downloads._DownloadTarget | None = None
         qt_item.receivedBytesChanged.connect(
             lambda: self.stats.on_download_progress(
                 qt_item.receivedBytes(),
@@ -111,7 +129,14 @@ class DownloadItem(downloads.AbstractDownloadItem):
         elif state == QWebEngineDownloadRequest.DownloadState.DownloadInterrupted:
             self.successful = False
             reason = self._qt_item.interruptReasonString()
+            needs_auth = self._request is not None and (
+                self._qt_item.interruptReason() ==
+                QWebEngineDownloadRequest.DownloadInterruptReason.ServerUnauthorized)
+            if needs_auth and self._retry_with_netrc():
+                return
             self._die(reason)
+            if needs_auth:
+                self._ask_for_credentials()
         else:
             raise ValueError("_on_state_changed was called with unknown state "
                              "{}".format(state_name))
@@ -130,16 +155,79 @@ class DownloadItem(downloads.AbstractDownloadItem):
                              QWebEngineDownloadRequest.DownloadState.DownloadCancelled], state_name
         self._qt_item.cancel()
 
+    def set_target(self, target):
+        self._target = target
+        super().set_target(target)
+
+    def _restart(self, **changes):
+        """Replace this download by a new one for a changed request."""
+        assert self._request is not None
+        assert not self.successful
+        if not self._dead:
+            self._dead = True
+            self._do_die()
+            self.stats.finish()
+            self.done = True
+        self.remove()
+        self.delete()
+        self._manager.get_request(dataclasses.replace(self._request, **changes))
+
+    def _retry_with_netrc(self):
+        """Retry an unauthorized download with credentials from netrc.
+
+        QtWebEngine doesn't ask for credentials for downloads started via
+        QWebEnginePage.download(), so we pass them as part of the URL instead.
+
+        Return:
+            True if the download was restarted, False otherwise.
+        """
+        assert self._request is not None
+        if self._request.netrc_used:
+            return False
+
+        authenticator = QAuthenticator()
+        if not shared.netrc_authentication(self._request.url, authenticator):
+            return False
+
+        self._restart(
+            user=authenticator.user(),
+            password=authenticator.password(),
+            netrc_used=True,
+            target=self._target or self._request.target,
+            suggested_fn=self.basename,
+        )
+        return True
+
+    def _ask_for_credentials(self):
+        """Ask for credentials for an unauthorized download and retry it."""
+        assert self._request is not None
+        url = self._request.url
+        message.ask_async(
+            title="Authentication required",
+            text="<b>{}</b> needs authentication".format(
+                html.escape(url.toDisplayString())),
+            mode=usertypes.PromptMode.user_pwd,
+            handler=self._on_credentials_entered,
+            abort_on=[self.remove_requested],
+            url=url.toString(QUrl.UrlFormattingOption.RemovePassword |
+                             QUrl.ComponentFormattingOption.FullyEncoded),
+        )
+
+    def _on_credentials_entered(self, answer):
+        self._restart(
+            user=answer.user,
+            password=answer.password,
+            netrc_used=True,
+            target=self._target or self._request.target,
+            suggested_fn=self.basename,
+        )
+
     def retry(self):
         if self._request is not None:
             # QtWebEngine doesn't send a new request when resuming e.g. after a
             # server error, so we start from scratch instead.
             assert self.done
-            assert not self.successful
-            self.remove()
-            self.delete()
-            self._manager.get_request(dataclasses.replace(
-                self._request, suggested_fn=self.basename))
+            self._restart(suggested_fn=self.basename)
             return
 
         state = self._qt_item.state()
@@ -155,7 +243,11 @@ class DownloadItem(downloads.AbstractDownloadItem):
         return self._filename
 
     def url(self) -> QUrl:
-        return self._qt_item.url()
+        url = self._qt_item.url()
+        if self._request is not None and self._request.user is not None:
+            # Don't show credentials we added ourselves.
+            url.setUserInfo(None)
+        return url
 
     def origin(self) -> QUrl:
         page = self._qt_item.page()
@@ -307,7 +399,7 @@ class DownloadManager(downloads.AbstractDownloadManager):
         # gets closed.
         page = QWebEnginePage(self._profiles[request.private], self)
         self._requests[page] = request
-        page.download(request.url)
+        page.download(request.url_with_credentials())
 
     def _suggested_filename(self, qt_item, request):
         """Get the filename to suggest for the given download."""

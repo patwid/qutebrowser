@@ -81,6 +81,10 @@ class Request(testprocess.Line):
             key = ('/basic-auth/user{suffix}/password{suffix}'
                    .format(suffix=suffix))
             path_to_statuses[key] = [HTTPStatus.UNAUTHORIZED, HTTPStatus.OK]
+        for suffix in ['1', '2', '3', '4']:
+            # Used for downloads, with credentials not cached by other tests
+            key = '/basic-auth/dluser{suffix}/dlpass{suffix}'.format(suffix=suffix)
+            path_to_statuses[key] = [HTTPStatus.UNAUTHORIZED, HTTPStatus.OK]
 
         default_statuses = [HTTPStatus.OK, HTTPStatus.NOT_MODIFIED]
 
