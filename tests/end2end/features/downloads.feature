@@ -608,14 +608,42 @@ Feature: Downloading things from a website.
         Then the downloaded file relative-redirect should exist
 
     # Certificate errors aren't reported to us for downloads we start
-    # ourselves, so those fail no matter what content.tls.certificate_errors is
-    # set to.
+    # ourselves, they fail first and get retried once the certificate was
+    # accepted. As an accepted certificate is remembered, every scenario needs
+    # an instance of its own (which then needs the download dir set again).
     Scenario: Downloading from a server with an invalid certificate
+        Given I have a fresh instance
+        And I set up a temporary download dir
         When I set downloads.location.prompt to false
         And I set content.tls.certificate_errors to load-insecurely
-        And I download an SSL redirect page
-        Then the error "Download error: General network failure" should be shown
-        And the downloaded file download.bin should not exist
+        And I download an SSL page
+        And I wait for the error "Download error: General network failure"
+        And I wait for the error "Certificate error: *"
+        And I wait until the download is finished
+        Then the downloaded file download.bin should exist
+
+    Scenario: Downloading from a server with an invalid certificate (blocked)
+        Given I have a fresh instance
+        And I set up a temporary download dir
+        When I set downloads.location.prompt to false
+        And I set content.tls.certificate_errors to block
+        And I download an SSL page
+        And I wait for the error "Download error: General network failure"
+        And I wait for "Checking for certificate errors: *" in the log
+        And I wait for "Certificate error *, config block" in the log
+        Then the downloaded file download.bin should not exist
+
+    Scenario: Downloading from a server with an invalid certificate (asking)
+        Given I have a fresh instance
+        And I set up a temporary download dir
+        When I set downloads.location.prompt to false
+        And I set content.tls.certificate_errors to ask
+        And I download an SSL page
+        And I wait for the error "Download error: General network failure"
+        And I wait for "Asking question *Certificate error*" in the log
+        And I run :prompt-accept yes
+        And I wait until the download is finished
+        Then the downloaded file download.bin should exist
 
     ## Other
 

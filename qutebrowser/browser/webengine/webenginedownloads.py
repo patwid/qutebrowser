@@ -10,12 +10,14 @@ import os.path
 import functools
 import dataclasses
 
-from qutebrowser.qt.core import pyqtSlot, Qt, QUrl, QObject
+from qutebrowser.qt.core import pyqtSignal, pyqtSlot, Qt, QUrl, QObject
 from qutebrowser.qt.network import QAuthenticator
 from qutebrowser.qt.webenginecore import (QWebEngineDownloadRequest, QWebEnginePage,
-                                          QWebEngineProfile)
+                                          QWebEngineProfile, QWebEngineSettings,
+                                          QWebEngineCertificateError)
 
 from qutebrowser.browser import downloads, shared
+from qutebrowser.browser.webengine import certificateerror
 from qutebrowser.utils import debug, usertypes, message, log, urlutils
 
 
@@ -40,6 +42,8 @@ class _Request:
         user: The username to authenticate with, or None.
         password: The password to authenticate with, or None.
         netrc_used: Whether the netrc file was already consulted.
+        certificate_checked: Whether we already checked for a certificate
+                             error of the host.
     """
 
     url: QUrl
@@ -50,6 +54,7 @@ class _Request:
     user: str | None = None
     password: str | None = None
     netrc_used: bool = False
+    certificate_checked: bool = False
 
     def url_with_credentials(self) -> QUrl:
         """Get the URL to request, including the credentials (if any)."""
@@ -58,6 +63,76 @@ class _Request:
             url.setUserName(self.user)
             url.setPassword(self.password)
         return url
+
+
+class _CertificateCheck(QObject):
+
+    """Handle a certificate error of the host a failed download came from.
+
+    QtWebEngine doesn't report certificate errors for downloads started via
+    QWebEnginePage.download(), they just fail. However, once a page of the
+    same host was loaded despite its certificate error, downloads from it work
+    too. Thus, we load the start page of the host in a page of our own, only
+    to get its certificate error.
+
+    Signals:
+        accepted: Emitted when a certificate error was accepted and the page
+                  was loaded.
+    """
+
+    accepted = pyqtSignal()
+
+    def __init__(self, url: QUrl, profile: QWebEngineProfile, *,
+                 abort_on: list, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._url = url
+        self._abort_on = abort_on
+        self._accepted = False
+        self._page = QWebEnginePage(profile, self)
+        settings = self._page.settings()
+        for attribute in [QWebEngineSettings.WebAttribute.JavascriptEnabled,
+                          QWebEngineSettings.WebAttribute.AutoLoadImages]:
+            settings.setAttribute(attribute, False)
+        self._page.certificateError.connect(self._on_certificate_error)
+        self._page.urlChanged.connect(self._on_url_changed)
+        self._page.loadFinished.connect(self._on_load_finished)
+
+        probe_url = QUrl()
+        probe_url.setScheme(url.scheme())
+        probe_url.setHost(url.host())
+        probe_url.setPort(url.port())
+        probe_url.setPath('/')
+        log.downloads.debug(
+            f"Checking for certificate errors: {probe_url.toDisplayString()}")
+        self._page.load(probe_url)
+
+    @pyqtSlot(QWebEngineCertificateError)
+    def _on_certificate_error(self, qt_error):
+        error = certificateerror.CertificateErrorWrapper(qt_error)
+        if not error.is_overridable():
+            log.network.error(f"Non-overridable certificate error: {error}")
+            return
+        shared.handle_certificate_error(
+            request_url=self._url,
+            first_party_url=QUrl(),
+            error=error,
+            abort_on=self._abort_on,
+        )
+        self._accepted = error.certificate_was_accepted()
+
+    @pyqtSlot()
+    def _on_url_changed(self):
+        if not self._accepted:
+            # The page loads without a certificate error (or we rejected
+            # it), so there is nothing to do for us.
+            self._page.triggerAction(QWebEnginePage.WebAction.Stop)
+            self.deleteLater()
+
+    @pyqtSlot(bool)
+    def _on_load_finished(self, ok):
+        if self._accepted and ok:
+            self.accepted.emit()
+        self.deleteLater()
 
 
 class DownloadItem(downloads.AbstractDownloadItem):
@@ -134,9 +209,17 @@ class DownloadItem(downloads.AbstractDownloadItem):
                 QWebEngineDownloadRequest.DownloadInterruptReason.ServerUnauthorized)
             if needs_auth and self._retry_with_netrc():
                 return
+            needs_certificate_check = (
+                self._request is not None and
+                not self._request.certificate_checked and
+                self._request.url.scheme() == 'https' and
+                self._qt_item.interruptReason() ==
+                QWebEngineDownloadRequest.DownloadInterruptReason.NetworkFailed)
             self._die(reason)
             if needs_auth:
                 self._ask_for_credentials()
+            elif needs_certificate_check:
+                self._check_certificate()
         else:
             raise ValueError("_on_state_changed was called with unknown state "
                              "{}".format(state_name))
@@ -218,6 +301,28 @@ class DownloadItem(downloads.AbstractDownloadItem):
             user=answer.user,
             password=answer.password,
             netrc_used=True,
+            target=self._target or self._request.target,
+            suggested_fn=self.basename,
+        )
+
+    def _check_certificate(self):
+        """Check if a failed download was due to a certificate error.
+
+        If so, and the user (or the config) accepts the certificate, the
+        download is started again.
+        """
+        assert self._request is not None
+        check = _CertificateCheck(
+            self._request.url,
+            self._manager.profile(private=self._request.private),
+            abort_on=[self.remove_requested],
+            parent=self._manager)
+        check.accepted.connect(self._on_certificate_accepted)
+
+    @pyqtSlot()
+    def _on_certificate_accepted(self):
+        self._restart(
+            certificate_checked=True,
             target=self._target or self._request.target,
             suggested_fn=self.basename,
         )
@@ -351,6 +456,10 @@ class DownloadManager(downloads.AbstractDownloadManager):
         self._mhtml_target = None
         self._profiles: dict[bool, QWebEngineProfile] = {}
         self._requests: dict[QWebEnginePage, _Request] = {}
+
+    def profile(self, *, private):
+        """Get the profile used for (private or normal) downloads."""
+        return self._profiles[private]
 
     def install(self, profile):
         """Set up the download manager on a QWebEngineProfile."""
