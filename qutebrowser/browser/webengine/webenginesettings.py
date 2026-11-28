@@ -97,7 +97,12 @@ class _SettingsWrapper:
 
 class WebEngineSettings(websettings.AbstractSettings):
 
-    """A wrapper for the config for QWebEngineSettings."""
+    """A wrapper for the config for QWebEngineSettings.
+
+    Attributes:
+        _pdf_viewer_forced: Whether the PDF viewer is turned on no matter what
+                            content.pdf_viewer is set to.
+    """
 
     _ATTRIBUTES = {
         'content.xss_auditing':
@@ -213,6 +218,16 @@ class WebEngineSettings(websettings.AbstractSettings):
         },
     }
 
+    def __init__(self, settings: Any) -> None:
+        super().__init__(settings)
+        self._pdf_viewer_forced = False
+
+    def force_pdf_viewer(self) -> None:
+        """Show PDF files in the PDF viewer for these settings from now on."""
+        self._pdf_viewer_forced = True
+        for setting in ['content.pdf_viewer', 'content.plugins']:
+            self.update_setting(setting)
+
     def set_unknown_url_scheme_policy(
             self, policy: str | usertypes.Unset) -> None:
         """Set the UnknownUrlSchemePolicy to use."""
@@ -238,7 +253,10 @@ class WebEngineSettings(websettings.AbstractSettings):
             self.set_unknown_url_scheme_policy(value)
         elif setting == 'content.javascript.clipboard':
             self._set_js_clipboard(value)
-        elif setting == 'content.plugins' and config.val.content.pdf_viewer:
+        elif setting == 'content.pdf_viewer' and self._pdf_viewer_forced:
+            value = True
+        elif setting == 'content.plugins' and (
+                self._pdf_viewer_forced or config.val.content.pdf_viewer):
             # QtWebEngine only uses its PDF viewer with plugins turned on.
             value = True
         # NOTE: When adding something here, also add it to init_settings()!

@@ -462,6 +462,15 @@ Feature: Downloading things from a website.
         And I wait until the download is finished
         Then "Opening *download.bin* with [*python*]" should be logged
 
+    Scenario: Opening a download in the PDF viewer
+        When I set downloads.location.prompt to true
+        And I open data/misc/test.pdf without waiting
+        And I wait for the download prompt for "*"
+        And I run :prompt-open-download --pdf-viewer
+        And I wait until the download is finished
+        And I wait for "load status for <* url='file://*test.pdf'>: LoadStatus.success" in the log
+        Then the downloaded file test.pdf should not exist
+
     # https://github.com/qutebrowser/qutebrowser/issues/1728
 
     Scenario: Cancelling a download that should be opened

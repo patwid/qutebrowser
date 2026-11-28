@@ -399,7 +399,8 @@ class PromptContainer(QWidget):
 
     @cmdutils.register(instance='prompt-container', scope='window',
                        modes=[usertypes.KeyMode.prompt], maxsplit=0)
-    def prompt_open_download(self, cmdline: str | None = None) -> None:
+    def prompt_open_download(self, cmdline: str | None = None,
+                             pdf_viewer: bool = False) -> None:
         """Immediately open a download.
 
         If no specific command is given, this will use the system's default
@@ -410,10 +411,11 @@ class PromptContainer(QWidget):
                      is expanded to the temporary file name. If no `{}` is
                      present, the filename is automatically appended to the
                      cmdline.
+            pdf_viewer: Show the download in the PDF viewer in a new tab.
         """
         assert self._prompt is not None
         try:
-            self._prompt.download_open(cmdline)
+            self._prompt.download_open(cmdline, pdf_viewer=pdf_viewer)
         except UnsupportedOperationError:
             pass
 
@@ -593,9 +595,10 @@ class _BasePrompt(QWidget):
     def accept(self, value=None, save=False):
         raise NotImplementedError
 
-    def download_open(self, cmdline):
+    def download_open(self, cmdline, pdf_viewer):
         """Open the download directly if this is a download prompt."""
         utils.unused(cmdline)
+        utils.unused(pdf_viewer)
         raise UnsupportedOperationError
 
     def item_focus(self, _which):
@@ -863,8 +866,14 @@ class DownloadFilenamePrompt(FilenamePrompt):
             self.question.answer = downloads.FileDownloadTarget(answer)
         return done
 
-    def download_open(self, cmdline):
-        self.question.answer = downloads.OpenFileDownloadTarget(cmdline)
+    def download_open(self, cmdline, pdf_viewer):
+        if pdf_viewer:
+            target: 'downloads._DownloadTarget' = (
+                downloads.PdfViewerDownloadTarget())
+        else:
+            target = downloads.OpenFileDownloadTarget(cmdline)
+
+        self.question.answer = target
         self.question.done()
         message.global_bridge.prompt_done.emit(self.KEY_MODE)
 
@@ -874,6 +883,8 @@ class DownloadFilenamePrompt(FilenamePrompt):
             ('mode-leave', 'Abort'),
             ('rl-filename-rubout', "Go to parent directory"),
             ('prompt-open-download', "Open download"),
+            ('prompt-open-download --pdf-viewer',
+             "Open download in the PDF viewer"),
             ('prompt-yank', "Yank URL"),
             ('prompt-fileselect-external', "Launch external file selector"),
         ]

@@ -18,7 +18,7 @@ from qutebrowser.qt.webenginecore import (QWebEngineDownloadRequest, QWebEngineP
 
 from qutebrowser.browser import downloads, shared
 from qutebrowser.browser.webengine import certificateerror
-from qutebrowser.utils import debug, usertypes, message, log, urlutils
+from qutebrowser.utils import debug, usertypes, message, log, urlutils, objreg
 
 
 # URL schemes which can be downloaded via DownloadManager.get(). For anything
@@ -456,6 +456,16 @@ class DownloadManager(downloads.AbstractDownloadManager):
         self._mhtml_target = None
         self._profiles: dict[bool, QWebEngineProfile] = {}
         self._requests: dict[QWebEnginePage, _Request] = {}
+
+    @pyqtSlot(str)
+    def _on_pdf_viewer_requested(self, filename):
+        tabbed_browser = objreg.get('tabbed-browser', scope='window',
+                                    window='last-focused')
+        tab = tabbed_browser.tabopen(background=False)
+        # The viewer is only turned on for this tab, independently of the
+        # content.pdf_viewer setting.
+        tab.settings.force_pdf_viewer()
+        tab.load_url(QUrl.fromLocalFile(filename))
 
     def profile(self, *, private):
         """Get the profile used for (private or normal) downloads."""

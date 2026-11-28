@@ -159,6 +159,26 @@ def test_pdf_viewer_for_url(config_stub, default_profile):
     assert qt_settings.testAttribute(attribute.PluginsEnabled)
 
 
+def test_pdf_viewer_forced(config_stub, default_profile):
+    """The PDF viewer can be turned on for a tab despite the settings."""
+    qt_settings = default_profile.settings()
+    settings = webenginesettings.WebEngineSettings(qt_settings)
+    config_stub.val.content.pdf_viewer = False
+    config_stub.val.content.plugins = False
+    settings.init_settings()
+    settings.force_pdf_viewer()
+
+    attribute = QWebEngineSettings.WebAttribute
+    assert qt_settings.testAttribute(attribute.PdfViewerEnabled)
+    assert qt_settings.testAttribute(attribute.PluginsEnabled)
+
+    # ... which stays that way when navigating
+    settings.update_for_url(QUrl("https://example.com/test.pdf"))
+    settings.init_settings()
+    assert qt_settings.testAttribute(attribute.PdfViewerEnabled)
+    assert qt_settings.testAttribute(attribute.PluginsEnabled)
+
+
 def test_big_cache_size(config_stub, default_profile):
     """Make sure a too big cache size is handled correctly."""
     config_stub.val.content.cache.size = 2 ** 63 - 1

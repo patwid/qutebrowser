@@ -244,6 +244,17 @@ class OpenFileDownloadTarget(_DownloadTarget):
         return 'temporary file'
 
 
+class PdfViewerDownloadTarget(_DownloadTarget):
+
+    """Save the download in a temp dir and show it in the PDF viewer."""
+
+    def suggested_filename(self):
+        raise NoFilenameError
+
+    def __str__(self):
+        return 'temporary file for the PDF viewer'
+
+
 class DownloadItemStats(QObject):
 
     """Statistics (bytes done, total bytes, time, etc.) about a download.
@@ -349,8 +360,9 @@ class AbstractDownloadItem(QObject):
                arg: The error message as string.
         remove_requested: Emitted when the removal of this download was
                           requested.
-                         arg 1: The filename of the PDF download.
-                         arg 2: The original download URL.
+        pdf_viewer_requested: Emitted when the download should be shown in
+                              the PDF viewer.
+                              arg: The path of the downloaded file.
     """
 
     data_changed = pyqtSignal()
@@ -358,6 +370,7 @@ class AbstractDownloadItem(QObject):
     error = pyqtSignal(str)
     cancelled = pyqtSignal()
     remove_requested = pyqtSignal()
+    pdf_viewer_requested = pyqtSignal(str)
 
     def __init__(self, manager, parent=None):
         super().__init__(parent)
@@ -678,6 +691,19 @@ class AbstractDownloadItem(QObject):
             return
         self.open_file(cmdline)
 
+    def _show_in_pdf_viewer_if_successful(self):
+        """Show the downloaded file in the PDF viewer, if it was successful."""
+        if not self.successful:
+            log.downloads.debug("{} finished but not successful, not opening!"
+                                .format(self))
+            return
+
+        filename = self._get_open_filename()
+        if filename is None:  # pragma: no cover
+            log.downloads.error("No filename to open the download!")
+            return
+        self.pdf_viewer_requested.emit(filename)
+
     def cancel_for_origin(self) -> bool:
         """Cancel the download based on URL/origin.
 
@@ -720,7 +746,7 @@ class AbstractDownloadItem(QObject):
         if isinstance(target, FileDownloadTarget):
             self._set_filename(
                 target.filename, force_overwrite=target.force_overwrite)
-        elif isinstance(target, OpenFileDownloadTarget):
+        elif isinstance(target, (OpenFileDownloadTarget, PdfViewerDownloadTarget)):
             try:
                 fobj = temp_download_manager.get_tmpfile(self.basename)
             except OSError as exc:
@@ -729,9 +755,11 @@ class AbstractDownloadItem(QObject):
                 self.cancel()
                 return
 
-            assert isinstance(target, OpenFileDownloadTarget), target
-            self.finished.connect(functools.partial(
-                self._open_if_successful, target.cmdline))
+            if isinstance(target, OpenFileDownloadTarget):
+                self.finished.connect(functools.partial(
+                    self._open_if_successful, target.cmdline))
+            else:
+                self.finished.connect(self._show_in_pdf_viewer_if_successful)
 
             self._set_tempfile(fobj)
         else:  # pragma: no cover
@@ -792,6 +820,7 @@ class AbstractDownloadManager(QObject):
         download.data_changed.connect(
             functools.partial(self._on_data_changed, download))
         download.error.connect(self._on_error)
+        download.pdf_viewer_requested.connect(self._on_pdf_viewer_requested)
 
         download.basename = suggested_filename
         idx = len(self.downloads)
@@ -812,6 +841,11 @@ class AbstractDownloadManager(QObject):
             # download has been deleted in the meantime
             return
         self.data_changed.emit(idx)
+
+    @pyqtSlot(str)
+    def _on_pdf_viewer_requested(self, filename):
+        """Show a downloaded file in the PDF viewer."""
+        raise NotImplementedError
 
     @pyqtSlot(str)
     def _on_error(self, msg):
