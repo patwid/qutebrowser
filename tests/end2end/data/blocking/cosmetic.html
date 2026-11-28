@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Cosmetic filtering</title>
+    </head>
+    <body>
+        <p>kept: regular content</p>
+        <div class="site-specific-ad">hidden: site-specific rule</div>
+        <div class="other-site-ad">kept: rule for another site</div>
+        <div class="foo generic-ad bar">hidden: generic class rule</div>
+        <div id="generic-ad-id">hidden: generic id rule</div>
+        <div class="excepted-ad">kept: generic rule with exception</div>
+        <div data-kind="attribute-ad">hidden: generic attribute rule</div>
+        <div class="restyled">restyled: style rule</div>
+        <script>
+            function add_late_ad() {
+                const elem = document.createElement("div");
+                elem.className = "late-ad";
+                elem.textContent = "hidden: added later";
+                document.body.appendChild(elem);
+                console.log("late ad added");
+            }
+        </script>
+    </body>
+</html>

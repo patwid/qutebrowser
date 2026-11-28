@@ -5,6 +5,7 @@
 import os
 import pathlib
 import logging
+import textwrap
 import csv
 from collections.abc import Iterable
 
@@ -15,7 +16,7 @@ import pytest
 from qutebrowser.api.interceptor import ResourceType
 from qutebrowser.components import braveadblock
 from qutebrowser.components.utils import blockutils
-from qutebrowser.utils import usertypes
+from qutebrowser.utils import usertypes, urlmatch
 from helpers import testutils
 
 pytestmark = pytest.mark.usefixtures("qapp")
@@ -497,6 +498,100 @@ class TestAutoUpdate:
             assert expected not in texts
         else:
             assert expected in texts
+
+
+class TestCosmetic:
+
+    """Test getting the rules to hide elements of a page."""
+
+    RULES = """
+        example.com##.site-ad
+        example.org##.other-site-ad
+        ##.generic-ad
+        ###generic-id
+        ##.excepted-ad
+        example.com#@#.excepted-ad
+        ##div[data-ad]
+        example.com##.restyled:style(color: red !important)
+        nogeneric.example#@#+generichide
+        @@||nogeneric.example^$generichide
+    """
+
+    @pytest.fixture(autouse=True)
+    def rules(self, ad_blocker, config_stub, tmp_path):
+        path = tmp_path / "cosmetic.txt"
+        path.write_text(textwrap.dedent(self.RULES), encoding="utf-8")
+        config_stub.val.content.blocking.adblock.lists = [
+            QUrl.fromLocalFile(str(path)).toString()]
+        config_stub.val.content.blocking.enabled = True
+        config_stub.val.content.blocking.adblock.hide_elements = True
+        ad_blocker.adblock_update(quiet=True)
+
+    def test_resources(self, ad_blocker):
+        res = ad_blocker.cosmetic_resources(QUrl("https://example.com/page"))
+        assert res is not None
+        # Generic rules for a single class/ID are not part of this
+        assert res.hide_selectors == [".site-ad", "div[data-ad]"]
+        assert res.style_selectors == {".restyled": ["color: red !important"]}
+        assert res.exceptions == {".excepted-ad"}
+        assert res.generic
+
+    def test_resources_other_site(self, ad_blocker):
+        res = ad_blocker.cosmetic_resources(QUrl("https://example.net/"))
+        assert res is not None
+        assert res.hide_selectors == ["div[data-ad]"]
+        assert not res.style_selectors
+        assert not res.exceptions
+
+    def test_generichide(self, ad_blocker):
+        res = ad_blocker.cosmetic_resources(QUrl("https://nogeneric.example/"))
+        assert res is not None
+        assert not res.generic
+
+    @pytest.mark.parametrize("url", [
+        "qute://version", "file:///tmp/foo.html", "about:blank", ""])
+    def test_resources_unsupported_url(self, ad_blocker, url):
+        assert ad_blocker.cosmetic_resources(QUrl(url)) is None
+
+    @pytest.mark.parametrize("setting", [
+        "content.blocking.enabled", "content.blocking.adblock.hide_elements"])
+    def test_resources_disabled(self, ad_blocker, config_stub, setting):
+        url = QUrl("https://example.com/page")
+        config_stub.set_obj(setting, False)
+        assert ad_blocker.cosmetic_resources(url) is None
+
+    def test_resources_disabled_for_url(self, ad_blocker, config_stub):
+        config_stub.set_str("content.blocking.adblock.hide_elements", "false",
+                            pattern=urlmatch.UrlPattern("*://example.com/*"))
+        assert ad_blocker.cosmetic_resources(QUrl("https://example.com/")) is None
+        assert ad_blocker.cosmetic_resources(QUrl("https://example.net/")) is not None
+
+    def test_generic_hide_selectors(self, ad_blocker):
+        selectors = ad_blocker.generic_hide_selectors(
+            classes=["generic-ad", "excepted-ad", "unknown"],
+            ids=["generic-id", "unknown"],
+            exceptions=set(),
+        )
+        assert sorted(selectors) == ["#generic-id", ".excepted-ad", ".generic-ad"]
+
+    def test_generic_hide_selectors_exceptions(self, ad_blocker):
+        selectors = ad_blocker.generic_hide_selectors(
+            classes=["generic-ad", "excepted-ad"],
+            ids=[],
+            exceptions={".excepted-ad"},
+        )
+        assert selectors == [".generic-ad"]
+
+    def test_from_cache(self, ad_blocker, data_tmpdir):
+        """The rules are still there after restarting."""
+        new_blocker = braveadblock.BraveAdBlocker(
+            data_dir=pathlib.Path(str(data_tmpdir)))
+        new_blocker.read_cache()
+        res = new_blocker.cosmetic_resources(QUrl("https://example.com/page"))
+        assert res is not None
+        assert ".site-ad" in res.hide_selectors
+        assert new_blocker.generic_hide_selectors(
+            classes=["generic-ad"], ids=[], exceptions=set()) == [".generic-ad"]
 
 
 def test_resource_type_strings_complete():

@@ -1,0 +1,11 @@
+[Adblock Plus 2.0]
+! Rules for cosmetic.html
+localhost##.site-specific-ad
+otherhost.invalid##.other-site-ad
+##.generic-ad
+###generic-ad-id
+##.excepted-ad
+localhost#@#.excepted-ad
+##.late-ad
+##div[data-kind="attribute-ad"]
+localhost##.restyled:style(visibility: hidden !important)

@@ -133,6 +133,7 @@
 |<<completion.web_history.max_items,completion.web_history.max_items>>|Number of URLs to show in the web history.
 |<<confirm_quit,confirm_quit>>|Require a confirmation before quitting the application.
 |<<content.autoplay,content.autoplay>>|Automatically start playing `<video>` elements.
+|<<content.blocking.adblock.hide_elements,content.blocking.adblock.hide_elements>>|Hide page elements matched by the lists in `content.blocking.adblock.lists`.
 |<<content.blocking.adblock.lists,content.blocking.adblock.lists>>|List of URLs to ABP-style adblocking rulesets.
 |<<content.blocking.adblock.update_interval,content.blocking.adblock.update_interval>>|After how many days the lists in `content.blocking.adblock.lists` are downloaded again in the background.
 |<<content.blocking.enabled,content.blocking.enabled>>|Enable the ad blocker
@@ -1785,6 +1786,17 @@ Default:
 [[content.autoplay]]
 === content.autoplay
 Automatically start playing `<video>` elements.
+
+This setting supports link:configuring{outfilesuffix}#patterns[URL patterns].
+
+Type: <<types,Bool>>
+
+Default: +pass:[true]+
+
+[[content.blocking.adblock.hide_elements]]
+=== content.blocking.adblock.hide_elements
+Hide page elements matched by the lists in `content.blocking.adblock.lists`.
+Apart from rules to block requests, those lists contain rules to hide elements of a page, such as ads which are part of the page itself, or the empty space a blocked ad leaves behind. Elements inside of frames are not hidden.
 
 This setting supports link:configuring{outfilesuffix}#patterns[URL patterns].
 

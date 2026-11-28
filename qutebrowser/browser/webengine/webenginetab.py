@@ -21,7 +21,7 @@ from qutebrowser.config import config
 from qutebrowser.browser import browsertab, eventfilter, shared, webelem
 from qutebrowser.browser.webengine import (webview, webengineelem,
                                            webenginesettings, certificateerror,
-                                           webengineinspector)
+                                           webengineinspector, cosmetic)
 
 from qutebrowser.utils import (usertypes, qtutils, log, javascript, utils,
                                resources, message, jinja, debug, urlutils)
@@ -859,10 +859,12 @@ class _WebEngineScripts(QObject):
         super().__init__(parent)
         self._tab = tab
         self._widget = cast(webview.WebEngineView, None)
+        self._cosmetic_bridge = cosmetic.CosmeticBridge(parent=self)
 
     def connect_signals(self):
         """Connect signals to our private slots."""
         config.instance.changed.connect(self._on_config_changed)
+        self._tab.url_changed.connect(self._on_url_changed)
 
         self._tab.search.cleared.connect(functools.partial(
             self._update_stylesheet, searching=False))
@@ -873,6 +875,17 @@ class _WebEngineScripts(QObject):
         if option in ['scrolling.bar', 'content.user_stylesheets']:
             self._init_stylesheet()
             self._update_stylesheet()
+
+    @pyqtSlot(QUrl)
+    def _on_url_changed(self, _url):
+        """Get the cosmetic rules for the new URL.
+
+        For a new document, cosmetic.js does so on its own (and might not even
+        be there yet). This is for pages changing their URL via JavaScript.
+        """
+        self._tab.run_js_async(
+            'window._qutebrowser && window._qutebrowser.cosmetic && '
+            'window._qutebrowser.cosmetic.refresh();')
 
     @pyqtSlot(bool)
     def _update_stylesheet(self, searching=False):
@@ -910,6 +923,9 @@ class _WebEngineScripts(QObject):
         # FIXME:qtwebengine what about subframes=True?
         self._inject_js('js', js_code, subframes=True)
         self._init_stylesheet()
+
+        self._cosmetic_bridge.install(self._widget.page())
+        self._inject_js('cosmetic', cosmetic.js_code())
 
         self._inject_site_specific_quirks()
 

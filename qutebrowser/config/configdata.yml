@@ -664,6 +664,18 @@ content.blocking.adblock.lists:
     need to find the link to the raw `.txt` file (e.g. by extracting it from the
     `location` parameter of the subscribe URL and URL-decoding it).
 
+content.blocking.adblock.hide_elements:
+  default: true
+  supports_pattern: true
+  type: Bool
+  desc: >-
+    Hide page elements matched by the lists in `content.blocking.adblock.lists`.
+
+    Apart from rules to block requests, those lists contain rules to hide
+    elements of a page, such as ads which are part of the page itself, or the
+    empty space a blocked ad leaves behind. Elements inside of frames are not
+    hidden.
+
 content.blocking.adblock.update_interval:
   default: 4
   type:

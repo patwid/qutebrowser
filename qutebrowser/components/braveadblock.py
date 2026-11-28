@@ -9,6 +9,7 @@ import time
 import logging
 import pathlib
 import functools
+import dataclasses
 import contextlib
 import subprocess
 from typing import Optional, IO
@@ -87,6 +88,24 @@ _RESOURCE_TYPE_STRINGS = {
 
 def _resource_type_to_string(resource_type: ResourceType | None) -> str:
     return _RESOURCE_TYPE_STRINGS.get(resource_type, "other")
+
+
+@dataclasses.dataclass
+class CosmeticResources:
+
+    """The cosmetic rules applying to a page.
+
+    Attributes:
+        hide_selectors: CSS selectors of elements to hide.
+        style_selectors: CSS declarations to apply, by selector.
+        exceptions: Selectors which must not be hidden on the page.
+        generic: Whether rules which aren't specific to the page apply too.
+    """
+
+    hide_selectors: list[str]
+    style_selectors: dict[str, list[str]]
+    exceptions: set[str]
+    generic: bool
 
 
 class DeserializationError(Exception):
@@ -209,6 +228,41 @@ class BraveAdBlocker:
             )
             return False
         return True
+
+    def cosmetic_resources(self, url: QUrl) -> CosmeticResources | None:
+        """Get the cosmetic rules for the page with the given URL.
+
+        Return:
+            None if elements shouldn't be hidden on the page at all.
+        """
+        if not url.isValid() or url.scheme() not in ["http", "https"]:
+            return None
+        if not (
+            config.get("content.blocking.enabled", url=url)
+            and config.get("content.blocking.adblock.hide_elements", url=url)
+        ):
+            return None
+
+        resources = self._engine.url_cosmetic_resources(url.toString())
+        return CosmeticResources(
+            hide_selectors=sorted(resources.hide_selectors),
+            style_selectors={
+                selector: list(declarations)
+                for selector, declarations in resources.style_selectors.items()
+            },
+            exceptions=set(resources.exceptions),
+            generic=not resources.generichide,
+        )
+
+    def generic_hide_selectors(
+        self, *, classes: list[str], ids: list[str], exceptions: set[str]
+    ) -> list[str]:
+        """Get the selectors to hide for the given classes and IDs.
+
+        This covers the generic rules for a single class or ID, which aren't
+        part of what cosmetic_resources() returns.
+        """
+        return self._engine.hidden_class_id_selectors(classes, ids, exceptions)
 
     def filter_request(self, info: interceptor.Request) -> None:
         """Block the given request if necessary."""
