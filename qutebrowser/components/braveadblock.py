@@ -5,6 +5,7 @@
 """Functions related to the Brave adblocker."""
 
 import io
+import time
 import logging
 import pathlib
 import functools
@@ -13,7 +14,7 @@ import subprocess
 from typing import Optional, IO
 from collections.abc import Iterator
 
-from qutebrowser.qt.core import QUrl
+from qutebrowser.qt.core import QUrl, QTimer
 
 from qutebrowser.api import (
     hook,
@@ -34,6 +35,11 @@ except ImportError:
 
 logger = logging.getLogger("network")
 ad_blocker: Optional["BraveAdBlocker"] = None
+
+# How long to wait after startup until outdated lists are updated, and how
+# often to check for outdated lists afterwards (in ms).
+_AUTO_UPDATE_STARTUP_DELAY = 10 * 1000
+_AUTO_UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000
 
 
 def _possibly_show_missing_dependency_warning() -> None:
@@ -122,11 +128,15 @@ class BraveAdBlocker:
         _has_basedir: Whether a custom --basedir is set.
         _cache_path: The path of the adblock engine cache file
         _engine: Brave ad-blocking engine.
+        _update_running: Whether the block lists are being downloaded.
+        _auto_update_timers: The timers triggering automatic updates.
     """
 
     def __init__(self, *, data_dir: pathlib.Path, has_basedir: bool = False) -> None:
         self._has_basedir = has_basedir
         self._cache_path = data_dir / "adblock-cache.dat"
+        self._update_running = False
+        self._auto_update_timers: list[QTimer] = []
         try:
             self._engine = adblock.Engine(adblock.FilterSet())
         except AttributeError:
@@ -231,12 +241,57 @@ class BraveAdBlocker:
             config.val.content.blocking.adblock.lists
             and not self._has_basedir
             and config.val.content.blocking.enabled
+            and not config.val.content.blocking.adblock.update_interval
         ):
             message.info("Run :adblock-update to get adblock lists.")
 
-    def adblock_update(self) -> blockutils.BlocklistDownloads:
-        """Update the adblock block lists."""
+    def _lists_outdated(self) -> bool:
+        """Check whether the block lists are due for an automatic update."""
+        interval = config.val.content.blocking.adblock.update_interval
+        if (
+            not interval
+            or self._has_basedir
+            or not config.val.content.blocking.adblock.lists
+            or not config.val.content.blocking.enabled
+        ):
+            return False
+
+        try:
+            age = time.time() - self._cache_path.stat().st_mtime
+        except FileNotFoundError:
+            return True
+        except OSError:
+            logger.exception("Failed to get the age of the adblock cache")
+            return False
+        return age >= interval * 24 * 60 * 60
+
+    def auto_update(self) -> None:
+        """Update the block lists in the background if they are outdated."""
+        if self._update_running or not self._lists_outdated():
+            return
+        self.adblock_update(quiet=True)
+
+    def start_auto_update(self) -> None:
+        """Check for outdated block lists soon, and then regularly."""
+        startup_timer = QTimer()
+        startup_timer.setSingleShot(True)
+        startup_timer.setInterval(_AUTO_UPDATE_STARTUP_DELAY)
+        regular_timer = QTimer()
+        regular_timer.setInterval(_AUTO_UPDATE_CHECK_INTERVAL)
+        self._auto_update_timers = [startup_timer, regular_timer]
+        for timer in self._auto_update_timers:
+            timer.timeout.connect(self.auto_update)
+            timer.start()
+
+    def adblock_update(self, *, quiet: bool = False) -> blockutils.BlocklistDownloads:
+        """Update the adblock block lists.
+
+        Args:
+            quiet: Only log the outcome instead of showing messages, used for
+                   automatic updates.
+        """
         logger.info("Downloading adblock filter lists...")
+        self._update_running = True
 
         filter_set = adblock.FilterSet()
         dl = blockutils.BlocklistDownloads(config.val.content.blocking.adblock.lists)
@@ -244,19 +299,43 @@ class BraveAdBlocker:
             functools.partial(self._on_download_finished, filter_set=filter_set)
         )
         dl.all_downloads_finished.connect(
-            functools.partial(self._on_lists_downloaded, filter_set=filter_set)
+            functools.partial(self._on_lists_downloaded, filter_set=filter_set,
+                              downloads=dl, quiet=quiet)
         )
         dl.initiate()
         return dl
 
     def _on_lists_downloaded(
-        self, done_count: int, filter_set: "adblock.FilterSet"
+        self,
+        done_count: int,
+        filter_set: "adblock.FilterSet",
+        downloads: blockutils.BlocklistDownloads,
+        quiet: bool,
     ) -> None:
-        """Install block lists after files have been downloaded."""
+        """Install block lists after files have been downloaded.
+
+        If any of them could not be read, we keep what we have: Otherwise, a
+        failed update (e.g. without a network connection) would leave us with
+        less blocked than before, or nothing at all.
+        """
+        self._update_running = False
+
+        if downloads.failed_count:
+            text = (f"braveadblock: {downloads.failed_count} block list(s) could "
+                    "not be read, keeping the existing filters.")
+            if quiet:
+                logger.warning(text)
+            else:
+                message.error(text)
+            return
+
         self._engine = adblock.Engine(filter_set)
         self._engine.serialize_to_file(str(self._cache_path))
-        message.info(
-            f"braveadblock: Filters successfully read from {done_count} sources.")
+        text = f"braveadblock: Filters successfully read from {done_count} sources."
+        if quiet:
+            logger.info(text)
+        else:
+            message.info(text)
 
     def update_files(self) -> None:
         """Update files when the config changed."""
@@ -308,4 +387,5 @@ def init(context: apitypes.InitContext) -> None:
         data_dir=context.data_dir, has_basedir=context.args.basedir is not None
     )
     ad_blocker.read_cache()
+    ad_blocker.start_auto_update()
     interceptor.register(ad_blocker.filter_request)

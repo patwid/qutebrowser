@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import os
 import pathlib
 import logging
 import csv
@@ -396,6 +397,106 @@ def test_corrupt_cache_handling(ad_blocker, message_mock, caplog):
     assert msg.text == (
         "Reading adblock filter data failed (corrupted data?). "
         "Please run :adblock-update.")
+
+
+class TestAutoUpdate:
+
+    """Test updating outdated block lists in the background."""
+
+    DAY = 24 * 60 * 60
+
+    @pytest.fixture(autouse=True)
+    def lists(self, config_stub, easylist_easyprivacy):
+        config_stub.val.content.blocking.adblock.lists = easylist_easyprivacy
+        config_stub.val.content.blocking.enabled = True
+        config_stub.val.content.blocking.adblock.update_interval = 4
+
+    def _set_cache_age(self, ad_blocker, days):
+        mtime = ad_blocker._cache_path.stat().st_mtime - days * self.DAY
+        os.utime(ad_blocker._cache_path, (mtime, mtime))
+        return mtime
+
+    def test_no_cache(self, ad_blocker, message_mock, caplog):
+        """Without any lists yet, they are fetched without showing a message."""
+        with caplog.at_level(logging.INFO):
+            ad_blocker.auto_update()
+
+        assert ad_blocker._cache_path.is_file()
+        assert_urls(ad_blocker, NOT_OKAY_URLS, True)
+        assert not message_mock.messages
+        assert_only_one_success_message(caplog.messages)
+
+    def test_up_to_date(self, ad_blocker, monkeypatch):
+        ad_blocker.adblock_update(quiet=True)
+        mtime = self._set_cache_age(ad_blocker, days=3)
+
+        ad_blocker.auto_update()
+        assert ad_blocker._cache_path.stat().st_mtime == mtime
+
+    def test_outdated(self, ad_blocker):
+        ad_blocker.adblock_update(quiet=True)
+        mtime = self._set_cache_age(ad_blocker, days=5)
+
+        ad_blocker.auto_update()
+        assert ad_blocker._cache_path.stat().st_mtime > mtime
+
+    @pytest.mark.parametrize("reason", [
+        "interval", "disabled", "no-lists", "basedir", "running"])
+    def test_not_updating(self, ad_blocker, config_stub, reason):
+        if reason == "interval":
+            config_stub.val.content.blocking.adblock.update_interval = 0
+        elif reason == "disabled":
+            config_stub.val.content.blocking.enabled = False
+        elif reason == "no-lists":
+            config_stub.val.content.blocking.adblock.lists = None
+        elif reason == "basedir":
+            ad_blocker._has_basedir = True
+        elif reason == "running":
+            ad_blocker._update_running = True
+
+        ad_blocker.auto_update()
+        assert not ad_blocker._cache_path.exists()
+
+    def test_first_start_hint(self, ad_blocker, config_stub, message_mock):
+        """The hint to update manually is only shown without auto-updates."""
+        ad_blocker.read_cache()
+        assert not message_mock.messages
+
+        config_stub.val.content.blocking.adblock.update_interval = 0
+        ad_blocker.read_cache()
+        msg = message_mock.getmsg(usertypes.MessageLevel.info)
+        assert msg.text == "Run :adblock-update to get adblock lists."
+
+    @pytest.mark.parametrize("quiet", [True, False])
+    def test_failure_keeps_filters(self, ad_blocker, config_stub, tmp_path,
+                                   easylist_easyprivacy, message_mock, caplog,
+                                   quiet):
+        """If a list can't be read, the existing filters are kept."""
+        ad_blocker.adblock_update(quiet=True)
+        mtime = self._set_cache_age(ad_blocker, days=5)
+
+        missing = QUrl.fromLocalFile(str(tmp_path / "missing.txt")).toString()
+        config_stub.val.content.blocking.adblock.lists = [
+            easylist_easyprivacy[0], missing]
+
+        # The inner one determines what caplog records.
+        with caplog.at_level(logging.ERROR, 'message'), \
+                caplog.at_level(logging.WARNING, 'network'):
+            ad_blocker.adblock_update(quiet=quiet)
+
+        assert ad_blocker._cache_path.stat().st_mtime == mtime
+        assert_urls(ad_blocker, NOT_OKAY_URLS, True)
+        assert not ad_blocker._update_running
+
+        expected = ("braveadblock: 1 block list(s) could not be read, keeping "
+                    "the existing filters.")
+        texts = [msg.text for msg in message_mock.messages
+                 if msg.level == usertypes.MessageLevel.error]
+        if quiet:
+            assert expected in caplog.messages
+            assert expected not in texts
+        else:
+            assert expected in texts
 
 
 def test_resource_type_strings_complete():

@@ -36,6 +36,7 @@ class BlocklistDownloads(QObject):
         _urls: The URLs to download.
         _in_progress: The DownloadItems which are currently downloading.
         _done_count: How many files have been read successfully.
+        failed_count: How many URLs or files could not be read.
         _finished_registering_downloads:
             Used to make sure that if all the downloads finish really quickly,
             before all of the block-lists have been added to the download
@@ -53,6 +54,7 @@ class BlocklistDownloads(QObject):
 
         self._in_progress: list[downloads.TempDownload] = []
         self._done_count = 0
+        self.failed_count = 0
         self._finished_registering_downloads = False
         self._started = False
         self._finished = False
@@ -114,6 +116,7 @@ class BlocklistDownloads(QObject):
             message.error(
                 "blockutils: Error while reading {}: {}".format(filename, e.strerror)
             )
+            self.failed_count += 1
             return
         download = FakeDownload(fileobj)
         self._in_progress.append(download)
@@ -133,6 +136,8 @@ class BlocklistDownloads(QObject):
                 self.single_download_finished.emit(download.fileobj)
             finally:
                 download.fileobj.close()
+        else:
+            self.failed_count += 1
         if not self._in_progress and self._finished_registering_downloads:
             self._finished = True
             self.all_downloads_finished.emit(self._done_count)

@@ -134,6 +134,7 @@
 |<<confirm_quit,confirm_quit>>|Require a confirmation before quitting the application.
 |<<content.autoplay,content.autoplay>>|Automatically start playing `<video>` elements.
 |<<content.blocking.adblock.lists,content.blocking.adblock.lists>>|List of URLs to ABP-style adblocking rulesets.
+|<<content.blocking.adblock.update_interval,content.blocking.adblock.update_interval>>|After how many days the lists in `content.blocking.adblock.lists` are downloaded again in the background.
 |<<content.blocking.enabled,content.blocking.enabled>>|Enable the ad blocker
 |<<content.blocking.whitelist,content.blocking.whitelist>>|A list of patterns that should always be loaded, despite being blocked by the ad blocker.
 |<<content.cache.size,content.cache.size>>|Size (in bytes) of the HTTP network cache. Null to use the default value.
@@ -1811,6 +1812,15 @@ Default:
 
 - +pass:[https://easylist.to/easylist/easylist.txt]+
 - +pass:[https://easylist.to/easylist/easyprivacy.txt]+
+
+[[content.blocking.adblock.update_interval]]
+=== content.blocking.adblock.update_interval
+After how many days the lists in `content.blocking.adblock.lists` are downloaded again in the background.
+With 0, they are only updated via `:adblock-update`.
+
+Type: <<types,Int>>
+
+Default: +pass:[4]+
 
 [[content.blocking.enabled]]
 === content.blocking.enabled

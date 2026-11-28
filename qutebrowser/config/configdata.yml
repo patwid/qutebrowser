@@ -664,6 +664,17 @@ content.blocking.adblock.lists:
     need to find the link to the raw `.txt` file (e.g. by extracting it from the
     `location` parameter of the subscribe URL and URL-decoding it).
 
+content.blocking.adblock.update_interval:
+  default: 4
+  type:
+    name: Int
+    minval: 0
+  desc: >-
+    After how many days the lists in `content.blocking.adblock.lists` are
+    downloaded again in the background.
+
+    With 0, they are only updated via `:adblock-update`.
+
 content.blocking.whitelist:
   default: []
   type:
