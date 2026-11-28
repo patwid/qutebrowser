@@ -177,6 +177,7 @@
 |<<content.notifications.enabled,content.notifications.enabled>>|Allow websites to show notifications.
 |<<content.notifications.presenter,content.notifications.presenter>>|What notification presenter to use for web notifications.
 |<<content.notifications.show_origin,content.notifications.show_origin>>|Whether to show the origin URL for notifications.
+|<<content.pdf_viewer,content.pdf_viewer>>|Show PDF files in the browser instead of downloading them.
 |<<content.persistent_storage,content.persistent_storage>>|Allow websites to request persistent storage quota via `navigator.webkitPersistentStorage.requestQuota`.
 |<<content.plugins,content.plugins>>|Enable plugins in Web pages.
 |<<content.prefers_reduced_motion,content.prefers_reduced_motion>>|Request websites to minimize non-essentials animations and motion.
@@ -2359,6 +2360,16 @@ This setting supports link:configuring{outfilesuffix}#patterns[URL patterns].
 Type: <<types,Bool>>
 
 Default: +pass:[true]+
+
+[[content.pdf_viewer]]
+=== content.pdf_viewer
+Show PDF files in the browser instead of downloading them.
+This uses the PDF viewer built into QtWebEngine, which is mostly operated with the mouse: Searching works, but hints, `:zoom` and yanking text do not, and scrolling via the keyboard only works once the document has the focus.
+The viewer needs plugins, so with this setting, `content.plugins` is turned on for all pages.
+
+Type: <<types,Bool>>
+
+Default: +pass:[false]+
 
 [[content.persistent_storage]]
 === content.persistent_storage

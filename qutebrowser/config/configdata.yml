@@ -948,6 +948,20 @@ content.notifications.show_origin:
 
     Note that with the `qt` presenter, origins are never shown.
 
+content.pdf_viewer:
+  default: false
+  type: Bool
+  desc: >-
+    Show PDF files in the browser instead of downloading them.
+
+    This uses the PDF viewer built into QtWebEngine, which is mostly operated
+    with the mouse: Searching works, but hints, `:zoom` and yanking text do
+    not, and scrolling via the keyboard only works once the document has the
+    focus.
+
+    The viewer needs plugins, so with this setting, `content.plugins` is
+    turned on for all pages.
+
 content.persistent_storage:
   default: ask
   type: BoolAsk

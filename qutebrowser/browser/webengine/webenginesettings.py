@@ -110,6 +110,8 @@ class WebEngineSettings(websettings.AbstractSettings):
             Attr(QWebEngineSettings.WebAttribute.JavascriptCanOpenWindows),
         'content.plugins':
             Attr(QWebEngineSettings.WebAttribute.PluginsEnabled),
+        'content.pdf_viewer':
+            Attr(QWebEngineSettings.WebAttribute.PdfViewerEnabled),
         'content.hyperlink_auditing':
             Attr(QWebEngineSettings.WebAttribute.HyperlinkAuditingEnabled),
         'content.local_content_can_access_remote_urls':
@@ -236,8 +238,14 @@ class WebEngineSettings(websettings.AbstractSettings):
             self.set_unknown_url_scheme_policy(value)
         elif setting == 'content.javascript.clipboard':
             self._set_js_clipboard(value)
+        elif setting == 'content.plugins' and config.val.content.pdf_viewer:
+            # QtWebEngine only uses its PDF viewer with plugins turned on.
+            value = True
         # NOTE: When adding something here, also add it to init_settings()!
         super()._update_setting(setting, value)
+
+        if setting == 'content.pdf_viewer':
+            self.update_setting('content.plugins')
 
     def init_settings(self):
         super().init_settings()
@@ -333,7 +341,6 @@ class ProfileSetter:
             QWebEngineSettings.WebAttribute.FullScreenSupportEnabled, True)
         settings.setAttribute(
             QWebEngineSettings.WebAttribute.FocusOnNavigationEnabled, False)
-        settings.setAttribute(QWebEngineSettings.WebAttribute.PdfViewerEnabled, False)
 
     def set_http_headers(self):
         """Set the user agent and accept-language for the given profile.

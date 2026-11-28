@@ -9,8 +9,11 @@ QtWebEngineCore = pytest.importorskip('qutebrowser.qt.webenginecore')
 QWebEngineProfile = QtWebEngineCore.QWebEngineProfile
 QWebEngineSettings = QtWebEngineCore.QWebEngineSettings
 
+from qutebrowser.qt.core import QUrl
+
 from qutebrowser.browser.webengine import webenginesettings
 from qutebrowser.config import configdata
+from qutebrowser.utils import urlmatch
 
 
 @pytest.fixture
@@ -101,6 +104,59 @@ def test_initial_settings(settings, config_stub, default_profile,
 
     actual = getter(qt_settings)
     assert actual == expected
+
+
+@pytest.mark.parametrize("pdf_viewer, plugins, expected_viewer, expected_plugins", [
+    (False, False, False, False),
+    (False, True, False, True),
+    # The viewer only works with plugins
+    (True, False, True, True),
+    (True, True, True, True),
+])
+def test_pdf_viewer(config_stub, default_profile, pdf_viewer, plugins,
+                    expected_viewer, expected_plugins):
+    qt_settings = default_profile.settings()
+    settings = webenginesettings.WebEngineSettings(qt_settings)
+    config_stub.val.content.pdf_viewer = pdf_viewer
+    config_stub.val.content.plugins = plugins
+    settings.init_settings()
+
+    attribute = QWebEngineSettings.WebAttribute
+    assert qt_settings.testAttribute(attribute.PdfViewerEnabled) == expected_viewer
+    assert qt_settings.testAttribute(attribute.PluginsEnabled) == expected_plugins
+
+
+def test_pdf_viewer_toggled(config_stub, default_profile):
+    """Plugins follow the PDF viewer being turned on and off again."""
+    qt_settings = default_profile.settings()
+    settings = webenginesettings.WebEngineSettings(qt_settings)
+    settings.init_settings()
+    attribute = QWebEngineSettings.WebAttribute
+    assert not qt_settings.testAttribute(attribute.PluginsEnabled)
+
+    config_stub.val.content.pdf_viewer = True
+    settings.update_setting('content.pdf_viewer')
+    assert qt_settings.testAttribute(attribute.PdfViewerEnabled)
+    assert qt_settings.testAttribute(attribute.PluginsEnabled)
+
+    config_stub.val.content.pdf_viewer = False
+    settings.update_setting('content.pdf_viewer')
+    assert not qt_settings.testAttribute(attribute.PdfViewerEnabled)
+    assert not qt_settings.testAttribute(attribute.PluginsEnabled)
+
+
+def test_pdf_viewer_for_url(config_stub, default_profile):
+    """Plugins being turned off for a URL don't turn off the PDF viewer."""
+    qt_settings = default_profile.settings()
+    settings = webenginesettings.WebEngineSettings(qt_settings)
+    config_stub.val.content.pdf_viewer = True
+    config_stub.set_str("content.plugins", "false",
+                        pattern=urlmatch.UrlPattern("*://example.com/*"))
+    settings.init_settings()
+    settings.update_for_url(QUrl("https://example.com/test.pdf"))
+
+    attribute = QWebEngineSettings.WebAttribute
+    assert qt_settings.testAttribute(attribute.PluginsEnabled)
 
 
 def test_big_cache_size(config_stub, default_profile):
