@@ -158,6 +158,80 @@ def test_parsed_user_agent(qapp):
     assert parsed.upstream_browser_version_short.endswith(".0.0.0")
 
 
+CHROME_UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+             "(KHTML, like Gecko) {} Safari/537.36")
+DEFAULT_BRANDS = {'Chromium': '140.0.7339.264', 'Not=A?Brand': '24.0.0.0'}
+
+
+@pytest.mark.parametrize("user_agent, expected", [
+    # Same Chrome version as QtWebEngine
+    (
+        CHROME_UA.format("Chrome/140.0.0.0"),
+        (
+            {
+                'Chromium': '140.0.7339.264',
+                'Google Chrome': '140.0.7339.264',
+                'Not=A?Brand': '24.0.0.0',
+            },
+            '140.0.7339.264',
+        ),
+    ),
+    # Claiming a newer Chrome
+    (
+        CHROME_UA.format("Chrome/150"),
+        (
+            {
+                'Chromium': '150.0.0.0',
+                'Google Chrome': '150.0.0.0',
+                'Not=A?Brand': '24.0.0.0',
+            },
+            '150.0.0.0',
+        ),
+    ),
+    # Not claiming to be Chrome
+    (CHROME_UA.format("QtWebEngine/6.140.0 Chrome/140.0.0.0"), None),
+    (CHROME_UA.format("Chrome/140.0.0.0 Edg/140.0.0.0"), None),
+    (CHROME_UA.format("Chrome/unknown"), None),
+    ("Mozilla/5.0 (X11; Linux x86_64; rv:149.0) Gecko/20100101 Firefox/149.0", None),
+    ("qutebrowser", None),
+])
+def test_client_hints_for_user_agent(user_agent, expected):
+    hints = webenginesettings._client_hints_for_user_agent(
+        user_agent, DEFAULT_BRANDS)
+    assert hints == expected
+
+
+def test_client_hints_no_chromium_brand():
+    hints = webenginesettings._client_hints_for_user_agent(
+        CHROME_UA.format("Chrome/140.0.0.0"), {'Not=A?Brand': '24.0.0.0'})
+    assert hints is None
+
+
+def test_client_hints_follow_user_agent(config_stub, monkeypatch, global_settings,
+                                        default_profile, private_profile):
+    """Client hints should claim to be Chrome iff the user agent does."""
+    webenginesettings.init_user_agent()
+    hints = default_profile.clientHints()
+    default_brands = dict(hints.fullVersionList())
+    default_full_version = hints.fullVersion()
+    assert 'Google Chrome' not in default_brands
+
+    config_stub.val.content.headers.user_agent = CHROME_UA.format("Chrome/1234.0.0.0")
+    webenginesettings._update_settings('content.headers.user_agent')
+    for profile in [default_profile, private_profile]:
+        hints = profile.clientHints()
+        assert hints.fullVersionList()['Google Chrome'] == '1234.0.0.0'
+        assert hints.fullVersionList()['Chromium'] == '1234.0.0.0'
+        assert hints.fullVersion() == '1234.0.0.0'
+
+    config_stub.val.content.headers.user_agent = "qutebrowser"
+    webenginesettings._update_settings('content.headers.user_agent')
+    for profile in [default_profile, private_profile]:
+        hints = profile.clientHints()
+        assert hints.fullVersionList() == default_brands
+        assert hints.fullVersion() == default_full_version
+
+
 def test_profile_setter_settings(private_profile, configdata_init):
     for setting in private_profile.setter._name_to_method:
         assert setting in set(configdata.DATA)

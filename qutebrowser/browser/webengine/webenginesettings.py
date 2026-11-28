@@ -10,6 +10,7 @@ Module attributes:
 """
 
 import os
+import re
 import operator
 import pathlib
 from typing import cast, Any, TYPE_CHECKING
@@ -244,12 +245,63 @@ class WebEngineSettings(websettings.AbstractSettings):
         self.update_setting('content.javascript.clipboard')
 
 
+def _client_hints_for_user_agent(
+        user_agent: str,
+        default_brands: dict[str, str],
+) -> tuple[dict[str, str], str] | None:
+    """Get the client hints matching a user agent claiming to be Chrome.
+
+    Args:
+        user_agent: The user agent to match.
+        default_brands: The brands (mapped to their versions) QtWebEngine uses
+                        by default.
+
+    Return:
+        A (brands, full_version) tuple, or None if the user agent doesn't look
+        like the one of Chrome and the defaults should be used.
+    """
+    products = dict(re.findall(r'(\S+)/(\S+)', user_agent))
+    if set(products) != {'Mozilla', 'AppleWebKit', 'Chrome', 'Safari'}:
+        # Not claiming to be Chrome, e.g. because QtWebEngine/... is included.
+        return None
+
+    chromium_version = default_brands.get('Chromium')
+    if chromium_version is None:
+        return None
+
+    major = products['Chrome'].split('.')[0]
+    if not major.isdigit():
+        return None
+
+    if major == chromium_version.split('.')[0]:
+        full_version = chromium_version
+    else:
+        # The user agent claims a different Chrome version than the one
+        # QtWebEngine is based on, so we follow suit.
+        full_version = f'{major}.0.0.0'
+
+    brands = dict(default_brands)
+    brands['Chromium'] = full_version
+    brands['Google Chrome'] = full_version
+    return brands, full_version
+
+
 class ProfileSetter:
 
-    """Helper to set various settings on a profile."""
+    """Helper to set various settings on a profile.
+
+    Attributes:
+        _profile: The QWebEngineProfile to set settings on.
+        _default_brands: The client hint brands QtWebEngine uses by default.
+        _default_full_version: The client hint browser version QtWebEngine uses
+                               by default.
+    """
 
     def __init__(self, profile):
         self._profile = profile
+        hints = profile.clientHints()
+        self._default_brands = dict(hints.fullVersionList())
+        self._default_full_version = hints.fullVersion()
         self._name_to_method = {
             'content.cache.size': self.set_http_cache_size,
             'content.cookies.store': self.set_persistent_cookie_policy,
@@ -294,10 +346,30 @@ class ProfileSetter:
         """
         user_agent = websettings.user_agent()
         self._profile.setHttpUserAgent(user_agent)
+        self._set_client_hints(user_agent)
 
         accept_language = config.val.content.headers.accept_language
         if accept_language is not None:
             self._profile.setHttpAcceptLanguage(accept_language)
+
+    def _set_client_hints(self, user_agent):
+        """Make the user agent client hints match the given user agent.
+
+        Real Chrome sends "Google Chrome" as a brand in Sec-CH-UA and
+        navigator.userAgentData, while QtWebEngine only sends "Chromium". If
+        our user agent claims to be Chrome, websites can use that mismatch to
+        tell we're not.
+
+        Unlike the user agent, client hints can't be set per domain.
+        """
+        hints = self._profile.clientHints()
+        matching = _client_hints_for_user_agent(user_agent, self._default_brands)
+        if matching is None:
+            brands, full_version = self._default_brands, self._default_full_version
+        else:
+            brands, full_version = matching
+        hints.setFullVersionList(brands)
+        hints.setFullVersion(full_version)
 
     def set_http_cache_size(self):
         """Initialize the HTTP cache size for the given profile."""
