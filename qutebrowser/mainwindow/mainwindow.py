@@ -25,7 +25,7 @@ from qutebrowser.mainwindow import messageview, prompt
 from qutebrowser.completion import completionwidget, completer
 from qutebrowser.keyinput import modeman
 from qutebrowser.browser import downloadview, hints, downloads
-from qutebrowser.misc import crashsignal, keyhintwidget, sessions, objects
+from qutebrowser.misc import crashsignal, keyhintwidget, objects
 from qutebrowser.qt import sip
 
 
@@ -676,7 +676,6 @@ class MainWindow(QWidget):
             except KeyError:
                 pass
 
-        sessions.session_manager.save_last_window_session()
         self._save_geometry()
 
         # Wipe private data if we close the last private window, but there are

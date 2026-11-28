@@ -9,6 +9,7 @@
 import functools
 import os
 import traceback
+from typing import Any
 
 from qutebrowser.qt.core import QUrl
 from qutebrowser.qt.widgets import QApplication
@@ -18,7 +19,7 @@ from qutebrowser.utils import log, objreg, usertypes, message, debug, utils
 from qutebrowser.keyinput import modeman
 from qutebrowser.commands import runners
 from qutebrowser.api import cmdutils
-from qutebrowser.misc import (  # pylint: disable=unused-import
+from qutebrowser.misc import (
     consolewidget, debugcachestats, objects, miscwidgets)
 from qutebrowser.utils.version import pastebin_version
 from qutebrowser.qt import sip
@@ -274,3 +275,74 @@ def debug_keytester() -> None:
     else:
         _keytester_widget = miscwidgets.KeyTesterWidget()
         _keytester_widget.show()
+
+
+def _dump_history_item(tab: Any, idx: int, item: Any) -> dict[str, Any]:
+    """Get the data of a single history item for :debug-dump-tabs."""
+    url = bytes(item.url().toEncoded()).decode('ascii')
+    active = tab.history.current_idx() == idx
+    data: dict[str, Any] = {'url': url}
+
+    if item.title():
+        data['title'] = item.title()
+    elif active:
+        data['title'] = tab.title()
+    else:
+        data['title'] = url
+
+    if item.originalUrl() != item.url():
+        encoded = item.originalUrl().toEncoded()
+        data['original-url'] = bytes(encoded).decode('ascii')
+
+    if active:
+        pos = tab.scroller.pos_px()
+        data['active'] = True
+        data['zoom'] = tab.zoom.factor()
+        data['scroll-pos'] = {'x': pos.x(), 'y': pos.y()}
+
+    data['pinned'] = tab.data.pinned
+    return data
+
+
+@cmdutils.register(debug=True)
+def debug_dump_tabs(dest: str) -> None:
+    """Dump all windows with their tabs and tab histories to a YAML file.
+
+    Args:
+        dest: Where to write the file to.
+    """
+    data: dict[str, Any] = {'windows': []}
+    for win_id in sorted(objreg.window_registry):
+        tabbed_browser = objreg.get('tabbed-browser', scope='window',
+                                    window=win_id)
+        main_window = objreg.get('main-window', scope='window', window=win_id)
+        # We could be in the middle of destroying a window here
+        if sip.isdeleted(main_window):
+            continue
+
+        win_data: dict[str, Any] = {'tabs': []}
+        if getattr(objects.qapp.activeWindow(), 'win_id', None) == win_id:
+            win_data['active'] = True
+        if tabbed_browser.is_private:
+            win_data['private'] = True
+
+        for i, tab in enumerate(tabbed_browser.widgets()):
+            tab_data: dict[str, Any] = {'history': []}
+            if i == tabbed_browser.widget.currentIndex():
+                tab_data['active'] = True
+            for idx, item in enumerate(tab.history):
+                # WORKAROUND for a Qt 6.5 regression
+                # https://github.com/qutebrowser/qutebrowser/issues/7696
+                if item.url().isValid():
+                    tab_data['history'].append(
+                        _dump_history_item(tab, idx, item))
+            win_data['tabs'].append(tab_data)
+        data['windows'].append(win_data)
+
+    dest = os.path.expanduser(dest)
+    try:
+        with open(dest, 'w', encoding='utf-8') as f:
+            utils.yaml_dump(data, f)
+    except OSError as e:
+        raise cmdutils.CommandError(f"Could not write tabs: {e}")
+    message.info(f"Dumped tabs to {dest}.")

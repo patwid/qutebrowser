@@ -118,7 +118,6 @@ shlexer = logging.getLogger('shlexer')
 save = logging.getLogger('save')
 message = logging.getLogger('message')
 config = logging.getLogger('config')
-sessions = logging.getLogger('sessions')
 webelem = logging.getLogger('webelem')
 prompt = logging.getLogger('prompt')
 network = logging.getLogger('network')
@@ -132,7 +131,7 @@ LOGGER_NAMES = [
     'mouse', 'procs', 'hints', 'keyboard',
     'commands', 'signals', 'downloads',
     'js', 'qt', 'ipc', 'shlexer',
-    'save', 'message', 'config', 'sessions',
+    'save', 'message', 'config',
     'webelem', 'prompt', 'network', 'sql',
     'greasemonkey', 'extensions',
 ]

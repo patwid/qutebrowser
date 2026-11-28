@@ -356,20 +356,6 @@ class QuickmarkManagerStub(UrlMarkManagerStub):
         self.delete(key)
 
 
-class SessionManagerStub:
-
-    """Stub for the session-manager object."""
-
-    def __init__(self):
-        self.sessions = []
-
-    def list_sessions(self):
-        return self.sessions
-
-    def save_autosave(self):
-        pass
-
-
 class TabbedBrowserStub(QObject):
 
     """Stub for the tabbed-browser object."""

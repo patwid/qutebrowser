@@ -26,7 +26,7 @@ from qutebrowser.keyinput import modeman
 from qutebrowser.config import config, websettings
 from qutebrowser.utils import (utils, objreg, usertypes, log, qtutils,
                                urlutils, message, jinja)
-from qutebrowser.misc import miscwidgets, objects, sessions
+from qutebrowser.misc import miscwidgets, objects
 from qutebrowser.browser import eventfilter, inspector
 from qutebrowser.qt import sip
 
@@ -684,10 +684,6 @@ class AbstractHistoryPrivate:
         """Deserialize from a format produced by self.serialize."""
         raise NotImplementedError
 
-    def load_items(self, items: Sequence[sessions.TabHistoryItem]) -> None:
-        """Deserialize from a list of TabHistoryItems."""
-        raise NotImplementedError
-
 
 class AbstractHistory:
 
@@ -1142,9 +1138,6 @@ class AbstractTab(QWidget):
         if self.is_deleted():
             # https://github.com/qutebrowser/qutebrowser/issues/3498
             return
-
-        if sessions.session_manager is not None:
-            sessions.session_manager.save_autosave()
 
         self.load_finished.emit(ok)
 

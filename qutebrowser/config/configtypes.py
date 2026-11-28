@@ -1850,21 +1850,6 @@ class Url(BaseType):
         return qurl
 
 
-class SessionName(BaseType):
-
-    """The name of a session."""
-
-    def to_py(self, value: _StrUnset) -> _StrUnsetNone:
-        self._basic_py_validation(value, str)
-        if isinstance(value, usertypes.Unset):
-            return value
-        elif not value:
-            return None
-        if value.startswith('_'):
-            raise configexc.ValidationError(value, "may not start with '_'!")
-        return value
-
-
 class SelectOnRemove(MappingType):
 
     """Which tab to select when the focused tab is removed."""

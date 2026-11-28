@@ -32,7 +32,7 @@ from qutebrowser.config import (config, configdata, configtypes, configexc,
 from qutebrowser.api import config as configapi
 from qutebrowser.utils import objreg, standarddir, version
 from qutebrowser.browser import greasemonkey, history, qutescheme
-from qutebrowser.misc import savemanager, sql, objects, sessions, httpclient
+from qutebrowser.misc import savemanager, sql, objects, httpclient
 from qutebrowser.keyinput import modeman
 from qutebrowser.qt import sip
 
@@ -181,8 +181,7 @@ def testdata_scheme(qapp):
 
 
 @pytest.fixture
-def web_tab_setup(qtbot, tab_registry, session_manager_stub,
-                  greasemonkey_manager, fake_args, config_stub,
+def web_tab_setup(qtbot, tab_registry, greasemonkey_manager, fake_args, config_stub,
                   testdata_scheme):
     """Shared setup for webengine_tab."""
     # Make sure error logging via JS fails tests
@@ -211,8 +210,6 @@ def webengine_tab(web_tab_setup, qtbot, redirect_webengine_data,
 
     yield tab
 
-    # If a page is still loading here, _on_load_finished could get called
-    # during teardown when session_manager_stub is already deleted.
     tab.stop()
 
     # Make sure the tab shuts itself down properly
@@ -336,14 +333,6 @@ def bookmark_manager_stub(stubs):
     objreg.register('bookmark-manager', stub)
     yield stub
     objreg.delete('bookmark-manager')
-
-
-@pytest.fixture
-def session_manager_stub(stubs, monkeypatch):
-    """Fixture which provides a fake session-manager object."""
-    stub = stubs.SessionManagerStub()
-    monkeypatch.setattr(sessions, 'session_manager', stub)
-    return stub
 
 
 @pytest.fixture

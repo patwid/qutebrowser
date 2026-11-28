@@ -103,7 +103,7 @@ possible to run or bind multiple commands by separating them with `;;`.
 |<<quit,quit>>|Quit qutebrowser.
 |<<reload,reload>>|Reload the current/[count]th tab.
 |<<report,report>>|Report a bug in qutebrowser.
-|<<restart,restart>>|Restart qutebrowser while keeping existing tabs open.
+|<<restart,restart>>|Restart qutebrowser and reopen the pages of all non-private windows.
 |<<save,save>>|Save configs and state.
 |<<screenshot,screenshot>>|Take a screenshot of the currently shown part of the page.
 |<<scroll,scroll>>|Scroll the current tab in the given direction.
@@ -115,9 +115,6 @@ possible to run or bind multiple commands by separating them with `;;`.
 |<<search-next,search-next>>|Continue the search to the ([count]th) next term.
 |<<search-prev,search-prev>>|Continue the search to the ([count]th) previous term.
 |<<selection-follow,selection-follow>>|Follow the selected text.
-|<<session-delete,session-delete>>|Delete a session.
-|<<session-load,session-load>>|Load a session.
-|<<session-save,session-save>>|Save a session.
 |<<set,set>>|Set an option.
 |<<set-mark,set-mark>>|Set a mark at the current scroll position in the current tab.
 |<<spawn,spawn>>|Spawn an external command.
@@ -1117,16 +1114,7 @@ Reload quickmarks from disk.
 
 [[quit]]
 === quit
-Syntax: +:quit [*--save*] ['session']+
-
 Quit qutebrowser.
-
-==== positional arguments
-* +'session'+: The name of the session to save.
-
-==== optional arguments
-* +*-s*+, +*--save*+: When given, save the open windows even if auto_save.session is turned off.
-
 
 [[reload]]
 === reload
@@ -1153,7 +1141,7 @@ Report a bug in qutebrowser.
 
 [[restart]]
 === restart
-Restart qutebrowser while keeping existing tabs open.
+Restart qutebrowser and reopen the pages of all non-private windows.
 
 [[save]]
 === save
@@ -1290,51 +1278,6 @@ Follow the selected text.
 
 ==== optional arguments
 * +*-t*+, +*--tab*+: Load the selected link in a new tab.
-
-[[session-delete]]
-=== session-delete
-Syntax: +:session-delete [*--force*] 'name'+
-
-Delete a session.
-
-==== positional arguments
-* +'name'+: The name of the session.
-
-==== optional arguments
-* +*-f*+, +*--force*+: Force deleting internal sessions (starting with an underline).
-
-[[session-load]]
-=== session-load
-Syntax: +:session-load [*--clear*] [*--temp*] [*--force*] [*--delete*] 'name'+
-
-Load a session.
-
-==== positional arguments
-* +'name'+: The name of the session.
-
-==== optional arguments
-* +*-c*+, +*--clear*+: Close all existing windows.
-* +*-t*+, +*--temp*+: Don't set the current session for :session-save.
-* +*-f*+, +*--force*+: Force loading internal sessions (starting with an underline).
-* +*-d*+, +*--delete*+: Delete the saved session once it has loaded.
-
-[[session-save]]
-=== session-save
-Syntax: +:session-save [*--current*] [*--quiet*] [*--force*] [*--only-active-window*] [*--with-private*] [*--no-history*] ['name']+
-
-Save a session.
-
-==== positional arguments
-* +'name'+: The name of the session. If not given, the session configured in session.default_name is saved.
-
-
-==== optional arguments
-* +*-c*+, +*--current*+: Save the current session instead of the default.
-* +*-q*+, +*--quiet*+: Don't show confirmation message.
-* +*-f*+, +*--force*+: Force saving internal sessions (starting with an underline).
-* +*-o*+, +*--only-active-window*+: Saves only tabs of the currently active window.
-* +*-p*+, +*--with-private*+: Include private windows.
-* +*-n*+, +*--no-history*+: Don't store tab history.
 
 [[set]]
 === set
@@ -2071,6 +2014,7 @@ These commands are mainly intended for debugging. They are hidden if qutebrowser
 |<<debug-crash,debug-crash>>|Crash for debugging purposes.
 |<<debug-dump-history,debug-dump-history>>|Dump the history to a file in the old pre-SQL format.
 |<<debug-dump-page,debug-dump-page>>|Dump the current page's content to a file.
+|<<debug-dump-tabs,debug-dump-tabs>>|Dump all windows with their tabs and tab histories to a YAML file.
 |<<debug-keytester,debug-keytester>>|Show a keytester widget.
 |<<debug-log-capacity,debug-log-capacity>>|Change the number of log lines to be stored in RAM.
 |<<debug-log-filter,debug-log-filter>>|Change the log filter for console logging.
@@ -2120,6 +2064,15 @@ Dump the current page's content to a file.
 
 ==== optional arguments
 * +*-p*+, +*--plain*+: Write plain text instead of HTML.
+
+[[debug-dump-tabs]]
+=== debug-dump-tabs
+Syntax: +:debug-dump-tabs 'dest'+
+
+Dump all windows with their tabs and tab histories to a YAML file.
+
+==== positional arguments
+* +'dest'+: Where to write the file to.
 
 [[debug-keytester]]
 === debug-keytester

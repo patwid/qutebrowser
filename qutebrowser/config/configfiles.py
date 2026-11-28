@@ -90,6 +90,7 @@ class StateConfig(configparser.ConfigParser):
             ('general', 'serviceworker_workaround'),
             ('general', 'session-warning-shown'),
             ('general', 'birthday-2023-shown'),
+            ('general', 'session'),
             ('geometry', 'inspector'),
         ]
         for sect, key in deleted_keys:

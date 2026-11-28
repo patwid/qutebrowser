@@ -79,7 +79,6 @@ def miscmodels_patch(mocker):
     m.helptopic = func('helptopic')
     m.quickmark = func('quickmark')
     m.bookmark = func('bookmark')
-    m.session = func('session')
     m.tabs = func('tabs')
     m.bind = func('bind')
     m.url = func('url')

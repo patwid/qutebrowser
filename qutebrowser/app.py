@@ -45,7 +45,7 @@ from qutebrowser.browser.network import proxy
 from qutebrowser.extensions import loader
 from qutebrowser.keyinput import macros, eventfilter
 from qutebrowser.mainwindow import mainwindow, prompt, windowundo
-from qutebrowser.misc import (ipc, savemanager, sessions, crashsignal,
+from qutebrowser.misc import (ipc, savemanager, crashsignal,
                               earlyinit, sql, cmdhistory, backendproblem,
                               objects, quitter)
 from qutebrowser.utils import (log, version, message, utils, urlutils, objreg,
@@ -179,28 +179,23 @@ def _init_icon():
 
 def _process_args(args):
     """Open startpage etc. and process commandline args."""
-    if not args.override_restore:
-        sessions.load_default(args.session)
+    log.init.debug("Initializing main window...")
+    private = args.target == 'private-window'
+    if (config.val.content.private_browsing or
+            private) and qtutils.is_single_process():
+        err = Exception("Private windows are unavailable with "
+                        "the single-process process model.")
+        error.handle_fatal_exc(err, 'Cannot start in private mode',
+                               no_err_windows=args.no_err_windows)
+        sys.exit(usertypes.Exit.err_init)
 
-    new_window = None
-    if not sessions.session_manager.did_load:
-        log.init.debug("Initializing main window...")
-        private = args.target == 'private-window'
-        if (config.val.content.private_browsing or
-                private) and qtutils.is_single_process():
-            err = Exception("Private windows are unavailable with "
-                            "the single-process process model.")
-            error.handle_fatal_exc(err, 'Cannot start in private mode',
-                                   no_err_windows=args.no_err_windows)
-            sys.exit(usertypes.Exit.err_init)
-
-        new_window = mainwindow.MainWindow(private=private)
+    new_window = mainwindow.MainWindow(private=private)
 
     process_pos_args(args.command)
     _open_startpage()
     _open_special_pages(args)
 
-    if new_window is not None and not args.nowindow:
+    if not args.nowindow:
         new_window.show()
         objects.qapp.setActiveWindow(new_window)
 
@@ -228,6 +223,8 @@ def process_pos_args(args, via_ipc=False, cwd=None, target_arg=None):
         command_target = 'tab-silent'
 
     window: mainwindow.MainWindow | None = None
+    # A further window opened at startup, which the following URLs belong to.
+    startup_window: mainwindow.MainWindow | None = None
 
     if via_ipc and (not args or args == ['']):
         window = mainwindow.get_window(via_ipc=via_ipc, target=new_window_target)
@@ -251,6 +248,12 @@ def process_pos_args(args, via_ipc=False, cwd=None, target_arg=None):
         elif not cmd:
             log.init.debug("Empty argument")
             window = mainwindow.get_window(via_ipc=via_ipc, target=new_window_target)
+            if not via_ipc and window.tabbed_browser.widget.count():
+                # :restart separates the pages of two windows by an empty
+                # argument.
+                window = mainwindow.MainWindow(
+                    private=new_window_target == 'private-window')
+                startup_window = window
         else:
             if via_ipc and target_arg and target_arg != 'auto':
                 open_target = target_arg
@@ -264,10 +267,11 @@ def process_pos_args(args, via_ipc=False, cwd=None, target_arg=None):
                 message.error("Error in startup argument '{}': {}".format(
                     cmd, e))
             else:
-                window = open_url(url, target=open_target, via_ipc=via_ipc)
+                window = open_url(url, target=open_target, via_ipc=via_ipc,
+                                  window=startup_window)
 
 
-def open_url(url, target=None, no_raise=False, via_ipc=True):
+def open_url(url, target=None, no_raise=False, via_ipc=True, window=None):
     """Open a URL in new window/tab.
 
     Args:
@@ -275,13 +279,16 @@ def open_url(url, target=None, no_raise=False, via_ipc=True):
         target: same as new_instance_open_target (used as a default).
         no_raise: suppress target window raising.
         via_ipc: Whether the arguments were transmitted over IPC.
+        window: The window to open the URL in instead of picking one.
 
     Return:
         The MainWindow of a window that was used to open the URL.
     """
     target = target or config.val.new_instance_open_target
     background = target in {'tab-bg', 'tab-bg-silent'}
-    window = mainwindow.get_window(via_ipc=via_ipc, target=target, no_raise=no_raise)
+    if window is None:
+        window = mainwindow.get_window(via_ipc=via_ipc, target=target,
+                                       no_raise=no_raise)
     log.init.debug("About to open URL: {}".format(url.toDisplayString()))
     window.tabbed_browser.tabopen(url, background=background, related=False)
     window.show()
@@ -449,9 +456,6 @@ def _init_modules(*, args):
     log.init.debug("Initializing websettings...")
     websettings.init(args)
     quitter.instance.shutting_down.connect(websettings.shutdown)
-
-    log.init.debug("Initializing sessions...")
-    sessions.init(objects.qapp)
 
     if not args.no_err_windows:
         crashsignal.crash_handler.display_faulthandler()

@@ -2030,20 +2030,6 @@ class TestUrl:
             klass().to_py('+')
 
 
-class TestSessionName:
-
-    @pytest.fixture
-    def klass(self):
-        return configtypes.SessionName
-
-    def test_to_py_valid(self, klass):
-        assert klass().to_py('foobar') == 'foobar'
-
-    def test_to_py_invalid(self, klass):
-        with pytest.raises(configexc.ValidationError):
-            klass().to_py('_foo')
-
-
 class TestConfirmQuit:
 
     TESTS = [

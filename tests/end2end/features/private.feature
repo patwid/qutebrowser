@@ -140,12 +140,6 @@ Feature: Using private browsing
                 - url: http://localhost:*/data/hello.txt
             """
 
-    Scenario: Skipping private window when saving session
-        When I open data/hello.txt in a private window
-        And I run :session-save (tmpdir)/session.yml
-        And I wait for "Saved session */session.yml." in the log
-        Then the file session.yml should not contain "hello.txt"
-
     # https://github.com/qutebrowser/qutebrowser/issues/2638
     Scenario: Turning off javascript with private browsing
         When I set content.javascript.enabled to false
@@ -180,35 +174,6 @@ Feature: Using private browsing
                 - url: http://localhost:*/data/numbers/2.txt
             """
 
-  @skip  # Too flaky
-  Scenario: Saving a private session with only-active-window
-        When I open data/numbers/1.txt
-        And I open data/numbers/2.txt in a new tab
-        And I open data/numbers/3.txt in a private window
-        And I open data/numbers/4.txt in a new tab
-        And I open data/numbers/5.txt in a new tab
-        And I run :session-save --only-active-window window_session_name
-        And I run :window-only
-        And I wait for "removed: tab" in the log
-        And I wait for "removed: tab" in the log
-        And I run :tab-only
-        And I wait for "removed: tab" in the log
-        And I wait for "removed: tab" in the log
-        And I wait for "removed: tab" in the log
-        And I run :session-load -c window_session_name
-        And I wait until data/numbers/5.txt is loaded
-        Then the session should look like:
-            """
-            windows:
-                - tabs:
-                    - history:
-                        - url: http://localhost:*/data/numbers/3.txt
-                    - history:
-                        - url: http://localhost:*/data/numbers/4.txt
-                    - history:
-                        - active: true
-                          url: http://localhost:*/data/numbers/5.txt
-            """
 
     # https://github.com/qutebrowser/qutebrowser/issues/5810
 

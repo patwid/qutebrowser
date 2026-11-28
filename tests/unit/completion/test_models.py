@@ -773,19 +773,6 @@ def test_url_completion_zero_limit(config_stub, web_history, quickmarks, info,
     assert model.data(category) is None
 
 
-def test_session_completion(qtmodeltester, session_manager_stub):
-    session_manager_stub.sessions = ['default', '1', '2']
-    model = miscmodels.session()
-    model.set_pattern('')
-    qtmodeltester.check(model)
-
-    _check_completions(model, {
-        "Sessions": [('1', None, None),
-                     ('2', None, None),
-                     ('default', None, None)]
-    })
-
-
 def test_tab_completion(qtmodeltester, fake_web_tab, win_registry,
                         tabbed_browser_stubs):
     tabbed_browser_stubs[0].widget.tabs = [

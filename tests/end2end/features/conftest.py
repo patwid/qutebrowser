@@ -507,13 +507,6 @@ def compare_session(quteproc, docstring):
     quteproc.compare_session(docstring)
 
 
-@bdd.then(
-    bdd.parsers.parse("The session saved with {flags} should look like:"))
-def compare_session_flags(quteproc, flags, docstring):
-    """Compare the current session saved with custom flags."""
-    quteproc.compare_session(docstring, flags=flags)
-
-
 @bdd.then("no crash should happen")
 def no_crash():
     """Don't do anything.

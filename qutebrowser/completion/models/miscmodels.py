@@ -73,21 +73,6 @@ def bookmark(*, info=None):
     return model
 
 
-def session(*, info=None):
-    """A CompletionModel filled with session names."""
-    from qutebrowser.misc import sessions
-    utils.unused(info)
-    model = completionmodel.CompletionModel()
-    try:
-        sess = ((name,) for name
-                in sessions.session_manager.list_sessions()
-                if not name.startswith('_'))
-        model.add_category(listcategory.ListCategory("Sessions", sess))
-    except OSError:
-        log.completion.exception("Failed to list sessions!")
-    return model
-
-
 def _tabs(*, win_id_filter=lambda _win_id: True, add_win_id=True, cur_win_id=None):
     """Helper to get the completion model for tabs/other_tabs.
 

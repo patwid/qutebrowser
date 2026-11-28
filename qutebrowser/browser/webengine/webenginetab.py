@@ -616,27 +616,6 @@ class WebEngineHistoryPrivate(browsertab.AbstractHistoryPrivate):
             log.webview.debug(f"Failed to deserialize history data:\n{dump}")
             raise
 
-    def load_items(self, items):
-        """Load the current URL of the given items.
-
-        QtWebEngine has no API to restore a tab's history from individual
-        items, so the back/forward history of the session is not restored, see
-        https://github.com/qutebrowser/qutebrowser/issues/5359
-        """
-        if not items:
-            return
-
-        for i, item in enumerate(items):
-            if item.active:
-                cur_idx = i
-                break
-
-        url = items[cur_idx].url
-        if (url.scheme(), url.host()) == ('qute', 'back') and cur_idx >= 1:
-            url = items[cur_idx - 1].url
-
-        self._tab.load_url(url)
-
 
 class WebEngineHistory(browsertab.AbstractHistory):
 

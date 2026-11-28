@@ -239,25 +239,6 @@ def test_initial_private_browsing(request, quteproc_new):
     quteproc_new.wait_for_quit()
 
 
-def test_loading_empty_session(tmp_path, request, quteproc_new):
-    """Make sure loading an empty session opens a window."""
-    session = tmp_path / 'session.yml'
-    session.write_text('windows: []')
-
-    args = _base_args(request.config) + ['--temp-basedir', '-r', str(session)]
-    quteproc_new.start(args)
-
-    quteproc_new.compare_session("""
-        windows:
-            - tabs:
-              - history:
-                - url: about:blank
-    """)
-
-    quteproc_new.send_cmd(':quit')
-    quteproc_new.wait_for_quit()
-
-
 def test_qute_settings_persistence(short_tmpdir, request, quteproc_new):
     """Make sure settings from qute://settings are persistent."""
     args = _base_args(request.config) + ['--basedir', str(short_tmpdir)]
@@ -708,3 +689,26 @@ def test_restart(request, quteproc_new):
     except ChildProcessError:
         # Already gone.
         pass
+
+
+def test_window_separator(request, quteproc_new):
+    """An empty argument starts a new window, like :restart relies on."""
+    # The base arguments end with about:blank as the first page.
+    args = ['--temp-basedir'] + _base_args(request.config) + [
+        'about:blank?2', '', 'about:blank?3']
+    quteproc_new.start(args)
+
+    quteproc_new.compare_session("""
+        windows:
+            - tabs:
+              - history:
+                - url: about:blank
+              - history:
+                - url: about:blank?2
+            - tabs:
+              - history:
+                - url: about:blank?3
+    """)
+
+    quteproc_new.send_cmd(':quit')
+    quteproc_new.wait_for_quit()
