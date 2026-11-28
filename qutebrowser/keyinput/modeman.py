@@ -141,14 +141,6 @@ def init(win_id: int, parent: QObject) -> 'ModeManager':
                 parent=modeman,
                 supports_count=False),
 
-        usertypes.KeyMode.caret:
-            modeparsers.CommandKeyParser(
-                mode=usertypes.KeyMode.caret,
-                win_id=win_id,
-                commandrunner=commandrunner,
-                parent=modeman,
-                passthrough=True),
-
         usertypes.KeyMode.set_mark:
             modeparsers.RegisterKeyParser(
                 mode=usertypes.KeyMode.set_mark,

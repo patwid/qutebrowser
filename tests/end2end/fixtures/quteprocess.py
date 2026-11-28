@@ -470,7 +470,6 @@ class QuteProc(testprocess.Process):
                 '--debug-flag', 'no-sql-history',
                 '--debug-flag', 'werror',
                 '--debug-flag', 'test-notification-service',
-                '--debug-flag', 'caret',
                 '--qt-flag', 'disable-features=PaintHoldingCrossOrigin',
                 '--qt-arg', 'geometry', '800x600+0+0']
 

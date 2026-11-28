@@ -776,7 +776,7 @@ class TestBind:
         # unbound
         ('x', 'normal', "x is unbound in normal mode"),
         # non-default mode
-        ('x', 'caret', "x is bound to 'nop' in caret mode"),
+        ('x', 'hint', "x is bound to 'nop' in hint mode"),
     ])
     def test_bind_print(self, commands, config_stub, message_mock,
                         key, mode, expected):
@@ -789,7 +789,7 @@ class TestBind:
             'normal': {'a': 'message-info a',
                        'b': 'mib',
                        '<Ctrl+x>': 'message-info C-x'},
-            'caret': {'x': 'nop'}
+            'hint': {'x': 'nop'}
         }
         config_stub.val.bindings.commands = {
             'normal': {'c': 'message-info c'}
@@ -891,11 +891,11 @@ class TestBind:
                     key, normalized):
         config_stub.val.bindings.default = {
             'normal': {'a': 'nop', '<ctrl+x>': 'nop'},
-            'caret': {'a': 'nop', '<ctrl+x>': 'nop'},
+            'hint': {'a': 'nop', '<ctrl+x>': 'nop'},
         }
         config_stub.val.bindings.commands = {
             'normal': {'b': 'nop'},
-            'caret': {'b': 'nop'},
+            'hint': {'b': 'nop'},
         }
         if key == 'c':
             # Test :bind and :unbind

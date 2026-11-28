@@ -20,10 +20,9 @@ from qutebrowser.api import cmdutils
 from qutebrowser.config import config, configdata
 from qutebrowser.browser import (urlmarks, browsertab, navigate, webelem,
                                  downloads)
-from qutebrowser.keyinput import modeman, keyutils
+from qutebrowser.keyinput import keyutils
 from qutebrowser.utils import (message, usertypes, log, qtutils, urlutils,
                                objreg, utils, standarddir, debug)
-from qutebrowser.utils.usertypes import KeyMode
 from qutebrowser.misc import editor, guiprocess, objects
 from qutebrowser.completion.models import urlmodel, miscmodels
 from qutebrowser.mainwindow import mainwindow, windowundo
@@ -706,8 +705,7 @@ class CommandDispatcher:
     @cmdutils.register(instance='command-dispatcher', scope='window')
     @cmdutils.argument('what', choices=['selection', 'url', 'pretty-url',
                                         'title', 'domain', 'inline'])
-    def yank(self, what='url', inline=None,
-             sel=False, keep=False, quiet=False):
+    def yank(self, what='url', inline=None, sel=False, quiet=False):
         """Yank (copy) something to the clipboard or primary selection.
 
         Args:
@@ -721,7 +719,6 @@ class CommandDispatcher:
                 - `inline`: Yank the text contained in the 'inline' argument.
 
             sel: Use the primary selection instead of the clipboard.
-            keep: Stay in visual mode after yanking the selection.
             quiet: Don't show an information message.
             inline: A block of text, to be yanked if 'what'
                 is inline and ignored otherwise.
@@ -746,7 +743,7 @@ class CommandDispatcher:
                 if not s and not quiet:
                     message.info("Nothing to yank")
                     return
-                self._yank_to_target(s, sel, what, keep, quiet)
+                self._yank_to_target(s, sel, what, quiet)
 
             caret = self._current_widget().caret
             caret.selection(callback=_selection_callback)
@@ -754,9 +751,9 @@ class CommandDispatcher:
         else:  # pragma: no cover
             raise ValueError("Invalid value {!r} for `what'.".format(what))
 
-        self._yank_to_target(s, sel, what, keep, quiet)
+        self._yank_to_target(s, sel, what, quiet)
 
-    def _yank_to_target(self, s, sel, what, keep, quiet):
+    def _yank_to_target(self, s, sel, what, quiet):
         if sel and utils.supports_selection():
             target = "primary selection"
         else:
@@ -764,16 +761,13 @@ class CommandDispatcher:
             target = "clipboard"
 
         utils.set_clipboard(s, selection=sel)
+        if quiet:
+            return
         if what != 'selection':
-            if not quiet:
-                message.info("Yanked {} to {}: {}".format(what, target, s))
+            message.info("Yanked {} to {}: {}".format(what, target, s))
         else:
-            if not quiet:
-                message.info("{} {} yanked to {}".format(
-                    len(s), "char" if len(s) == 1 else "chars", target))
-            if not keep:
-                modeman.leave(self._win_id, KeyMode.caret, "yank selected",
-                              maybe=True)
+            message.info("{} {} yanked to {}".format(
+                len(s), "char" if len(s) == 1 else "chars", target))
 
     @cmdutils.register(instance='command-dispatcher', scope='window')
     @cmdutils.argument('pinned', choices=['prompt', 'close', 'keep'], flag='P',

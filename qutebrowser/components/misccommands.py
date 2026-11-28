@@ -442,3 +442,17 @@ def devtools_focus(tab: apitypes.Tab) -> None:
 def knights_who_say_ni() -> None:
     """We are the Knights Who Say... 'Ni'!"""  # noqa: D400
     raise cmdutils.CommandError("Do you demand a shrubbery?")
+
+
+@cmdutils.register()
+@cmdutils.argument('tab_obj', value=cmdutils.Value.cur_tab)
+def selection_follow(tab_obj: apitypes.Tab, *, tab: bool = False) -> None:
+    """Follow the selected text.
+
+    Args:
+        tab: Load the selected link in a new tab.
+    """
+    try:
+        tab_obj.caret.follow_selected(tab=tab)
+    except apitypes.WebTabError as e:
+        raise cmdutils.CommandError(str(e))

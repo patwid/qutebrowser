@@ -251,7 +251,6 @@ class KeyMode(enum.Enum):
     prompt = enum.auto()  #: Text prompts
     insert = enum.auto()  #: Insert mode (passing through most keys)
     passthrough = enum.auto()  #: Passthrough mode (passing through all keys)
-    caret = enum.auto()  #: Caret mode (moving cursor with keys)
     set_mark = enum.auto()
     jump_mark = enum.auto()
     record_macro = enum.auto()

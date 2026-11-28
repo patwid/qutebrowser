@@ -66,10 +66,6 @@
 |<<colors.prompts.fg,colors.prompts.fg>>|Foreground color for prompts.
 |<<colors.prompts.selected.bg,colors.prompts.selected.bg>>|Background color for the selected item in filename prompts.
 |<<colors.prompts.selected.fg,colors.prompts.selected.fg>>|Foreground color for the selected item in filename prompts.
-|<<colors.statusbar.caret.bg,colors.statusbar.caret.bg>>|Background color of the statusbar in caret mode.
-|<<colors.statusbar.caret.fg,colors.statusbar.caret.fg>>|Foreground color of the statusbar in caret mode.
-|<<colors.statusbar.caret.selection.bg,colors.statusbar.caret.selection.bg>>|Background color of the statusbar in caret mode with a selection.
-|<<colors.statusbar.caret.selection.fg,colors.statusbar.caret.selection.fg>>|Foreground color of the statusbar in caret mode with a selection.
 |<<colors.statusbar.command.bg,colors.statusbar.command.bg>>|Background color of the statusbar in command mode.
 |<<colors.statusbar.command.fg,colors.statusbar.command.fg>>|Foreground color of the statusbar in command mode.
 |<<colors.statusbar.command.private.bg,colors.statusbar.command.private.bg>>|Background color of the statusbar in private browsing + command mode.
@@ -412,9 +408,6 @@ The following modes are available:
   locations or when invoked from JavaScript.
 
 * yesno: Entered when there's a yes/no prompt displayed.
-* caret: Entered when pressing the `v` mode, used to select text using the
-  keyboard.
-
 * register: Entered when qutebrowser is waiting for a register name/key for
   commands like `:set-mark`.
 
@@ -434,37 +427,6 @@ Type: <<types,Dict>>
 
 Default: 
 
-- +pass:[caret]+:
-
-* +pass:[$]+: +pass:[move-to-end-of-line]+
-* +pass:[0]+: +pass:[move-to-start-of-line]+
-* +pass:[&lt;Ctrl-Space&gt;]+: +pass:[selection-drop]+
-* +pass:[&lt;Escape&gt;]+: +pass:[mode-leave]+
-* +pass:[&lt;Return&gt;]+: +pass:[yank selection]+
-* +pass:[&lt;Space&gt;]+: +pass:[selection-toggle]+
-* +pass:[G]+: +pass:[move-to-end-of-document]+
-* +pass:[H]+: +pass:[scroll left]+
-* +pass:[J]+: +pass:[scroll down]+
-* +pass:[K]+: +pass:[scroll up]+
-* +pass:[L]+: +pass:[scroll right]+
-* +pass:[V]+: +pass:[selection-toggle --line]+
-* +pass:[Y]+: +pass:[yank selection -s]+
-* +pass:[[]+: +pass:[move-to-start-of-prev-block]+
-* +pass:[\]]+: +pass:[move-to-start-of-next-block]+
-* +pass:[b]+: +pass:[move-to-prev-word]+
-* +pass:[c]+: +pass:[mode-enter normal]+
-* +pass:[e]+: +pass:[move-to-end-of-word]+
-* +pass:[gg]+: +pass:[move-to-start-of-document]+
-* +pass:[h]+: +pass:[move-to-prev-char]+
-* +pass:[j]+: +pass:[move-to-next-line]+
-* +pass:[k]+: +pass:[move-to-prev-line]+
-* +pass:[l]+: +pass:[move-to-next-char]+
-* +pass:[o]+: +pass:[selection-reverse]+
-* +pass:[v]+: +pass:[selection-toggle]+
-* +pass:[w]+: +pass:[move-to-next-word]+
-* +pass:[y]+: +pass:[yank selection]+
-* +pass:[{]+: +pass:[move-to-end-of-prev-block]+
-* +pass:[}]+: +pass:[move-to-end-of-next-block]+
 - +pass:[command]+:
 
 * +pass:[&lt;Alt-B&gt;]+: +pass:[rl-backward-word]+
@@ -595,7 +557,6 @@ Default:
 * +pass:[Ss]+: +pass:[set]+
 * +pass:[T]+: +pass:[cmd-set-text -sr :tab-focus]+
 * +pass:[U]+: +pass:[undo -w]+
-* +pass:[V]+: +pass:[mode-enter caret ;; selection-toggle --line]+
 * +pass:[ZQ]+: +pass:[quit]+
 * +pass:[ZZ]+: +pass:[quit]+
 * +pass:[[[]+: +pass:[navigate prev]+
@@ -668,7 +629,6 @@ Default:
 * +pass:[tsh]+: +pass:[config-cycle -p -t -u *://{url:host}/* content.javascript.enabled ;; reload]+
 * +pass:[tsu]+: +pass:[config-cycle -p -t -u {url} content.javascript.enabled ;; reload]+
 * +pass:[u]+: +pass:[undo]+
-* +pass:[v]+: +pass:[mode-enter caret]+
 * +pass:[wIf]+: +pass:[devtools-focus]+
 * +pass:[wIh]+: +pass:[devtools left]+
 * +pass:[wIj]+: +pass:[devtools bottom]+
@@ -1200,38 +1160,6 @@ Default: +pass:[grey]+
 [[colors.prompts.selected.fg]]
 === colors.prompts.selected.fg
 Foreground color for the selected item in filename prompts.
-
-Type: <<types,QssColor>>
-
-Default: +pass:[white]+
-
-[[colors.statusbar.caret.bg]]
-=== colors.statusbar.caret.bg
-Background color of the statusbar in caret mode.
-
-Type: <<types,QssColor>>
-
-Default: +pass:[purple]+
-
-[[colors.statusbar.caret.fg]]
-=== colors.statusbar.caret.fg
-Foreground color of the statusbar in caret mode.
-
-Type: <<types,QssColor>>
-
-Default: +pass:[white]+
-
-[[colors.statusbar.caret.selection.bg]]
-=== colors.statusbar.caret.selection.bg
-Background color of the statusbar in caret mode with a selection.
-
-Type: <<types,QssColor>>
-
-Default: +pass:[#a12dff]+
-
-[[colors.statusbar.caret.selection.fg]]
-=== colors.statusbar.caret.selection.fg
-Foreground color of the statusbar in caret mode with a selection.
 
 Type: <<types,QssColor>>
 

@@ -487,99 +487,21 @@ class AbstractZoom(QObject):
         self._set_factor_internal(self._zoom_factor)
 
 
-class SelectionState(enum.Enum):
-
-    """Possible states of selection in caret mode.
-
-    NOTE: Names need to line up with SelectionState in caret.js!
-    """
-
-    none = enum.auto()
-    normal = enum.auto()
-    line = enum.auto()
-
-
 class AbstractCaret(QObject):
 
-    """Attribute ``caret`` of AbstractTab for caret browsing."""
+    """Attribute ``caret`` of AbstractTab to access the selection."""
 
-    #: Signal emitted when the selection was toggled.
-    selection_toggled = pyqtSignal(SelectionState)
     #: Emitted when a ``follow_selection`` action is done.
     follow_selected_done = pyqtSignal()
 
     def __init__(self,
                  tab: 'AbstractTab',
-                 mode_manager: modeman.ModeManager,
                  parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._widget = cast(_WidgetType, None)
-        self._mode_manager = mode_manager
-        mode_manager.entered.connect(self._on_mode_entered)
-        mode_manager.left.connect(self._on_mode_left)
         self._tab = tab
 
-    def _on_mode_entered(self, mode: usertypes.KeyMode) -> None:
-        raise NotImplementedError
-
-    def _on_mode_left(self, mode: usertypes.KeyMode) -> None:
-        raise NotImplementedError
-
-    def move_to_next_line(self, count: int = 1) -> None:
-        raise NotImplementedError
-
-    def move_to_prev_line(self, count: int = 1) -> None:
-        raise NotImplementedError
-
-    def move_to_next_char(self, count: int = 1) -> None:
-        raise NotImplementedError
-
-    def move_to_prev_char(self, count: int = 1) -> None:
-        raise NotImplementedError
-
-    def move_to_end_of_word(self, count: int = 1) -> None:
-        raise NotImplementedError
-
-    def move_to_next_word(self, count: int = 1) -> None:
-        raise NotImplementedError
-
-    def move_to_prev_word(self, count: int = 1) -> None:
-        raise NotImplementedError
-
-    def move_to_start_of_line(self) -> None:
-        raise NotImplementedError
-
-    def move_to_end_of_line(self) -> None:
-        raise NotImplementedError
-
-    def move_to_start_of_next_block(self, count: int = 1) -> None:
-        raise NotImplementedError
-
-    def move_to_start_of_prev_block(self, count: int = 1) -> None:
-        raise NotImplementedError
-
-    def move_to_end_of_next_block(self, count: int = 1) -> None:
-        raise NotImplementedError
-
-    def move_to_end_of_prev_block(self, count: int = 1) -> None:
-        raise NotImplementedError
-
-    def move_to_start_of_document(self) -> None:
-        raise NotImplementedError
-
-    def move_to_end_of_document(self) -> None:
-        raise NotImplementedError
-
-    def toggle_selection(self, line: bool = False) -> None:
-        raise NotImplementedError
-
-    def drop_selection(self) -> None:
-        raise NotImplementedError
-
     def selection(self, callback: Callable[[str], None]) -> None:
-        raise NotImplementedError
-
-    def reverse_selection(self) -> None:
         raise NotImplementedError
 
     def _follow_enter(self, tab: bool) -> None:

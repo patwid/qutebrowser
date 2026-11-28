@@ -1076,7 +1076,7 @@ class TestConfigPyWriter:
             description=desc)
         options = [(None, opt, 'val')]
         bindings = {'normal': {',x': 'message-info normal'},
-                    'caret': {',y': 'message-info caret'}}
+                    'hint': {',y': 'message-info hint'}}
 
         writer = configfiles.ConfigPyWriter(options, bindings, commented=False)
         text = '\n'.join(writer._gen_lines())
@@ -1106,8 +1106,8 @@ class TestConfigPyWriter:
             # Bindings for normal mode
             config.bind(',x', 'message-info normal')
 
-            # Bindings for caret mode
-            config.bind(',y', 'message-info caret', mode='caret')
+            # Bindings for hint mode
+            config.bind(',y', 'message-info hint', mode='hint')
         """).lstrip()
 
     def test_binding_options_hidden(self):
@@ -1123,16 +1123,16 @@ class TestConfigPyWriter:
 
     def test_unbind(self):
         bindings = {'normal': {',x': None},
-                    'caret': {',y': 'message-info caret', ',z': None}}
+                    'hint': {',y': 'message-info hint', ',z': None}}
 
         writer = configfiles.ConfigPyWriter([], bindings, commented=False)
         lines = list(writer._gen_lines())
 
         assert "config.unbind(',x')" in lines
-        assert "config.unbind(',z', mode='caret')" in lines
-        caret_bind = ("config.bind(',y', 'message-info caret', "
-                      "mode='caret')")
-        assert caret_bind in lines
+        assert "config.unbind(',z', mode='hint')" in lines
+        hint_bind = ("config.bind(',y', 'message-info hint', "
+                     "mode='hint')")
+        assert hint_bind in lines
 
     def test_commented(self):
         opt = configdata.Option(
@@ -1140,7 +1140,7 @@ class TestConfigPyWriter:
             description='Hello World')
         options = [(None, opt, 'val')]
         bindings = {'normal': {',x': 'message-info normal'},
-                    'caret': {',y': 'message-info caret'}}
+                    'hint': {',y': 'message-info hint'}}
 
         writer = configfiles.ConfigPyWriter(options, bindings, commented=True)
         lines = list(writer._gen_lines())
@@ -1150,9 +1150,9 @@ class TestConfigPyWriter:
         assert "# c.opt = 'val'" in lines
         assert "## Bindings for normal mode" in lines
         assert "# config.bind(',x', 'message-info normal')" in lines
-        caret_bind = ("# config.bind(',y', 'message-info caret', "
-                      "mode='caret')")
-        assert caret_bind in lines
+        hint_bind = ("# config.bind(',y', 'message-info hint', "
+                     "mode='hint')")
+        assert hint_bind in lines
 
     def test_valid_values(self):
         opt1 = configdata.Option(

@@ -271,112 +271,16 @@ class WebEngineSearch(browsertab.AbstractSearch):
 
 class WebEngineCaret(browsertab.AbstractCaret):
 
-    """QtWebEngine implementations related to moving the cursor/selection."""
+    """QtWebEngine implementations related to the selection."""
 
     _tab: 'WebEngineTab'
-
-    def _flags(self):
-        """Get flags to pass to JS."""
-        return ['debug'] if 'caret' in objects.debug_flags else []
-
-    @pyqtSlot(usertypes.KeyMode)
-    def _on_mode_entered(self, mode):
-        if mode != usertypes.KeyMode.caret:
-            return
-
-        if self._tab.search.search_displayed:
-            # We are currently in search mode.
-            # convert the search to a blue selection so we can operate on it
-            self._tab.search.clear()
-
-        self._tab.run_js_async(
-            javascript.assemble('caret', 'setFlags', self._flags()))
-
-        self._js_call('setInitialCursor', callback=self._selection_cb)
-
-    def _selection_cb(self, enabled):
-        """Emit selection_toggled based on setInitialCursor."""
-        if self._mode_manager.mode != usertypes.KeyMode.caret:
-            log.webview.debug("Ignoring selection cb due to mode change.")
-            return
-        if enabled is None:
-            log.webview.debug("Ignoring selection status None")
-            return
-        if enabled:
-            self.selection_toggled.emit(browsertab.SelectionState.normal)
-        else:
-            self.selection_toggled.emit(browsertab.SelectionState.none)
-
-    @pyqtSlot(usertypes.KeyMode)
-    def _on_mode_left(self, mode):
-        if mode != usertypes.KeyMode.caret:
-            return
-
-        self.drop_selection()
-        self._js_call('disableCaret')
-
-    def move_to_next_line(self, count=1):
-        self._js_call('moveDown', count)
-
-    def move_to_prev_line(self, count=1):
-        self._js_call('moveUp', count)
-
-    def move_to_next_char(self, count=1):
-        self._js_call('moveRight', count)
-
-    def move_to_prev_char(self, count=1):
-        self._js_call('moveLeft', count)
-
-    def move_to_end_of_word(self, count=1):
-        self._js_call('moveToEndOfWord', count)
-
-    def move_to_next_word(self, count=1):
-        self._js_call('moveToNextWord', count)
-
-    def move_to_prev_word(self, count=1):
-        self._js_call('moveToPreviousWord', count)
-
-    def move_to_start_of_line(self):
-        self._js_call('moveToStartOfLine')
-
-    def move_to_end_of_line(self):
-        self._js_call('moveToEndOfLine')
-
-    def move_to_start_of_next_block(self, count=1):
-        self._js_call('moveToStartOfNextBlock', count)
-
-    def move_to_start_of_prev_block(self, count=1):
-        self._js_call('moveToStartOfPrevBlock', count)
-
-    def move_to_end_of_next_block(self, count=1):
-        self._js_call('moveToEndOfNextBlock', count)
-
-    def move_to_end_of_prev_block(self, count=1):
-        self._js_call('moveToEndOfPrevBlock', count)
-
-    def move_to_start_of_document(self):
-        self._js_call('moveToStartOfDocument')
-
-    def move_to_end_of_document(self):
-        self._js_call('moveToEndOfDocument')
-
-    def toggle_selection(self, line=False):
-        self._js_call('toggleSelection', line,
-                      callback=self._toggle_sel_translate)
-
-    def drop_selection(self):
-        self._js_call('dropSelection')
 
     def selection(self, callback):
         # Not using selectedText() as WORKAROUND for
         # https://bugreports.qt.io/browse/QTBUG-53134
         # selectedText() works poorly (especially with multi-line text), see
         # https://github.com/qutebrowser/qutebrowser/issues/3523
-        self._tab.run_js_async(javascript.assemble('caret', 'getSelection'),
-                               callback)
-
-    def reverse_selection(self):
-        self._js_call('reverseSelection')
+        self._tab.run_js_async('window.getSelection().toString()', callback)
 
     def _follow_selected_cb_wrapped(self, js_elem, tab):
         if sip.isdeleted(self):
@@ -441,24 +345,6 @@ class WebEngineCaret(browsertab.AbstractCaret):
             self._tab.run_js_async(
                 js_code,
                 lambda jsret: self._follow_selected_cb_wrapped(jsret, tab))
-
-    def _js_call(self, command, *args, callback=None):
-        code = javascript.assemble('caret', command, *args)
-        self._tab.run_js_async(code, callback)
-
-    def _toggle_sel_translate(self, state_str):
-        if self._mode_manager.mode != usertypes.KeyMode.caret:
-            # This may happen if the user switches to another mode after
-            # `:selection-toggle` is executed and before this callback function
-            # is asynchronously called.
-            log.misc.debug("Ignoring caret selection callback in {}".format(
-                self._mode_manager.mode))
-            return
-        if state_str is None:
-            message.error("Error toggling caret selection")
-            return
-        state = browsertab.SelectionState[state_str]
-        self.selection_toggled.emit(state)
 
 
 class WebEngineScroller(browsertab.AbstractScroller):
@@ -1021,7 +907,6 @@ class _WebEngineScripts(QObject):
             'scripts',
             resources.read_file('javascript/scroll.js'),
             resources.read_file('javascript/webelem.js'),
-            resources.read_file('javascript/caret.js'),
         )
         # FIXME:qtwebengine what about subframes=True?
         self._inject_js('js', js_code, subframes=True)
@@ -1207,8 +1092,7 @@ class WebEngineTab(browsertab.AbstractTab):
                                        private=private)
         self.history = WebEngineHistory(tab=self)
         self.scroller = WebEngineScroller(tab=self, parent=self)
-        self.caret = WebEngineCaret(mode_manager=mode_manager,
-                                    tab=self, parent=self)
+        self.caret = WebEngineCaret(tab=self, parent=self)
         self.zoom = WebEngineZoom(tab=self, parent=self)
         self.search = WebEngineSearch(tab=self, parent=self)
         self.printing = WebEnginePrinting(tab=self, parent=self)

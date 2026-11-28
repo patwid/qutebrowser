@@ -4,7 +4,6 @@
 
 """The main statusbar widget."""
 
-import enum
 import dataclasses
 
 from qutebrowser.qt.core import pyqtSignal, pyqtProperty, pyqtSlot, Qt, QSize, QTimer
@@ -28,23 +27,13 @@ class ColorFlags:
         prompt: If we're currently in prompt-mode.
         insert: If we're currently in insert mode.
         command: If we're currently in command mode.
-        mode: The current caret mode (CaretMode.off/.on/.selection).
         private: Whether this window is in private browsing mode.
         passthrough: If we're currently in passthrough-mode.
     """
 
-    class CaretMode(enum.Enum):
-
-        """The current caret "sub-mode" we're in."""
-
-        off = enum.auto()
-        on = enum.auto()
-        selection = enum.auto()
-
     prompt: bool = False
     insert: bool = False
     command: bool = False
-    caret: CaretMode = CaretMode.off
     private: bool = False
     passthrough: bool = False
 
@@ -68,21 +57,12 @@ class ColorFlags:
         if self.private and self.command:
             strings.append('private-command')
 
-        if self.caret == self.CaretMode.on:
-            strings.append('caret')
-        elif self.caret == self.CaretMode.selection:
-            strings.append('caret-selection')
-        else:
-            assert self.caret == self.CaretMode.off
-
         return strings
 
 
 def _generate_stylesheet():
     flags = [
         ('private', 'statusbar.private'),
-        ('caret', 'statusbar.caret'),
-        ('caret-selection', 'statusbar.caret.selection'),
         ('prompt', 'prompts'),
         ('insert', 'statusbar.insert'),
         ('command', 'statusbar.command'),
@@ -320,7 +300,7 @@ class StatusBar(QWidget):
         return window.widget.currentWidget()
 
     def set_mode_active(self, mode, val):
-        """Setter for self.{insert,command,caret}_active.
+        """Setter for self.{insert,command}_active.
 
         Re-set the stylesheet after setting the value, so everything gets
         updated by Qt properly.
@@ -337,11 +317,6 @@ class StatusBar(QWidget):
         elif mode in [usertypes.KeyMode.prompt, usertypes.KeyMode.yesno]:
             log.statusbar.debug("Setting prompt flag to {}".format(val))
             self._color_flags.prompt = val
-        elif mode == usertypes.KeyMode.caret:
-            if not val:
-                # Turning on is handled in on_current_caret_selection_toggled
-                log.statusbar.debug("Setting caret mode off")
-                self._color_flags.caret = ColorFlags.CaretMode.off
         stylesheet.set_register(self, update=False)
 
     def _set_mode_text(self, mode):
@@ -389,7 +364,6 @@ class StatusBar(QWidget):
             self._set_mode_text(mode.name)
         if mode in [usertypes.KeyMode.insert,
                     usertypes.KeyMode.command,
-                    usertypes.KeyMode.caret,
                     usertypes.KeyMode.prompt,
                     usertypes.KeyMode.yesno,
                     usertypes.KeyMode.passthrough]:
@@ -410,7 +384,6 @@ class StatusBar(QWidget):
                 self.txt.setText('')
         if old_mode in [usertypes.KeyMode.insert,
                         usertypes.KeyMode.command,
-                        usertypes.KeyMode.caret,
                         usertypes.KeyMode.prompt,
                         usertypes.KeyMode.yesno,
                         usertypes.KeyMode.passthrough]:
@@ -425,22 +398,6 @@ class StatusBar(QWidget):
         self.backforward.on_tab_changed(tab)
         self.maybe_hide()
         assert tab.is_private == self._color_flags.private
-
-    @pyqtSlot(browsertab.SelectionState)
-    def on_caret_selection_toggled(self, selection_state):
-        """Update the statusbar when entering/leaving caret selection mode."""
-        log.statusbar.debug("Setting caret selection {}"
-                            .format(selection_state))
-        if selection_state is browsertab.SelectionState.normal:
-            self._set_mode_text("caret selection")
-            self._color_flags.caret = ColorFlags.CaretMode.selection
-        elif selection_state is browsertab.SelectionState.line:
-            self._set_mode_text("caret line selection")
-            self._color_flags.caret = ColorFlags.CaretMode.selection
-        else:
-            self._set_mode_text("caret")
-            self._color_flags.caret = ColorFlags.CaretMode.on
-        stylesheet.set_register(self, update=False)
 
     def resizeEvent(self, e):
         """Extend resizeEvent of QWidget to emit a resized signal afterwards.

@@ -121,7 +121,6 @@ class TestKeyConfig:
             'passthrough': {},
             'command': {},
             'prompt': {},
-            'caret': {},
             'register': {},
             'yesno': {}
         }
@@ -133,7 +132,6 @@ class TestKeyConfig:
             'passthrough': {},
             'command': {},
             'prompt': {},
-            'caret': {},
             'register': {},
             'yesno': {}
         }
@@ -225,7 +223,7 @@ class TestKeyConfig:
         command = key_config_stub.get_command(seq, 'normal')
         assert command == 'message-info foo'
 
-    @pytest.mark.parametrize('mode', ['normal', 'caret'])
+    @pytest.mark.parametrize('mode', ['normal', 'hint'])
     @pytest.mark.parametrize('command', [
         'message-info foo',
         'nop ;; wq',  # https://github.com/qutebrowser/qutebrowser/issues/3002
@@ -285,18 +283,18 @@ class TestKeyConfig:
         'b',  # custom bindings
         '<Ctrl-X>',
     ])
-    @pytest.mark.parametrize('mode', ['normal', 'caret', 'prompt'])
+    @pytest.mark.parametrize('mode', ['normal', 'hint', 'prompt'])
     def test_unbind(self, key_config_stub, config_stub, qtbot,
                     key, mode):
         default_bindings = {
             'normal': {'a': 'nop', '<ctrl+x>': 'nop'},
-            'caret': {'a': 'nop', '<ctrl+x>': 'nop'},
+            'hint': {'a': 'nop', '<ctrl+x>': 'nop'},
             # prompt: a mode which isn't in bindings.commands yet
             'prompt': {'a': 'nop', 'b': 'nop', '<ctrl+x>': 'nop'},
         }
         expected_default_bindings = {
             'normal': {keyseq('a'): 'nop', keyseq('<ctrl+x>'): 'nop'},
-            'caret': {keyseq('a'): 'nop', keyseq('<ctrl+x>'): 'nop'},
+            'hint': {keyseq('a'): 'nop', keyseq('<ctrl+x>'): 'nop'},
             # prompt: a mode which isn't in bindings.commands yet
             'prompt': {keyseq('a'): 'nop',
                        keyseq('b'): 'nop',
@@ -306,7 +304,7 @@ class TestKeyConfig:
         config_stub.val.bindings.default = default_bindings
         config_stub.val.bindings.commands = {
             'normal': {'b': 'nop'},
-            'caret': {'b': 'nop'},
+            'hint': {'b': 'nop'},
         }
         seq = keyseq(key)
 

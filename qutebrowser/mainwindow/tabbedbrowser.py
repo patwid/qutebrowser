@@ -191,7 +191,6 @@ class TabbedBrowser(QWidget):
     cur_load_status_changed = pyqtSignal(usertypes.LoadStatus)
     cur_search_match_changed = pyqtSignal(browsertab.SearchMatch)
     cur_fullscreen_requested = pyqtSignal(bool)
-    cur_caret_selection_toggled = pyqtSignal(browsertab.SelectionState)
     close_window = pyqtSignal()
     resized = pyqtSignal('QRect')
     current_tab_changed = pyqtSignal(browsertab.AbstractTab)
@@ -334,8 +333,6 @@ class TabbedBrowser(QWidget):
             self._filter.create(self.cur_load_status_changed, tab))
         tab.fullscreen_requested.connect(
             self._filter.create(self.cur_fullscreen_requested, tab))
-        tab.caret.selection_toggled.connect(
-            self._filter.create(self.cur_caret_selection_toggled, tab))
         tab.search.match_changed.connect(
             self._filter.create(self.cur_search_match_changed, tab))
         # misc
@@ -898,7 +895,7 @@ class TabbedBrowser(QWidget):
         log.modes.debug("Current tab changed, focusing {!r}".format(tab))
         tab.setFocus()
 
-        modes_to_leave = [usertypes.KeyMode.hint, usertypes.KeyMode.caret]
+        modes_to_leave = [usertypes.KeyMode.hint]
 
         mm_instance = modeman.instance(self._win_id)
         current_mode = mm_instance.mode

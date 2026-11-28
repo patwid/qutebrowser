@@ -532,9 +532,6 @@ class MainWindow(QWidget):
         self.tabbed_browser.cur_search_match_changed.connect(
             self.status.search_match.set_match)
 
-        self.tabbed_browser.cur_caret_selection_toggled.connect(
-            self.status.on_caret_selection_toggled)
-
         self.tabbed_browser.cur_fullscreen_requested.connect(
             self._on_fullscreen_requested)
         self.tabbed_browser.cur_fullscreen_requested.connect(

@@ -216,8 +216,7 @@ def webengine_tab(web_tab_setup, qtbot, redirect_webengine_data,
     tab.private_api.shutdown()
 
     # If we wait for the GC to clean things up, there's a segfault inside
-    # QtWebEngine sometimes (e.g. if we only run
-    # tests/unit/browser/test_caret.py).
+    # QtWebEngine sometimes.
     sip.delete(tab._widget)
 
 
