@@ -29,39 +29,15 @@ def update_ace():
     urllib.request.urlcleanup()
 
 
-def test_dicts():
-    """Test available dictionaries."""
-    from scripts import dictcli
-    from qutebrowser.config import configdata
-    configdata.init()
-    for lang in dictcli.available_languages():
-        print('Testing dictionary {}... '.format(lang.code), end='')
-        lang_url = urllib.parse.urljoin(dictcli.API_URL, lang.remote_filename)
-        request = urllib.request.Request(lang_url, method='HEAD')
-        with urllib.request.urlopen(request) as response:
-            if response.status == 200:
-                print('OK')
-            else:
-                print('ERROR: {}'.format(response.status))
-
-
-def run(*, ace=False, dicts=False):
+def run(*, ace=False):
     """Update components based on the given arguments."""
     if ace:
         update_ace()
-    if dicts:
-        test_dicts()
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--dicts', '-d',
-        help='Test whether all available dictionaries '
-        'can be reached at the remote repository.',
-        required=False, action='store_true')
-    args = parser.parse_args()
-    run(ace=True, dicts=args.dicts)
+    argparse.ArgumentParser().parse_args()
+    run(ace=True)
 
 
 if __name__ == '__main__':

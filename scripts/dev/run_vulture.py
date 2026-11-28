@@ -103,7 +103,6 @@ def whitelist_generator():  # noqa: C901
     yield 'qutebrowser.command.command.ArgInfo._validate_exclusive'
     yield 'scripts.get_coredumpctl_traces.Line.uid'
     yield 'scripts.get_coredumpctl_traces.Line.gid'
-    yield 'scripts.importer.import_moz_places.places.row_factory'
 
     # component hooks
     yield 'qutebrowser.components.braveadblock.on_lists_changed'

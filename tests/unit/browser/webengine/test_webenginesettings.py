@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import logging
 
 import pytest
 
@@ -11,7 +10,6 @@ QWebEngineProfile = QtWebEngineCore.QWebEngineProfile
 QWebEngineSettings = QtWebEngineCore.QWebEngineSettings
 
 from qutebrowser.browser.webengine import webenginesettings
-from qutebrowser.utils import usertypes
 from qutebrowser.config import configdata
 
 
@@ -110,42 +108,6 @@ def test_big_cache_size(config_stub, default_profile):
     config_stub.val.content.cache.size = 2 ** 63 - 1
     default_profile.setter.set_http_cache_size()
     assert default_profile.httpCacheMaximumSize() == 2 ** 31 - 1
-
-
-def test_non_existing_dict(config_stub, monkeypatch, message_mock, caplog,
-                           global_settings):
-    monkeypatch.setattr(webenginesettings.spell, 'local_filename',
-                        lambda _code: None)
-    config_stub.val.spellcheck.languages = ['af-ZA']
-
-    with caplog.at_level(logging.WARNING):
-        webenginesettings._update_settings('spellcheck.languages')
-
-    msg = message_mock.getmsg(usertypes.MessageLevel.warning)
-    expected = ("Language af-ZA is not installed - see scripts/dictcli.py in "
-                "qutebrowser's sources")
-    assert msg.text == expected
-
-
-def test_existing_dict(config_stub, monkeypatch, global_settings,
-                       default_profile, private_profile):
-    """With a language set, spell check should get enabled."""
-    monkeypatch.setattr(webenginesettings.spell, 'local_filename',
-                        lambda _code: 'en-US-8-0')
-    config_stub.val.spellcheck.languages = ['en-US']
-    webenginesettings._update_settings('spellcheck.languages')
-    for profile in [default_profile, private_profile]:
-        assert profile.isSpellCheckEnabled()
-        assert profile.spellCheckLanguages() == ['en-US-8-0']
-
-
-def test_spell_check_disabled(config_stub, monkeypatch, global_settings,
-                              default_profile, private_profile):
-    """With no language set, spell check should get disabled."""
-    config_stub.val.spellcheck.languages = []
-    webenginesettings._update_settings('spellcheck.languages')
-    for profile in [default_profile, private_profile]:
-        assert not profile.isSpellCheckEnabled()
 
 
 def test_parsed_user_agent(qapp):

@@ -39,8 +39,6 @@ def _get_files(
         check=True,
     )
     all_ignored = ignored or []
-    all_ignored.append(
-        pathlib.Path('tests', 'unit', 'scripts', 'importer_sample', 'chrome'))
 
     for filename in filenames.stdout.split('\0'):
         path = pathlib.Path(filename)

@@ -20,11 +20,11 @@ from qutebrowser.qt.widgets import QApplication
 from qutebrowser.qt.webenginecore import QWebEngineSettings, QWebEngineProfile
 
 from qutebrowser.browser import history
-from qutebrowser.browser.webengine import (spell, webenginequtescheme, cookies,
+from qutebrowser.browser.webengine import (webenginequtescheme, cookies,
                                            webenginedownloads, notification)
 from qutebrowser.config import config, websettings
 from qutebrowser.config.websettings import AttributeInfo as Attr
-from qutebrowser.utils import (standarddir, qtutils, message, log,
+from qutebrowser.utils import (standarddir, qtutils, log,
                                urlmatch, usertypes, objreg, version, utils)
 if TYPE_CHECKING:
     from qutebrowser.browser.webengine import interceptor
@@ -305,7 +305,6 @@ class ProfileSetter:
         self._name_to_method = {
             'content.cache.size': self.set_http_cache_size,
             'content.cookies.store': self.set_persistent_cookie_policy,
-            'spellcheck.languages': self.set_dictionary_language,
             'content.headers.user_agent': self.set_http_headers,
             'content.headers.accept_language': self.set_http_headers,
         }
@@ -324,7 +323,6 @@ class ProfileSetter:
         self.set_http_cache_size()
         self._set_hardcoded_settings()
         self.set_persistent_cookie_policy()
-        self.set_dictionary_language()
         self.disable_persistent_permissions_policy()
 
     def _set_hardcoded_settings(self):
@@ -391,29 +389,6 @@ class ProfileSetter:
         else:
             value = QWebEngineProfile.PersistentCookiesPolicy.NoPersistentCookies
         self._profile.setPersistentCookiesPolicy(value)
-
-    def set_dictionary_language(self):
-        """Load the given dictionaries."""
-        filenames = []
-        for code in config.val.spellcheck.languages or []:
-            local_filename = spell.local_filename(code)
-            if not local_filename:
-                if not self._profile.isOffTheRecord():
-                    message.warning("Language {} is not installed - see "
-                                    "scripts/dictcli.py in qutebrowser's "
-                                    "sources".format(code))
-                continue
-
-            filenames.append(os.path.splitext(local_filename)[0])
-
-        log.config.debug("Found dicts: {}".format(filenames))
-        self._profile.setSpellCheckLanguages(filenames)
-
-        should_enable = bool(filenames)
-        if self._profile.isSpellCheckEnabled() != should_enable:
-            # Only setting conditionally as a WORKAROUND for a bogus Qt error message:
-            # https://bugreports.qt.io/browse/QTBUG-131969
-            self._profile.setSpellCheckEnabled(should_enable)
 
     def disable_persistent_permissions_policy(self):
         """Disable webengine's permission persistence."""
@@ -650,7 +625,6 @@ def _init_default_settings():
 def init():
     """Initialize the global QWebSettings."""
     webenginequtescheme.init()
-    spell.init()
 
     # For some reason we need to keep a reference, otherwise the scheme handler
     # won't work...
