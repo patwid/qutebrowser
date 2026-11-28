@@ -67,16 +67,9 @@ def test_finished_signal(qtbot):
     assert signal_triggered
 
 
-def test_information(qtbot):
-    box = msgbox.information(parent=None, title='foo', text='bar')
-    qtbot.add_widget(box)
-    assert box.windowTitle() == 'foo'
-    assert box.text() == 'bar'
-    assert box.icon() == QMessageBox.Icon.Information
-
-
 def test_no_err_windows(fake_args, caplog):
     fake_args.no_err_windows = True
-    box = msgbox.information(parent=None, title='foo', text='bar')
+    box = msgbox.msgbox(parent=None, title='foo', text='bar',
+                        icon=QMessageBox.Icon.Information)
     box.exec()  # should do nothing
     assert caplog.messages == ['foo\n\nbar']

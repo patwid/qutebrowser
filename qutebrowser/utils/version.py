@@ -14,7 +14,6 @@ import pathlib
 import configparser
 import enum
 import datetime
-import getpass
 import functools
 import dataclasses
 import importlib.metadata
@@ -29,9 +28,8 @@ from qutebrowser.qt.widgets import QApplication
 
 
 import qutebrowser
-from qutebrowser.utils import (log, utils, standarddir, message, resources,
-                               qtutils)
-from qutebrowser.misc import objects, earlyinit, sql, httpclient, pastebin
+from qutebrowser.utils import log, utils, standarddir, resources, qtutils
+from qutebrowser.misc import objects, earlyinit, sql
 from qutebrowser.config import config
 
 _LOGO = r'''
@@ -61,9 +59,6 @@ class DistributionInfo:
     id: str | None
     parsed: 'Distribution'
     pretty: str
-
-
-pastebin_url: str | None = None
 
 
 class Distribution(enum.Enum):
@@ -729,43 +724,3 @@ def opengl_info() -> OpenGLInfo | None:  # pragma: no cover
         ctx.doneCurrent()
         if old_context and old_surface:
             old_context.makeCurrent(old_surface)
-
-
-def pastebin_version(pbclient: pastebin.PastebinClient | None = None) -> None:
-    """Pastebin the version and log the url to messages."""
-    def _yank_url(url: str) -> None:
-        utils.set_clipboard(url)
-        message.info("Version url {} yanked to clipboard.".format(url))
-
-    def _on_paste_version_success(url: str) -> None:
-        assert pbclient is not None
-        global pastebin_url
-        url = url.strip()
-        _yank_url(url)
-        pbclient.deleteLater()
-        pastebin_url = url
-
-    def _on_paste_version_err(text: str) -> None:
-        assert pbclient is not None
-        message.error("Failed to pastebin version"
-                      " info: {}".format(text))
-        pbclient.deleteLater()
-
-    if pastebin_url:
-        _yank_url(pastebin_url)
-        return
-
-    app = QApplication.instance()
-    http_client = httpclient.HTTPClient()
-
-    misc_api = pastebin.PastebinClient.MISC_API_URL
-    pbclient = pbclient or pastebin.PastebinClient(http_client, parent=app,
-                                                   api_url=misc_api)
-
-    pbclient.success.connect(_on_paste_version_success)
-    pbclient.error.connect(_on_paste_version_err)
-
-    pbclient.paste(getpass.getuser(),
-                   "qute version info {}".format(qutebrowser.__version__),
-                   version_info(),
-                   private=True)

@@ -326,8 +326,7 @@ wildly between various Qt versions.
 
 My issue is not listed.::
     If you experience any segfaults or crashes, you can report the issue in
-    https://github.com/qutebrowser/qutebrowser/issues[the issue tracker] or
-    using the `:report` command.
+    https://github.com/qutebrowser/qutebrowser/issues[the issue tracker].
     If you are reporting a segfault, make sure you read the
     link:stacktrace{outfilesuffix}[guide] on how to report them with all needed
     information.
@@ -451,22 +450,6 @@ are removed.
 Note that some services related to qutebrowser are stored on third-party
 services such as GitHub. By using their websites, you're subject to their
 privacy policies.
-
-=== Crash reports
-
-When qutebrowser crashes or you use the `:report` command, you have the
-possibility to send a crash report. If you decide to do so, your crash report
-is stored on qutebrowser's server, where qutebrowser's maintainer (Freya Bruhin / The
-Compiler) can access it. Before February 2021, other core qutebrowser developers (a
-maximum of four people total) could access the reports as well (access was restricted
-based on the sensitive nature of those reports, not because of any known issues with
-those individuals).
-
-If you select the option to include a debug log with your report, it's possible
-that sensitive information is contained in your report. You can show and edit
-the log in the crash report window to redact any such information as you see
-fit. Additionally, qutebrowser tries to avoid logging information such as
-passwords entirely (by not logging any input going to websites).
 
 Currently, crash reports are stored indefinitely for technical reasons. With a
 https://github.com/The-Compiler/crashbin/[new tool designed for crash reports],

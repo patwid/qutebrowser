@@ -87,7 +87,7 @@ def run(args):
         sys.exit(usertypes.Exit.ok)
 
     quitter.init(args)
-    crashsignal.init(q_app=app, args=args, quitter=quitter.instance)
+    crashsignal.init(q_app=app, quitter=quitter.instance)
 
     try:
         server = ipc.send_or_listen(args)
@@ -156,7 +156,6 @@ def init(*, args: argparse.Namespace) -> None:
             scheme, open_desktopservices_url)
 
     log.init.debug("Init done!")
-    crashsignal.crash_handler.raise_crashdlg()
 
 
 def _init_icon():
@@ -456,9 +455,6 @@ def _init_modules(*, args):
     log.init.debug("Initializing websettings...")
     websettings.init(args)
     quitter.instance.shutting_down.connect(websettings.shutdown)
-
-    if not args.no_err_windows:
-        crashsignal.crash_handler.display_faulthandler()
 
     log.init.debug("Initializing quickmarks...")
     quickmark_manager = urlmarks.QuickmarkManager(objects.qapp)

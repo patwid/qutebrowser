@@ -389,9 +389,6 @@ def qute_help(url: QUrl) -> _HandlerRet:
             properly. If you are running qutebrowser from the git repository,
             please (re)run scripts/asciidoc2html.py and reload this page.
 
-            If you're running a released version this is a bug, please use
-            :report to report it.
-
             Falling back to the plaintext version.
 
             ---------------------------------------------------------------
@@ -474,13 +471,6 @@ def qute_configdiff(url: QUrl) -> _HandlerRet:
     include_hidden = QUrlQuery(url).queryItemValue('include_hidden') == 'true'
     dump = config.instance.dump_userconfig(include_hidden=include_hidden)
     return 'text/plain', dump.encode('utf-8')
-
-
-@add_handler('pastebin-version')
-def qute_pastebin_version(_url: QUrl) -> _HandlerRet:
-    """Handler that pastebins the version string."""
-    version.pastebin_version()
-    return 'text/plain', b'Paste called.'
 
 
 @add_handler('resource')

@@ -61,7 +61,6 @@ useful hints.
 If you found a bug or have a feature request, you can report it in several
 ways:
 
-* Use the built-in `:report` command or the automatic crash dialog.
 * Open an issue in the Github issue tracker.
 * Write a mail to the
 https://listi.jpberlin.de/mailman/listinfo/qutebrowser[mailinglist] at

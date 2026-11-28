@@ -4,14 +4,6 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 {% extends "base.html" %}
 
-{% block script %}
-function paste_version() {
-  const xhr = new XMLHttpRequest();
-  xhr.open("GET", "qute://pastebin-version");
-  xhr.send();
-}
-{% endblock %}
-
 {% block style %}
 html { margin-left: 10px; }
 {% endblock %}
@@ -19,7 +11,6 @@ html { margin-left: 10px; }
 {% block content %}
 {{ super() }}
 <h1>Version info</h1>
-<button onclick="paste_version()">Yank pastebin URL for version info</button>
 <pre>{{ version }}</pre>
 
 <h1>Copyright info</h1>

@@ -26,8 +26,8 @@ from qutebrowser.qt.webenginecore import QWebEngineProfile
 
 import qutebrowser
 from qutebrowser.config import config
-from qutebrowser.utils import version, usertypes, utils, standarddir
-from qutebrowser.misc import pastebin, objects
+from qutebrowser.utils import version, utils, standarddir
+from qutebrowser.misc import objects
 
 try:
     from qutebrowser.browser.webengine import webenginesettings
@@ -1277,60 +1277,6 @@ class TestWebEngineExtensions:
             FakeExtensionProfile(FakeExtensionManager(extensions)),
         )
         assert version._webengine_extensions() == expected
-
-
-@pytest.fixture
-def pbclient(stubs):
-    http_stub = stubs.HTTPPostStub()
-    client = pastebin.PastebinClient(http_stub)
-    yield client
-    version.pastebin_url = None
-
-
-def test_pastebin_version(pbclient, message_mock, monkeypatch, qtbot):
-    """Test version.pastebin_version() sets the url."""
-    monkeypatch.setattr(version, 'version_info', lambda: 'dummy')
-    monkeypatch.setattr(utils, 'log_clipboard', True)
-
-    version.pastebin_version(pbclient)
-    pbclient.success.emit("https://www.example.com/\n")
-
-    msg = message_mock.getmsg(usertypes.MessageLevel.info)
-    expected_text = "Version url https://www.example.com/ yanked to clipboard."
-    assert msg.text == expected_text
-    assert version.pastebin_url == "https://www.example.com/"
-
-
-def test_pastebin_version_twice(pbclient, monkeypatch):
-    """Test whether calling pastebin_version twice sends no data."""
-    monkeypatch.setattr(version, 'version_info', lambda: 'dummy')
-
-    version.pastebin_version(pbclient)
-    pbclient.success.emit("https://www.example.com/\n")
-
-    pbclient.url = None
-    pbclient.data = None
-    version.pastebin_url = "https://www.example.org/"
-
-    version.pastebin_version(pbclient)
-    assert pbclient.url is None
-    assert pbclient.data is None
-    assert version.pastebin_url == "https://www.example.org/"
-
-
-def test_pastebin_version_error(pbclient, caplog, message_mock, monkeypatch):
-    """Test version.pastebin_version() with errors."""
-    monkeypatch.setattr(version, 'version_info', lambda: 'dummy')
-
-    version.pastebin_url = None
-    with caplog.at_level(logging.ERROR):
-        version.pastebin_version(pbclient)
-        pbclient._client.error.emit("test")
-
-    assert version.pastebin_url is None
-
-    msg = message_mock.getmsg(usertypes.MessageLevel.error)
-    assert msg.text == "Failed to pastebin version info: test"
 
 
 def test_uptime(monkeypatch, qapp):

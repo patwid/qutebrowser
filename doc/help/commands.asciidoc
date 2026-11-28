@@ -97,7 +97,6 @@ possible to run or bind multiple commands by separating them with `;;`.
 |<<quickmarks-reload,quickmarks-reload>>|Reload quickmarks from disk.
 |<<quit,quit>>|Quit qutebrowser.
 |<<reload,reload>>|Reload the current/[count]th tab.
-|<<report,report>>|Report a bug in qutebrowser.
 |<<restart,restart>>|Restart qutebrowser and reopen the pages of all non-private windows.
 |<<save,save>>|Save configs and state.
 |<<screenshot,screenshot>>|Take a screenshot of the currently shown part of the page.
@@ -1053,17 +1052,6 @@ Reload the current/[count]th tab.
 ==== count
 The tab index to reload.
 
-[[report]]
-=== report
-Syntax: +:report ['info'] ['contact']+
-
-Report a bug in qutebrowser.
-
-==== positional arguments
-* +'info'+: Information about the bug report. If given, no report dialog shows up.
-
-* +'contact'+: Contact information for the report.
-
 [[restart]]
 === restart
 Restart qutebrowser and reopen the pages of all non-private windows.
@@ -1461,12 +1449,7 @@ How deep in the undo stack to find the tab or tabs to re-open.
 
 [[version]]
 === version
-Syntax: +:version [*--paste*]+
-
 Show version information.
-
-==== optional arguments
-* +*-p*+, +*--paste*+: Paste to pastebin.
 
 [[view-source]]
 === view-source

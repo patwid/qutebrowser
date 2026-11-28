@@ -21,7 +21,6 @@ from qutebrowser.commands import runners
 from qutebrowser.api import cmdutils
 from qutebrowser.misc import (
     consolewidget, debugcachestats, objects, miscwidgets)
-from qutebrowser.utils.version import pastebin_version
 from qutebrowser.qt import sip
 
 
@@ -247,18 +246,11 @@ def window_only(current_win_id: int) -> None:
 
 @cmdutils.register()
 @cmdutils.argument('win_id', value=cmdutils.Value.win_id)
-def version(win_id: int, paste: bool = False) -> None:
-    """Show version information.
-
-    Args:
-        paste: Paste to pastebin.
-    """
+def version(win_id: int) -> None:
+    """Show version information."""
     tabbed_browser = objreg.get('tabbed-browser', scope='window',
                                 window=win_id)
     tabbed_browser.load_url(QUrl('qute://version/'), newtab=True)
-
-    if paste:
-        pastebin_version()
 
 
 _keytester_widget: miscwidgets.KeyTesterWidget | None = None

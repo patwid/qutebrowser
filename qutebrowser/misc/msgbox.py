@@ -54,16 +54,3 @@ def msgbox(parent, title, text, *, icon, buttons=QMessageBox.StandardButton.Ok,
     box.setText(text)
     box.show()
     return box
-
-
-def information(*args, **kwargs):
-    """Display an information box.
-
-    Args:
-        *args: Passed to msgbox.
-        **kwargs: Passed to msgbox.
-
-    Return:
-        A new QMessageBox.
-    """
-    return msgbox(*args, icon=QMessageBox.Icon.Information, **kwargs)

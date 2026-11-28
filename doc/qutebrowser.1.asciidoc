@@ -119,9 +119,6 @@ defaults.
 Bugs are tracked in the Github issue tracker at
 https://github.com/qutebrowser/qutebrowser/issues.
 
-If you found a bug, use the built-in ':report' command to create a bug report
-with all information needed.
-
 If you prefer, you can also write to the
 https://listi.jpberlin.de/mailman/listinfo/qutebrowser[mailinglist] at
 mailto:qutebrowser@lists.qutebrowser.org[] instead.
