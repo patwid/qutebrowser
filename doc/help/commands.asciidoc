@@ -34,11 +34,6 @@ possible to run or bind multiple commands by separating them with `;;`.
 |<<adblock-update,adblock-update>>|Update the block lists of the Brave ad blocker.
 |<<back,back>>|Go back in the history of the current tab.
 |<<bind,bind>>|Bind a key to a command.
-|<<bookmark-add,bookmark-add>>|Save the current page as a bookmark, or a specific url.
-|<<bookmark-del,bookmark-del>>|Delete a bookmark.
-|<<bookmark-list,bookmark-list>>|Show all bookmarks/quickmarks.
-|<<bookmark-load,bookmark-load>>|Load a bookmark.
-|<<bookmarks-reload,bookmarks-reload>>|Reload bookmarks from disk.
 |<<clear-keychain,clear-keychain>>|Clear the currently entered key chain.
 |<<clear-messages,clear-messages>>|Clear all message notifications.
 |<<click-element,click-element>>|Click the element matching the given filter.
@@ -97,6 +92,7 @@ possible to run or bind multiple commands by separating them with `;;`.
 |<<process,process>>|Manage processes spawned by qutebrowser.
 |<<quickmark-add,quickmark-add>>|Add a new quickmark.
 |<<quickmark-del,quickmark-del>>|Delete a quickmark.
+|<<quickmark-list,quickmark-list>>|Show all quickmarks.
 |<<quickmark-load,quickmark-load>>|Load a quickmark.
 |<<quickmark-save,quickmark-save>>|Save the current page as a quickmark.
 |<<quickmarks-reload,quickmarks-reload>>|Reload quickmarks from disk.
@@ -185,73 +181,6 @@ If no command is given, show the current binding for the given key. Using :bind 
 * This command does not split arguments after the last argument and handles quotes literally.
 * With this command, +;;+ is interpreted literally instead of splitting off a second command.
 * This command does not replace variables like +\{url\}+.
-
-[[bookmark-add]]
-=== bookmark-add
-Syntax: +:bookmark-add [*--toggle*] ['url'] ['title']+
-
-Save the current page as a bookmark, or a specific url.
-
-If no url and title are provided, then save the current page as a bookmark. If a url and title have been provided, then save the given url as a bookmark with the provided title. You can view all saved bookmarks on the link:qute://bookmarks[bookmarks page].
-
-==== positional arguments
-* +'url'+: url to save as a bookmark. If not given, use url of current page.
-
-* +'title'+: title of the new bookmark.
-
-==== optional arguments
-* +*-t*+, +*--toggle*+: remove the bookmark instead of raising an error if it already exists.
-
-
-[[bookmark-del]]
-=== bookmark-del
-Syntax: +:bookmark-del [*--all*] ['url']+
-
-Delete a bookmark.
-
-==== positional arguments
-* +'url'+: The url of the bookmark to delete. If not given, use the current page's url.
-
-
-==== optional arguments
-* +*-a*+, +*--all*+: If given, delete all bookmarks.
-
-==== note
-* This command does not split arguments after the last argument and handles quotes literally.
-
-[[bookmark-list]]
-=== bookmark-list
-Syntax: +:bookmark-list [*--jump*] [*--tab*] [*--bg*] [*--window*]+
-
-Show all bookmarks/quickmarks.
-
-==== optional arguments
-* +*-j*+, +*--jump*+: Jump to the "bookmarks" header.
-* +*-t*+, +*--tab*+: Open in a new tab.
-* +*-b*+, +*--bg*+: Open in a background tab.
-* +*-w*+, +*--window*+: Open in a new window.
-
-[[bookmark-load]]
-=== bookmark-load
-Syntax: +:bookmark-load [*--tab*] [*--bg*] [*--window*] [*--delete*] 'url'+
-
-Load a bookmark.
-
-==== positional arguments
-* +'url'+: The url of the bookmark to load.
-
-==== optional arguments
-* +*-t*+, +*--tab*+: Load the bookmark in a new tab.
-* +*-b*+, +*--bg*+: Load the bookmark in a new background tab.
-* +*-w*+, +*--window*+: Load the bookmark in a new window.
-* +*-d*+, +*--delete*+: Whether to delete the bookmark afterwards.
-
-==== note
-* This command does not split arguments after the last argument and handles quotes literally.
-
-[[bookmarks-reload]]
-=== bookmarks-reload
-Reload bookmarks from disk.
 
 [[clear-keychain]]
 === clear-keychain
@@ -1064,7 +993,7 @@ Syntax: +:quickmark-add 'url' 'name'+
 
 Add a new quickmark.
 
-You can view all saved quickmarks on the link:qute://bookmarks[bookmarks page].
+You can view all saved quickmarks on the link:qute://quickmarks[quickmarks page].
 
 ==== positional arguments
 * +'url'+: The url to add as quickmark.
@@ -1086,6 +1015,17 @@ Delete a quickmark.
 
 ==== note
 * This command does not split arguments after the last argument and handles quotes literally.
+
+[[quickmark-list]]
+=== quickmark-list
+Syntax: +:quickmark-list [*--tab*] [*--bg*] [*--window*]+
+
+Show all quickmarks.
+
+==== optional arguments
+* +*-t*+, +*--tab*+: Open in a new tab.
+* +*-b*+, +*--bg*+: Open in a background tab.
+* +*-w*+, +*--window*+: Open in a new window.
 
 [[quickmark-load]]
 === quickmark-load

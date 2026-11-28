@@ -329,7 +329,7 @@ class StatusBarCommandStub(QLineEdit):
 
 class UrlMarkManagerStub(QObject):
 
-    """Stub for the quickmark-manager or bookmark-manager object."""
+    """Stub for the quickmark-manager object."""
 
     added = pyqtSignal(str, str)
     removed = pyqtSignal(str)
@@ -341,11 +341,6 @@ class UrlMarkManagerStub(QObject):
     def delete(self, key):
         del self.marks[key]
         self.removed.emit(key)
-
-
-class BookmarkManagerStub(UrlMarkManagerStub):
-
-    """Stub for the bookmark-manager object."""
 
 
 class QuickmarkManagerStub(UrlMarkManagerStub):

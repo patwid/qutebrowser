@@ -1242,117 +1242,15 @@ class CommandDispatcher:
                                         .format(name))
 
     @cmdutils.register(instance='command-dispatcher', scope='window')
-    def bookmark_add(self, url=None, title=None, toggle=False):
-        """Save the current page as a bookmark, or a specific url.
-
-        If no url and title are provided, then save the current page as a
-        bookmark.
-        If a url and title have been provided, then save the given url as
-        a bookmark with the provided title.
-
-        You can view all saved bookmarks on the
-        link:qute://bookmarks[bookmarks page].
-
-        Args:
-            url: url to save as a bookmark. If not given, use url of current
-                 page.
-            title: title of the new bookmark.
-            toggle: remove the bookmark instead of raising an error if it
-                    already exists.
-        """
-        if url and not title:
-            raise cmdutils.CommandError('Title must be provided if url has '
-                                        'been provided')
-        bookmark_manager = objreg.get('bookmark-manager')
-        if not url:
-            url = self._current_url()
-        else:
-            try:
-                url = urlutils.fuzzy_url(url)
-            except urlutils.InvalidUrlError as e:
-                raise cmdutils.CommandError(e)
-        if not title:
-            title = self._current_title()
-        try:
-            was_added = bookmark_manager.add(url, title, toggle=toggle)
-        except urlmarks.Error as e:
-            raise cmdutils.CommandError(str(e))
-        msg = "Bookmarked {}" if was_added else "Removed bookmark {}"
-        message.info(msg.format(url.toDisplayString()))
-
-    @cmdutils.register(instance='command-dispatcher', scope='window',
-                       maxsplit=0)
-    @cmdutils.argument('url', completion=miscmodels.bookmark)
-    def bookmark_load(self, url, tab=False, bg=False, window=False,
-                      delete=False):
-        """Load a bookmark.
-
-        Args:
-            url: The url of the bookmark to load.
-            tab: Load the bookmark in a new tab.
-            bg: Load the bookmark in a new background tab.
-            window: Load the bookmark in a new window.
-            delete: Whether to delete the bookmark afterwards.
-        """
-        try:
-            qurl = urlutils.fuzzy_url(url)
-        except urlutils.InvalidUrlError as e:
-            raise cmdutils.CommandError(e)
-        self._open(qurl, tab, bg, window)
-        if delete:
-            self.bookmark_del(url)
-
-    @cmdutils.register(instance='command-dispatcher', scope='window',
-                       maxsplit=0)
-    @cmdutils.argument('url', completion=miscmodels.bookmark)
-    def bookmark_del(self, url=None, all_=False):
-        """Delete a bookmark.
-
-        Args:
-            url: The url of the bookmark to delete. If not given, use the
-                 current page's url.
-            all_: If given, delete all bookmarks.
-        """
-        bookmark_manager = objreg.get('bookmark-manager')
-        if all_:
-            if url is not None:
-                raise cmdutils.CommandError("Cannot specify url and --all")
-            bookmark_manager.clear()
-            message.info("Bookmarks cleared.")
-            return
-
-        if url is None:
-            url = self._current_url().toString(QUrl.UrlFormattingOption.RemovePassword |
-                                               QUrl.ComponentFormattingOption.FullyEncoded)
-
-        try:
-            bookmark_manager.delete(url)
-        except KeyError:
-            raise cmdutils.CommandError("Bookmark '{}' not found!".format(url))
-        message.info("Removed bookmark {}".format(url))
-
-    @cmdutils.register(instance='command-dispatcher', scope='window')
-    def bookmark_list(self, jump=False, tab=True, bg=False, window=False):
-        """Show all bookmarks/quickmarks.
+    def quickmark_list(self, tab=True, bg=False, window=False):
+        """Show all quickmarks.
 
         Args:
             tab: Open in a new tab.
             bg: Open in a background tab.
             window: Open in a new window.
-            jump: Jump to the "bookmarks" header.
         """
-        url = QUrl('qute://bookmarks/')
-        if jump:
-            url.setFragment('bookmarks')
-        self._open(url, tab, bg, window)
-
-    @cmdutils.register(instance='command-dispatcher', scope='window')
-    def bookmarks_reload(self):
-        """Reload bookmarks from disk."""
-        bookmark_manager = objreg.get('bookmark-manager')
-        bookmark_manager.reload()
-
-        message.info("Bookmarks reloaded.")
+        self._open(QUrl('qute://quickmarks/'), tab, bg, window)
 
     @cmdutils.register(instance='command-dispatcher', scope='window')
     def download(self, url=None, *, mhtml_=False, dest=None):

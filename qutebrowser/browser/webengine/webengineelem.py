@@ -212,7 +212,7 @@ class WebEngineElement(webelem.AbstractWebElement):
             return False
 
         # QtWebEngine needs a user interaction to allow navigations from qute:// to
-        # outside qute:// (like e.g. on qute://bookmarks), as well as from file:// to
+        # outside qute:// (like e.g. on qute://quickmarks), as well as from file:// to
         # outside of file:// (e.g. users having a local bookmarks.html).
         for scheme in ["qute", "file"]:
             if baseurl.scheme() == scheme and url.scheme() != scheme:

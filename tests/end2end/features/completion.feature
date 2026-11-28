@@ -40,10 +40,6 @@ Feature: Using completion
         When I run :cmd-set-text -s :quickmark-load
         Then the completion model should be quickmark
 
-    Scenario: Using bookmark completion
-        When I run :cmd-set-text -s :bookmark-load
-        Then the completion model should be bookmark
-
     Scenario: Using bind completion
         When I run :cmd-set-text -s :bind X
         Then the completion model should be bind

@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""Managers for bookmarks and quickmarks.
+"""Manager for quickmarks.
 
 Note we violate our general QUrl rule by storing url strings in the marks
 OrderedDict. This is because we read them from a file at start and write them
@@ -47,10 +47,10 @@ class AlreadyExistsError(Error):
 
 class UrlMarkManager(QObject):
 
-    """Base class for BookmarkManager and QuickmarkManager.
+    """Base class for QuickmarkManager.
 
     Attributes:
-        marks: An OrderedDict of all quickmarks/bookmarks.
+        marks: An OrderedDict of all quickmarks.
         _lineparser: The LineParser used for the marks
 
     Signals:
@@ -86,10 +86,10 @@ class UrlMarkManager(QObject):
         self._lineparser.save()
 
     def delete(self, key):
-        """Delete a quickmark/bookmark.
+        """Delete a quickmark.
 
         Args:
-            key: The key to delete (name for quickmarks, URL for bookmarks.)
+            key: The name of the quickmark to delete.
         """
         del self.marks[key]
         self.changed.emit()
@@ -100,7 +100,7 @@ class UrlMarkManager(QObject):
         self.changed.emit()
 
     def reload(self):
-        """Reload quickmarks/bookmarks from disk."""
+        """Reload quickmarks from disk."""
         self.marks.clear()
 
         self._init_lineparser()
@@ -161,7 +161,7 @@ class QuickmarkManager(UrlMarkManager):
         """Add a new quickmark.
 
         You can view all saved quickmarks on the
-        link:qute://bookmarks[bookmarks page].
+        link:qute://quickmarks[quickmarks page].
 
         Args:
             url: The url to add as quickmark.
@@ -218,65 +218,3 @@ class QuickmarkManager(UrlMarkManager):
             raise InvalidUrlError(
                 "Invalid URL for quickmark {}: {}".format(name, str(e)))
         return url
-
-
-class BookmarkManager(UrlMarkManager):
-
-    """Manager for bookmarks.
-
-    The primary key for bookmarks is their *url*, this means:
-
-        - self.marks maps URLs to titles.
-        - changed gets emitted with the URL as first argument and the title as
-          second argument.
-    """
-
-    def _init_lineparser(self):
-        bookmarks_directory = os.path.join(standarddir.config(), 'bookmarks')
-        os.makedirs(bookmarks_directory, exist_ok=True)
-
-        bookmarks_subdir = os.path.join('bookmarks', 'urls')
-        self._lineparser = lineparser.LineParser(
-            standarddir.config(), bookmarks_subdir, parent=self)
-
-    def _init_savemanager(self, save_manager):
-        filename = os.path.join(standarddir.config(), 'bookmarks', 'urls')
-        save_manager.add_saveable('bookmark-manager', self.save, self.changed,
-                                  filename=filename)
-
-    def _parse_line(self, line):
-        parts = line.split(maxsplit=1)
-        if len(parts) == 2:
-            self.marks[parts[0]] = parts[1]
-        elif len(parts) == 1:
-            self.marks[parts[0]] = ''
-
-    def add(self, url, title, *, toggle=False):
-        """Add a new bookmark.
-
-        Args:
-            url: The url to add as bookmark.
-            title: The title for the new bookmark.
-            toggle: remove the bookmark instead of raising an error if it
-                    already exists.
-
-        Return:
-            True if the bookmark was added, and False if it was
-            removed (only possible if toggle is True).
-        """
-        if not url.isValid():
-            errstr = urlutils.get_errstring(url)
-            raise InvalidUrlError(errstr)
-
-        urlstr = url.toString(QUrl.UrlFormattingOption.RemovePassword | QUrl.ComponentFormattingOption.FullyEncoded)
-
-        if urlstr in self.marks:
-            if toggle:
-                self.delete(urlstr)
-                return False
-            else:
-                raise AlreadyExistsError("Bookmark already exists!")
-        else:
-            self.marks[urlstr] = title
-            self.changed.emit()
-            return True

@@ -327,15 +327,6 @@ def quickmark_manager_stub(stubs):
 
 
 @pytest.fixture
-def bookmark_manager_stub(stubs):
-    """Fixture which provides a fake bookmark manager object."""
-    stub = stubs.BookmarkManagerStub()
-    objreg.register('bookmark-manager', stub)
-    yield stub
-    objreg.delete('bookmark-manager')
-
-
-@pytest.fixture
 def tabbed_browser_stubs(qapp, stubs, win_registry):
     """Fixture providing a fake tabbed-browser object on win_id 0 and 1."""
     win_registry.add_window(1)

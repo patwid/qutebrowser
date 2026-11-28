@@ -55,24 +55,6 @@ def quickmark(*, info=None):
     return model
 
 
-def bookmark(*, info=None):
-    """A CompletionModel filled with all bookmarks."""
-    def delete(data: Sequence[str]) -> None:
-        """Delete a bookmark from the completion menu."""
-        urlstr = data[0]
-        log.completion.debug('Deleting bookmark {}'.format(urlstr))
-        bookmark_manager = objreg.get('bookmark-manager')
-        bookmark_manager.delete(urlstr)
-
-    utils.unused(info)
-    model = completionmodel.CompletionModel(column_widths=(30, 70, 0))
-    marks = objreg.get('bookmark-manager').marks.items()
-    model.add_category(listcategory.ListCategory('Bookmarks', marks,
-                                                 delete_func=delete,
-                                                 sort=False))
-    return model
-
-
 def _tabs(*, win_id_filter=lambda _win_id: True, add_win_id=True, cur_win_id=None):
     """Helper to get the completion model for tabs/other_tabs.
 

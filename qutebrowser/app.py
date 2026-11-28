@@ -464,10 +464,6 @@ def _init_modules(*, args):
     quickmark_manager = urlmarks.QuickmarkManager(objects.qapp)
     objreg.register('quickmark-manager', quickmark_manager)
 
-    log.init.debug("Initializing bookmarks...")
-    bookmark_manager = urlmarks.BookmarkManager(objects.qapp)
-    objreg.register('bookmark-manager', bookmark_manager)
-
     log.init.debug("Initializing Greasemonkey...")
     greasemonkey.init()
 

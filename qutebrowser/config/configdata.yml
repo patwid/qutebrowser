@@ -1205,12 +1205,11 @@ downloads.location.suggestion:
 completion.open_categories:
   type:
     name: FlagList
-    valid_values: [searchengines, quickmarks, bookmarks, history, filesystem]
+    valid_values: [searchengines, quickmarks, history, filesystem]
     none_ok: true
   default:
     - searchengines
     - quickmarks
-    - bookmarks
     - history
     - filesystem
   desc: Which categories to show (in which order) in the :open completion.
@@ -3316,10 +3315,6 @@ bindings.default:
       b: cmd-set-text -s :quickmark-load
       B: cmd-set-text -s :quickmark-load -t
       wb: cmd-set-text -s :quickmark-load -w
-      M: bookmark-add
-      gb: cmd-set-text -s :bookmark-load
-      gB: cmd-set-text -s :bookmark-load -t
-      wB: cmd-set-text -s :bookmark-load -w
       sf: save
       ss: cmd-set-text -s :set
       sl: cmd-set-text -s :set -t
@@ -3374,8 +3369,7 @@ bindings.default:
       <Ctrl-s>: stop
       <Ctrl-Alt-p>: print
       Ss: set
-      Sb: bookmark-list --jump
-      Sq: bookmark-list
+      Sq: quickmark-list
       Sh: history
       <Return>: selection-follow
       <Ctrl-Return>: selection-follow -t

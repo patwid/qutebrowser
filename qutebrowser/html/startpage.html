@@ -131,16 +131,6 @@ a:link, a:visited {
     </div>
   </div>
   <div class="bookmarks">
-    {% if bookmarks %}
-    <div class="bookmark-container">
-      <h4 class="bookmark-container-title">Bookmarks</h4>
-      {% for bookmark in bookmarks %}
-      <div class="link-container">
-        <a href="{{ bookmark[0] }}"> {{ bookmark[1] }} </a>
-      </div>
-      {% endfor %}
-    </div>
-    {% endif %}
     {% if quickmarks %}
     <div class="bookmark-container">
       <h4 class="bookmark-container-title">Quickmarks</h4>

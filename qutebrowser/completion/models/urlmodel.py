@@ -24,13 +24,6 @@ def _delete_history(data):
     history.web_history.delete_url(urlstr)
 
 
-def _delete_bookmark(data: Sequence[str]) -> None:
-    urlstr = data[_URLCOL]
-    log.completion.debug('Deleting bookmark {}'.format(urlstr))
-    bookmark_manager = objreg.get('bookmark-manager')
-    bookmark_manager.delete(urlstr)
-
-
 def _delete_quickmark(data: Sequence[str]) -> None:
     name = data[_TEXTCOL]
     quickmark_manager = objreg.get('quickmark-manager')
@@ -42,7 +35,6 @@ def url(*, info):
     """A model which combines various URLs.
 
     This combines:
-    - bookmarks
     - quickmarks
     - search engines
     - web history URLs
@@ -53,7 +45,6 @@ def url(*, info):
 
     quickmarks = [(url, name) for (name, url)
                   in objreg.get('quickmark-manager').marks.items()]
-    bookmarks = objreg.get('bookmark-manager').marks.items()
     searchengines = [(k, v) for k, v
                      in sorted(config.val.url.searchengines.items())
                      if k != 'DEFAULT']
@@ -68,9 +59,6 @@ def url(*, info):
         models['quickmarks'] = listcategory.ListCategory(
             'Quickmarks', quickmarks, delete_func=_delete_quickmark,
             sort=False)
-    if bookmarks and 'bookmarks' in categories:
-        models['bookmarks'] = listcategory.ListCategory(
-            'Bookmarks', bookmarks, delete_func=_delete_bookmark, sort=False)
 
     history_disabled = info.config.get('completion.web_history.max_items') == 0
     if not history_disabled and 'history' in categories:

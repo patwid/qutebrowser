@@ -18,23 +18,16 @@ def clear_marks(quteproc):
     yield
     quteproc.send_cmd(':quickmark-del --all')
     quteproc.wait_for(message="Quickmarks cleared.")
-    quteproc.send_cmd(':bookmark-del --all')
-    quteproc.wait_for(message="Bookmarks cleared.")
 
 
-def _check_marks(quteproc, quickmarks, expected, contains):
-    """Make sure the given line does (not) exist in the bookmarks.
+def _check_marks(quteproc, expected, contains):
+    """Make sure the given line does (not) exist in the quickmarks.
 
     Args:
-        quickmarks: True to check the quickmarks file instead of bookmarks.
         expected: The line to search for.
         contains: True if the line should be there, False otherwise.
     """
-    if quickmarks:
-        mark_file = os.path.join(quteproc.basedir, 'config', 'quickmarks')
-    else:
-        mark_file = os.path.join(quteproc.basedir, 'config', 'bookmarks',
-                                 'urls')
+    mark_file = os.path.join(quteproc.basedir, 'config', 'quickmarks')
 
     quteproc.clear_data()  # So we don't match old messages
     quteproc.send_cmd(':save')
@@ -50,21 +43,11 @@ def _check_marks(quteproc, quickmarks, expected, contains):
     assert matched_line == contains, lines
 
 
-@bdd.then(bdd.parsers.parse('the bookmark file should contain "{line}"'))
-def bookmark_file_contains(quteproc, line):
-    _check_marks(quteproc, quickmarks=False, expected=line, contains=True)
-
-
-@bdd.then(bdd.parsers.parse('the bookmark file should not contain "{line}"'))
-def bookmark_file_does_not_contain(quteproc, line):
-    _check_marks(quteproc, quickmarks=False, expected=line, contains=False)
-
-
 @bdd.then(bdd.parsers.parse('the quickmark file should contain "{line}"'))
 def quickmark_file_contains(quteproc, line):
-    _check_marks(quteproc, quickmarks=True, expected=line, contains=True)
+    _check_marks(quteproc, expected=line, contains=True)
 
 
 @bdd.then(bdd.parsers.parse('the quickmark file should not contain "{line}"'))
 def quickmark_file_does_not_contain(quteproc, line):
-    _check_marks(quteproc, quickmarks=True, expected=line, contains=False)
+    _check_marks(quteproc, expected=line, contains=False)

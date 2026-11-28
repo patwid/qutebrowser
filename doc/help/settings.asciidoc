@@ -585,15 +585,13 @@ Default:
 * +pass:[J]+: +pass:[tab-next]+
 * +pass:[K]+: +pass:[tab-prev]+
 * +pass:[L]+: +pass:[forward]+
-* +pass:[M]+: +pass:[bookmark-add]+
 * +pass:[N]+: +pass:[search-prev]+
 * +pass:[O]+: +pass:[cmd-set-text -s :open -t]+
 * +pass:[PP]+: +pass:[open -t -- {primary}]+
 * +pass:[Pp]+: +pass:[open -t -- {clipboard}]+
 * +pass:[R]+: +pass:[reload -f]+
-* +pass:[Sb]+: +pass:[bookmark-list --jump]+
 * +pass:[Sh]+: +pass:[history]+
-* +pass:[Sq]+: +pass:[bookmark-list]+
+* +pass:[Sq]+: +pass:[quickmark-list]+
 * +pass:[Ss]+: +pass:[set]+
 * +pass:[T]+: +pass:[cmd-set-text -sr :tab-focus]+
 * +pass:[U]+: +pass:[undo -w]+
@@ -611,7 +609,6 @@ Default:
 * +pass:[f]+: +pass:[hint]+
 * +pass:[g$]+: +pass:[tab-focus -1]+
 * +pass:[g0]+: +pass:[tab-focus 1]+
-* +pass:[gB]+: +pass:[cmd-set-text -s :bookmark-load -t]+
 * +pass:[gC]+: +pass:[tab-clone]+
 * +pass:[gD]+: +pass:[tab-give]+
 * +pass:[gJ]+: +pass:[tab-move +]+
@@ -620,7 +617,6 @@ Default:
 * +pass:[gU]+: +pass:[navigate up -t]+
 * +pass:[g^]+: +pass:[tab-focus 1]+
 * +pass:[ga]+: +pass:[open -t]+
-* +pass:[gb]+: +pass:[cmd-set-text -s :bookmark-load]+
 * +pass:[gd]+: +pass:[download]+
 * +pass:[gf]+: +pass:[view-source]+
 * +pass:[gg]+: +pass:[scroll-to-perc 0]+
@@ -673,7 +669,6 @@ Default:
 * +pass:[tsu]+: +pass:[config-cycle -p -t -u {url} content.javascript.enabled ;; reload]+
 * +pass:[u]+: +pass:[undo]+
 * +pass:[v]+: +pass:[mode-enter caret]+
-* +pass:[wB]+: +pass:[cmd-set-text -s :bookmark-load -w]+
 * +pass:[wIf]+: +pass:[devtools-focus]+
 * +pass:[wIh]+: +pass:[devtools left]+
 * +pass:[wIj]+: +pass:[devtools bottom]+
@@ -1747,7 +1742,6 @@ Valid values:
 
  * +searchengines+
  * +quickmarks+
- * +bookmarks+
  * +history+
  * +filesystem+
 
@@ -1755,7 +1749,6 @@ Default:
 
 - +pass:[searchengines]+
 - +pass:[quickmarks]+
-- +pass:[bookmarks]+
 - +pass:[history]+
 - +pass:[filesystem]+
 

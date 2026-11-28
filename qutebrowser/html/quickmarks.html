@@ -46,21 +46,4 @@ th {
 <span class="empty-msg">You have no quickmarks</span>
 {% endif %}
 
-<h1 id="bookmarks">Bookmarks</h1>
-
-{% if bookmarks|length %}
-<table class="bmarks">
-    <tbody>
-    {% for url, title in bookmarks %}
-    <tr>
-        <td class="name"><a href="{{url}}">{{title | default(url, true)}}</a></td>
-        <td class="url"><a href="{{url}}">{{url}}</a></td>
-    </tr>
-    {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<span class="empty-msg">You have no bookmarks</span>
-{% endif %}
-
 {% endblock %}

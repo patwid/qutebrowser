@@ -160,17 +160,14 @@ def data_for_url(url: QUrl) -> tuple[str, bytes]:
     return mimetype, data
 
 
-@add_handler('bookmarks')
-def qute_bookmarks(_url: QUrl) -> _HandlerRet:
-    """Handler for qute://bookmarks. Display all quickmarks / bookmarks."""
-    bookmarks = sorted(objreg.get('bookmark-manager').marks.items(),
-                       key=lambda x: x[1])  # Sort by title
+@add_handler('quickmarks')
+def qute_quickmarks(_url: QUrl) -> _HandlerRet:
+    """Handler for qute://quickmarks. Display all quickmarks."""
     quickmarks = sorted(objreg.get('quickmark-manager').marks.items(),
                         key=lambda x: x[0])  # Sort by name
 
-    src = jinja.render('bookmarks.html',
-                       title='Bookmarks',
-                       bookmarks=bookmarks,
+    src = jinja.render('quickmarks.html',
+                       title='Quickmarks',
                        quickmarks=quickmarks)
     return 'text/html', src
 
@@ -501,14 +498,11 @@ def qute_resource(url: QUrl) -> _HandlerRet:
 @add_handler('start')
 def qute_start(_url: QUrl) -> _HandlerRet:
     """Handler for qute://start."""
-    bookmarks = sorted(objreg.get('bookmark-manager').marks.items(),
-                       key=lambda x: x[1])  # Sort by title
     quickmarks = sorted(objreg.get('quickmark-manager').marks.items(),
                         key=lambda x: x[0])  # Sort by name
     searchurl = config.val.url.searchengines['DEFAULT']
     page = jinja.render('startpage.html',
                         title='Welcome to qutebrowser',
-                        bookmarks=bookmarks,
                         search_url=searchurl,
                         quickmarks=quickmarks)
     return 'text/html', page

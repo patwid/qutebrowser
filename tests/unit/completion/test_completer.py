@@ -78,7 +78,6 @@ def miscmodels_patch(mocker):
     m.command = func('command')
     m.helptopic = func('helptopic')
     m.quickmark = func('quickmark')
-    m.bookmark = func('bookmark')
     m.tabs = func('tabs')
     m.bind = func('bind')
     m.url = func('url')
@@ -312,9 +311,9 @@ def test_on_selection_changed(before, newtxt, after, completer_obj,
 
 def test_quickcomplete_flicker(status_command_stub, completer_obj,
                                completion_widget_stub, config_stub):
-    """Validate fix for #1519: bookmark-load background highlighting quirk.
+    """Validate fix for #1519: quickmark-load background highlighting quirk.
 
-    For commands like bookmark-load and open with maxsplit=0, a commandline
+    For commands like quickmark-load and open with maxsplit=0, a commandline
     that looks like ':open someurl |' is considered to be completing the first
     arg with pattern 'someurl ' (note trailing whitespace). As this matches the
     one completion available, it keeps the completionmenu open.

@@ -1,141 +1,4 @@
-Feature: quickmarks and bookmarks
-
-    ## bookmarks
-
-    Scenario: Saving a bookmark
-        When I open data/title.html
-        And I run :bookmark-add
-        Then the message "Bookmarked http://localhost:*/data/title.html" should be shown
-        And the bookmark file should contain "http://localhost:*/data/title.html Test title"
-
-    Scenario: Saving a bookmark with a provided url and title
-        When I run :bookmark-add http://example.com "some example title"
-        Then the message "Bookmarked http://example.com" should be shown
-        And the bookmark file should contain "http://example.com some example title"
-
-    Scenario: Saving a bookmark with a url but no title
-        When I run :bookmark-add http://example.com
-        Then the error "Title must be provided if url has been provided" should be shown
-
-    Scenario: Saving a bookmark with an invalid url
-        When I set url.auto_search to never
-        And I run :bookmark-add foo! "some example title"
-        Then the error "Invalid URL" should be shown
-
-    Scenario: Saving a duplicate bookmark
-        Given I have a fresh instance
-        When I open data/title.html
-        And I run :bookmark-add
-        And I run :bookmark-add
-        Then the error "Bookmark already exists!" should be shown
-
-    Scenario: Loading a bookmark
-        When I run :tab-only
-        And I run :bookmark-load http://localhost:(port)/data/numbers/1.txt
-        Then data/numbers/1.txt should be loaded
-        And the following tabs should be open:
-            """
-            - data/numbers/1.txt (active)
-            """
-
-    Scenario: Loading a bookmark in a new tab
-        Given I open about:blank
-        When I run :tab-only
-        And I run :bookmark-load -t http://localhost:(port)/data/numbers/2.txt
-        Then data/numbers/2.txt should be loaded
-        And the following tabs should be open:
-            """
-            - about:blank
-            - data/numbers/2.txt (active)
-            """
-
-    Scenario: Loading a bookmark in a background tab
-        Given I open about:blank
-        When I run :tab-only
-        And I run :bookmark-load -b http://localhost:(port)/data/numbers/3.txt
-        Then data/numbers/3.txt should be loaded
-        And the following tabs should be open:
-            """
-            - about:blank (active)
-            - data/numbers/3.txt
-            """
-
-    Scenario: Loading a bookmark in a new window
-        Given I open about:blank
-        When I run :tab-only
-        And I run :bookmark-load -w http://localhost:(port)/data/numbers/4.txt
-        And I wait until data/numbers/4.txt is loaded
-        Then the session should look like:
-            """
-            windows:
-            - tabs:
-              - active: true
-                history:
-                - active: true
-                  url: about:blank
-            - tabs:
-              - active: true
-                history:
-                - active: true
-                  url: http://localhost:*/data/numbers/4.txt
-            """
-
-    Scenario: Loading a bookmark with -t and -b
-        When I run :bookmark-load -t -b about:blank
-        Then the error "Only one of -t/-b/-w/-p can be given!" should be shown
-
-    Scenario: Deleting a bookmark which does not exist
-        When I run :bookmark-del doesnotexist
-        Then the error "Bookmark 'doesnotexist' not found!" should be shown
-
-    Scenario: Deleting a bookmark
-        When I open data/numbers/5.txt
-        And I run :bookmark-add
-        And I run :bookmark-del http://localhost:(port)/data/numbers/5.txt
-        Then the bookmark file should not contain "http://localhost:*/data/numbers/5.txt *"
-
-    Scenario: Deleting all bookmarks
-        When I open data/numbers/1.txt
-        And I run :bookmark-add
-        And I open data/numbers/2.txt
-        And I run :bookmark-add
-        And I run :bookmark-del --all
-        Then the message "Bookmarks cleared." should be shown
-        And the bookmark file should not contain "http://localhost:*/data/numbers/1.txt *"
-        And the bookmark file should not contain "http://localhost:*/data/numbers/2.txt *"
-
-    Scenario: Deleting all bookmarks with url
-        When I open data/numbers/1.txt
-        And I run :bookmark-add
-        And I run :bookmark-del --all https://example.org
-        Then the error "Cannot specify url and --all" should be shown
-        And the bookmark file should contain "http://localhost:*/data/numbers/1.txt *"
-
-    Scenario: Deleting the current page's bookmark if it doesn't exist
-        When I open data/hello.txt
-        And I run :bookmark-del
-        Then the error "Bookmark 'http://localhost:(port)/data/hello.txt' not found!" should be shown
-
-    Scenario: Deleting the current page's bookmark
-        When I open data/numbers/6.txt
-        And I run :bookmark-add
-        And I run :bookmark-del
-        Then the bookmark file should not contain "http://localhost:*/data/numbers/6.txt *"
-
-    Scenario: Toggling a bookmark
-        When I open data/numbers/7.txt
-        And I run :bookmark-add
-        And I run :bookmark-add --toggle
-        Then the bookmark file should not contain "http://localhost:*/data/numbers/7.txt *"
-
-    Scenario: Loading a bookmark with --delete
-        When I run :bookmark-add http://localhost:(port)/data/numbers/8.txt "eight"
-        And I run :bookmark-load -d http://localhost:(port)/data/numbers/8.txt
-        Then the bookmark file should not contain "http://localhost:*/data/numbers/8.txt *"
-
-    Scenario:
-        When I run :bookmarks-reload
-        Then the message "Bookmarks reloaded." should be shown
+Feature: quickmarks
 
     ## quickmarks
 
@@ -275,31 +138,23 @@ Feature: quickmarks and bookmarks
     Scenario: Listing quickmarks
         When I run :quickmark-add http://localhost:(port)/data/numbers/20.txt twenty
         And I run :quickmark-add http://localhost:(port)/data/numbers/21.txt twentyone
-        And I open qute://bookmarks
+        And I open qute://quickmarks
         Then the page should contain the plaintext "twenty"
         And the page should contain the plaintext "twentyone"
 
-    Scenario: Listing bookmarks
-        When I open data/title.html#unique-url in a new tab
-        And I run :bookmark-add
-        And I open qute://bookmarks
-        Then the page should contain the plaintext "Test title"
-
-    Scenario: Following a bookmark
-        When I open data/numbers/1.txt in a new tab
-        And I run :bookmark-add
-        And I open qute://bookmarks
+    Scenario: Following a quickmark
+        When I run :quickmark-add http://localhost:(port)/data/numbers/1.txt one
+        And I open qute://quickmarks in a new tab
         And I hint with args "links current" and follow a
         Then data/numbers/1.txt should be loaded
 
-    Scenario: Following a bookmark and going back/forward
-        When I open data/numbers/1.txt in a new tab
-        And I run :bookmark-add
-        And I open qute://bookmarks
+    Scenario: Following a quickmark and going back/forward
+        When I run :quickmark-add http://localhost:(port)/data/numbers/1.txt one
+        And I open qute://quickmarks in a new tab
         And I hint with args "links current" and follow a
         And I wait until data/numbers/1.txt is loaded
         And I run :back
-        And I wait until qute://bookmarks is loaded
+        And I wait until qute://quickmarks is loaded
         And I run :forward
         Then data/numbers/1.txt should be loaded
 
