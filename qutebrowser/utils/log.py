@@ -122,7 +122,6 @@ webelem = logging.getLogger('webelem')
 prompt = logging.getLogger('prompt')
 network = logging.getLogger('network')
 sql = logging.getLogger('sql')
-greasemonkey = logging.getLogger('greasemonkey')
 extensions = logging.getLogger('extensions')
 
 LOGGER_NAMES = [
@@ -133,7 +132,7 @@ LOGGER_NAMES = [
     'js', 'qt', 'ipc', 'shlexer',
     'save', 'message', 'config',
     'webelem', 'prompt', 'network', 'sql',
-    'greasemonkey', 'extensions',
+    'extensions',
 ]
 
 

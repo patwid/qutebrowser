@@ -1594,8 +1594,7 @@ class CommandDispatcher:
             world: A world ID or name to
                    run the snippet in. Predefined world names are:
 
-                      - `main` (same world as the web page's JavaScript and
-                        Greasemonkey, unless overridden via `@qute-js-world`)
+                      - `main` (same world as the web page's JavaScript)
                       - `application` (used for internal qutebrowser JS code,
                         should not be used via `:jseval` unless you know what
                         you're doing)

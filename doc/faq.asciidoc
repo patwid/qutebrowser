@@ -217,32 +217,6 @@ Why does it take longer to open a URL in qutebrowser than in chromium?::
     running already) using socat which is much faster and starts a new
     qutebrowser if it is not running already.
 
-How do I make qutebrowser use greasemonkey scripts?::
-    There is currently no UI elements to handle managing greasemonkey scripts.
-    All management of what scripts are installed or disabled is done in the
-    filesystem by you. qutebrowser reads all files that have an extension of
-    `.js` from the `<data>/greasemonkey/` folder and attempts to load them.
-    Where `<data>` is the qutebrowser data directory shown in the `Paths`
-    section of the page displayed by `:version`. If you want to disable a
-    script just rename it, for example, to have `.disabled` on the end, after
-    the `.js` extension. To reload scripts from that directory run the command
-    `:greasemonkey-reload`.
-+
-Troubleshooting: to check that your script is being loaded when
-`:greasemonkey-reload` runs you can start qutebrowser with the arguments
-`--debug --logfilter greasemonkey,js` and check the messages on the
-program's standard output for errors parsing or loading your script.
-You may also see javascript errors if your script is expecting an environment
-that we fail to provide.
-+
-Note that there are some missing features which you may run into:
-
-. Some scripts expect `GM_xmlhttpRequest` to ignore Cross Origin Resource
-  Sharing restrictions, this is currently not supported, so scripts making
-  requests to third party sites will often fail to function correctly.
-. Any greasemonkey API function to do with adding UI elements is not currently
-  supported. That means context menu extentensions and background pages.
-
 How do I change the `WM_CLASS` used by qutebrowser windows?::
     Qt only supports setting `WM_CLASS` globally, which you can do by starting
     with `--qt-arg name foo`. Note that all windows are part of the same
@@ -326,9 +300,6 @@ There is a total of four possible approaches to get dark websites:
   often yields worse results compared to the above ones, but it's possible to toggle it
   dynamically using a binding like `:bind ,d config-cycle content.user_stylesheets
   ~/path/to/solarized-everything-css/css/gruvbox/gruvbox-all-sites.css ""`
-- Finally, qutebrowser's Greasemonkey support should allow for running a
-  https://github.com/darkreader/darkreader/issues/926#issuecomment-575893299[stripped down version]
-  of the Dark Reader extension. This is mostly untested, though.
 
 How do I make copy to clipboard buttons work?::
 You can `:set content.javascript.clipboard access` to allow this globally (not

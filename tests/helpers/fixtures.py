@@ -31,7 +31,7 @@ from qutebrowser.config import (config, configdata, configtypes, configexc,
                                 configfiles, configcache, stylesheet)
 from qutebrowser.api import config as configapi
 from qutebrowser.utils import objreg, standarddir, version
-from qutebrowser.browser import greasemonkey, history, qutescheme
+from qutebrowser.browser import history, qutescheme
 from qutebrowser.misc import savemanager, sql, objects, httpclient
 from qutebrowser.keyinput import modeman
 from qutebrowser.qt import sip
@@ -149,12 +149,6 @@ def fake_web_tab(stubs, tab_registry, mode_manager, qapp):
     return stubs.FakeWebTab
 
 
-@pytest.fixture
-def greasemonkey_manager(monkeypatch, data_tmpdir, config_tmpdir):
-    gm_manager = greasemonkey.GreasemonkeyManager()
-    monkeypatch.setattr(greasemonkey, 'gm_manager', gm_manager)
-
-
 @pytest.fixture(scope='session')
 def testdata_scheme(qapp):
     try:
@@ -181,7 +175,7 @@ def testdata_scheme(qapp):
 
 
 @pytest.fixture
-def web_tab_setup(qtbot, tab_registry, greasemonkey_manager, fake_args, config_stub,
+def web_tab_setup(qtbot, tab_registry, fake_args, config_stub,
                   testdata_scheme):
     """Shared setup for webengine_tab."""
     # Make sure error logging via JS fails tests

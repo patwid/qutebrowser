@@ -40,7 +40,7 @@ from qutebrowser.commands import runners
 from qutebrowser.config import (config, websettings, configfiles, configinit,
                                 qtargs)
 from qutebrowser.browser import (urlmarks, history, browsertab,
-                                 downloads, greasemonkey)
+                                 downloads)
 from qutebrowser.browser.network import proxy
 from qutebrowser.extensions import loader
 from qutebrowser.keyinput import macros, eventfilter
@@ -463,9 +463,6 @@ def _init_modules(*, args):
     log.init.debug("Initializing quickmarks...")
     quickmark_manager = urlmarks.QuickmarkManager(objects.qapp)
     objreg.register('quickmark-manager', quickmark_manager)
-
-    log.init.debug("Initializing Greasemonkey...")
-    greasemonkey.init()
 
     log.init.debug("Misc initialization...")
     macros.init()

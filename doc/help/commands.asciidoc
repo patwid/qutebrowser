@@ -69,7 +69,6 @@ possible to run or bind multiple commands by separating them with `;;`.
 |<<fake-key,fake-key>>|Send a fake keypress or key string to the website or qutebrowser.
 |<<forward,forward>>|Go forward in the history of the current tab.
 |<<fullscreen,fullscreen>>|Toggle fullscreen mode.
-|<<greasemonkey-reload,greasemonkey-reload>>|Re-read Greasemonkey scripts from disk.
 |<<help,help>>|Show help about a command or setting.
 |<<hint,hint>>|Start hinting.
 |<<history,history>>|Show browsing history.
@@ -607,19 +606,6 @@ Toggle fullscreen mode.
 * +*-e*+, +*--enter*+: Activate fullscreen and do not toggle if it is already active.
 
 
-[[greasemonkey-reload]]
-=== greasemonkey-reload
-Syntax: +:greasemonkey-reload [*--force*] [*--quiet*]+
-
-Re-read Greasemonkey scripts from disk.
-
-The scripts are read from a 'greasemonkey' subdirectory in qutebrowser's data or config directories (see `:version`).
-
-==== optional arguments
-* +*-f*+, +*--force*+: For any scripts that have required dependencies, re-download them.
-
-* +*-q*+, +*--quiet*+: Suppress message after loading scripts.
-
 [[help]]
 === help
 Syntax: +:help [*--tab*] [*--bg*] [*--window*] ['topic']+
@@ -776,8 +762,7 @@ Evaluate a JavaScript string.
 * +*-w*+, +*--world*+: A world ID or name to run the snippet in. Predefined world names are:
  
 
- - `main` (same world as the web page's JavaScript and
- Greasemonkey, unless overridden via `@qute-js-world`)
+ - `main` (same world as the web page's JavaScript)
  - `application` (used for internal qutebrowser JS code,
  should not be used via `:jseval` unless you know what
  you're doing)

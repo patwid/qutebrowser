@@ -114,27 +114,6 @@ Feature: Javascript stuff
     # https://github.com/qutebrowser/qutebrowser/issues/1190
     # https://github.com/qutebrowser/qutebrowser/issues/2495
 
-    Scenario: Have a GreaseMonkey script run at page start
-        When I have a GreaseMonkey file saved for document-start with noframes unset
-        And I run :greasemonkey-reload
-        And I open data/hints/iframe.html
-        And I wait for "* wrapped loaded" in the log
-        Then the javascript message "Script is running on /data/hints/iframe.html" should be logged
-
-    Scenario: Have a GreaseMonkey script running on frames
-        When I have a GreaseMonkey file saved for document-end with noframes unset
-        And I run :greasemonkey-reload
-        And I open data/hints/iframe.html
-        And I wait for "* wrapped loaded" in the log
-        Then the javascript message "Script is running on /data/hints/html/wrapped.html" should be logged
-
-    Scenario: Have a GreaseMonkey script running on noframes
-        When I have a GreaseMonkey file saved for document-end with noframes set
-        And I run :greasemonkey-reload
-        And I open data/hints/iframe.html
-        And I wait for "* wrapped loaded" in the log
-        Then the javascript message "Script is running on /data/hints/html/wrapped.html" should not be logged
-
     Scenario: Per-URL localstorage setting
         When I set content.local_storage to false
         And I run :set -tu http://localhost:*/data2/* content.local_storage true

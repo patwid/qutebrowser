@@ -18,7 +18,7 @@ from qutebrowser.qt.network import QAuthenticator
 from qutebrowser.qt.webenginecore import QWebEnginePage, QWebEngineScript, QWebEngineHistory
 
 from qutebrowser.config import config
-from qutebrowser.browser import browsertab, eventfilter, shared, webelem, greasemonkey
+from qutebrowser.browser import browsertab, eventfilter, shared, webelem
 from qutebrowser.browser.webengine import (webview, webengineelem,
                                            webenginesettings, certificateerror,
                                            webengineinspector)
@@ -859,7 +859,6 @@ class _WebEngineScripts(QObject):
         super().__init__(parent)
         self._tab = tab
         self._widget = cast(webview.WebEngineView, None)
-        self._greasemonkey = greasemonkey.gm_manager
 
     def connect_signals(self):
         """Connect signals to our private slots."""
@@ -912,9 +911,6 @@ class _WebEngineScripts(QObject):
         self._inject_js('js', js_code, subframes=True)
         self._init_stylesheet()
 
-        self._greasemonkey.scripts_reloaded.connect(
-            self._inject_all_greasemonkey_scripts)
-        self._inject_all_greasemonkey_scripts()
         self._inject_site_specific_quirks()
 
     def _init_stylesheet(self):
@@ -931,85 +927,6 @@ class _WebEngineScripts(QObject):
             javascript.assemble('stylesheet', 'set_css', css),
         )
         self._inject_js('stylesheet', js_code, subframes=True)
-
-    @pyqtSlot()
-    def _inject_all_greasemonkey_scripts(self):
-        scripts = self._greasemonkey.all_scripts()
-        self._inject_greasemonkey_scripts(scripts)
-
-    def _remove_all_greasemonkey_scripts(self):
-        page_scripts = self._widget.page().scripts()
-        for script in page_scripts.toList():
-            if script.name().startswith("GM-"):
-                log.greasemonkey.debug('Removing script: {}'
-                                       .format(script.name()))
-                removed = page_scripts.remove(script)
-                assert removed, script.name()
-
-    def _inject_greasemonkey_scripts(self, scripts):
-        """Register user JavaScript files with the current tab.
-
-        Args:
-            scripts: A list of GreasemonkeyScripts.
-        """
-        if sip.isdeleted(self._widget):
-            return
-
-        # Since we are inserting scripts into a per-tab collection,
-        # rather than just injecting scripts on page load, we need to
-        # make sure we replace existing scripts, not just add new ones.
-        # While, taking care not to remove any other scripts that might
-        # have been added elsewhere, like the one for stylesheets.
-        page_scripts = self._widget.page().scripts()
-        self._remove_all_greasemonkey_scripts()
-
-        seen_names = set()
-        for script in scripts:
-            while script.full_name() in seen_names:
-                script.dedup_suffix += 1
-            seen_names.add(script.full_name())
-
-            new_script = QWebEngineScript()
-
-            try:
-                world = int(script.jsworld)
-                if not 0 <= world <= qtutils.MAX_WORLD_ID:
-                    log.greasemonkey.error(
-                        f"script {script.name} has invalid value for '@qute-js-world'"
-                        f": {script.jsworld}, should be between 0 and "
-                        f"{qtutils.MAX_WORLD_ID}")
-                    continue
-            except ValueError:
-                try:
-                    world = _JS_WORLD_MAP[usertypes.JsWorld[script.jsworld.lower()]]
-                except KeyError:
-                    log.greasemonkey.error(
-                        f"script {script.name} has invalid value for '@qute-js-world'"
-                        f": {script.jsworld}")
-                    continue
-            new_script.setWorldId(world)
-
-            # Corresponds to "@run-at document-end" which is the default according to
-            # https://wiki.greasespot.net/Metadata_Block#.40run-at - however,
-            # QtWebEngine uses QWebEngineScript.InjectionPoint.Deferred (@run-at document-idle) as
-            # default.
-            #
-            # NOTE that this needs to be done before setSourceCode, so that
-            # QtWebEngine's parsing of GreaseMonkey tags will override it if there is a
-            # @run-at comment.
-            new_script.setInjectionPoint(QWebEngineScript.InjectionPoint.DocumentReady)
-
-            new_script.setSourceCode(script.code())
-            new_script.setName(script.full_name())
-            new_script.setRunsOnSubFrames(script.runs_on_sub_frames)
-
-            if script.needs_document_end_workaround():
-                log.greasemonkey.debug(
-                    f"Forcing @run-at document-end for {script.name}")
-                new_script.setInjectionPoint(QWebEngineScript.InjectionPoint.DocumentReady)
-
-            log.greasemonkey.debug(f'adding script: {new_script.name()}')
-            page_scripts.insert(new_script)
 
     def _get_quirks(self):
         """Get a list of all available JS quirks."""
