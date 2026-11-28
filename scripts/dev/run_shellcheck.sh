@@ -9,7 +9,6 @@ set -e
 
 script_list=$(mktemp)
 find scripts/ -name '*.sh' > "$script_list"
-find misc/userscripts/ -type f -exec grep -lE '[/ ][bd]ash$|[/ ]sh$|[/ ]ksh$' {} + >> "$script_list"
 mapfile -t scripts < "$script_list"
 rm -f "$script_list"
 

@@ -163,12 +163,6 @@
             pkgs.qt6.qtsvg
           ];
 
-          postPatch = ''
-            # Let qutebrowser find the userscripts installed below.
-            substituteInPlace qutebrowser/utils/standarddir.py \
-              --replace-fail "'/usr'" "'$out'"
-          '';
-
           # In-app documentation for :help
           preBuild = ''
             python3 scripts/asciidoc2html.py
@@ -185,9 +179,6 @@
             done
             install -Dm644 qutebrowser/icons/qutebrowser.svg \
               "$out/share/icons/hicolor/scalable/apps/qutebrowser.svg"
-
-            rm -rf misc/userscripts/__pycache__
-            install -Dm755 -t "$out/share/qutebrowser/userscripts" misc/userscripts/*
           '';
 
 
@@ -242,8 +233,7 @@
         misc = mkCheck pkgs "misc" ''
           # misc_checks.py lists the files to check via git.
           git init --quiet && git add --all
-          for check in vcs spelling pyqt-imports userscript-descriptions \
-              userscript-shebangs vim-modelines; do
+          for check in vcs spelling pyqt-imports vim-modelines; do
             python3 scripts/dev/misc_checks.py "$check"
           done
         '';

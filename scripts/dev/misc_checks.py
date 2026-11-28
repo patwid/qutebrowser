@@ -255,7 +255,6 @@ def check_pyqt_imports(args: argparse.Namespace) -> bool | None:
     """Check for direct PyQt imports."""
     ignored = [
         pathlib.Path("qutebrowser", "qt"),
-        pathlib.Path("misc", "userscripts"),
         pathlib.Path("scripts"),
     ]
     patterns = [
@@ -291,68 +290,6 @@ def check_vcs_conflict(args: argparse.Namespace) -> bool | None:
         return None
 
 
-def check_userscripts_descriptions(_args: argparse.Namespace | None = None) -> bool:
-    """Make sure all userscripts are described properly."""
-    folder = pathlib.Path('misc/userscripts')
-    readme = folder / 'README.md'
-
-    described = set()
-    for line in readme.open('r'):
-        line = line.strip()
-        if line == '## Others':
-            break
-
-        match = re.fullmatch(r'- \[([^]]*)\].*', line)
-        if match:
-            described.add(match.group(1))
-
-    present = {path.name for path in folder.iterdir()}
-    present -= {'README.md', '.mypy_cache', '__pycache__'}
-
-    missing = present - described
-    additional = described - present
-    ok = True
-
-    if missing:
-        print("Missing userscript descriptions: {}".format(missing))
-        ok = False
-    if additional:
-        print("Additional userscript descriptions: {}".format(additional))
-        ok = False
-
-    return ok
-
-
-def check_userscript_shebangs(_args: argparse.Namespace) -> bool:
-    """Check that we're using /usr/bin/env in shebangs and scripts are executable."""
-    ok = True
-    folder = pathlib.Path('misc/userscripts')
-
-    for sub in folder.iterdir():
-        if sub.is_dir() or sub.name == 'README.md':
-            continue
-
-        if not os.access(sub, os.X_OK):
-            print(f"{sub} is not marked as executable")
-            ok = False
-
-        with sub.open('r', encoding='utf-8') as f:
-            shebang = f.readline().rstrip('\n')
-        assert shebang.startswith('#!'), shebang
-        shebang = shebang[2:]
-
-        binary = shebang.split()[0]
-        if binary not in ['/bin/sh', '/usr/bin/env']:
-            bin_name = pathlib.Path(binary).name
-            print(f"In {sub}, use #!/usr/bin/env {bin_name} instead of #!{binary}")
-            ok = False
-        elif shebang in ['/usr/bin/env python', '/usr/bin/env python2']:
-            print(f"In {sub}, use #!/usr/bin/env python3 instead of #!{shebang}")
-            ok = False
-
-    return ok
-
-
 def check_vim_modelines(args: argparse.Namespace) -> bool:
     """Check that we're not using vim modelines."""
     ok = True
@@ -378,8 +315,6 @@ def main() -> int:
         'vcs': check_vcs_conflict,
         'spelling': check_spelling,
         'pyqt-imports': check_pyqt_imports,
-        'userscript-descriptions': check_userscripts_descriptions,
-        'userscript-shebangs': check_userscript_shebangs,
         'vim-modelines': check_vim_modelines,
     }
 
