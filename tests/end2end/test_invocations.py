@@ -221,6 +221,26 @@ def test_command_on_start(request, quteproc_new):
     quteproc_new.wait_for_quit()
 
 
+def test_quickmarks_arg(request, quteproc_new, tmp_path):
+    """Quickmarks are read from and saved to the file given via --quickmarks."""
+    quickmarks = tmp_path / 'marks'
+    quickmarks.write_text('one about:blank?one\n', encoding='utf-8')
+
+    args = (['--temp-basedir', '--quickmarks', str(quickmarks)] +
+            _base_args(request.config))
+    quteproc_new.start(args)
+
+    quteproc_new.send_cmd(':quickmark-load -t one')
+    quteproc_new.wait_for_load_finished_url('about:blank?one')
+
+    quteproc_new.send_cmd(':quickmark-add about:blank?two two')
+    quteproc_new.send_cmd(':quit')
+    quteproc_new.wait_for_quit()
+
+    assert quickmarks.read_text(encoding='utf-8').splitlines() == [
+        'one about:blank?one', 'two about:blank?two']
+
+
 def test_initial_private_browsing(request, quteproc_new):
     """Make sure the initial window is private when the setting is set."""
     args = (_base_args(request.config) +

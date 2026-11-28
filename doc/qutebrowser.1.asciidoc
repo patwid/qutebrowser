@@ -46,6 +46,9 @@ show it.
 *-C* 'CONFIG', *--config-py* 'CONFIG'::
     Path to config.py.
 
+*--quickmarks* 'FILE'::
+    Path to the quickmarks file, which quickmarks are read from and saved to.
+
 *-V*, *--version*::
     Show version and quit.
 

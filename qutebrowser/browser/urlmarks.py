@@ -124,13 +124,12 @@ class QuickmarkManager(UrlMarkManager):
     """
 
     def _init_lineparser(self):
-        self._lineparser = lineparser.LineParser(
-            standarddir.config(), 'quickmarks', parent=self)
+        dirname, basename = os.path.split(standarddir.quickmarks())
+        self._lineparser = lineparser.LineParser(dirname, basename, parent=self)
 
     def _init_savemanager(self, save_manager):
-        filename = os.path.join(standarddir.config(), 'quickmarks')
         save_manager.add_saveable('quickmark-manager', self.save, self.changed,
-                                  filename=filename)
+                                  filename=standarddir.quickmarks())
 
     def _parse_line(self, line):
         try:

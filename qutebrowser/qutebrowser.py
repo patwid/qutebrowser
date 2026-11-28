@@ -33,6 +33,9 @@ def get_argparser():
                         "storage.")
     parser.add_argument('-C', '--config-py', help="Path to config.py.",
                         metavar='CONFIG')
+    parser.add_argument('--quickmarks', help="Path to the quickmarks file, "
+                        "which quickmarks are read from and saved to.",
+                        metavar='FILE')
     parser.add_argument('-V', '--version', help="Show version and quit.",
                         action='store_true')
     parser.add_argument('-s', '--set', help="Set a temporary setting for "

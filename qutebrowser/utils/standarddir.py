@@ -32,6 +32,7 @@ class _Location(enum.Enum):
     download = enum.auto()
     runtime = enum.auto()
     config_py = enum.auto()
+    quickmarks = enum.auto()
 
 
 APPNAME = 'qutebrowser'
@@ -75,6 +76,12 @@ def _init_config(args: argparse.Namespace | None) -> None:
         config_py_file = os.path.abspath(args.config_py)
     _locations[_Location.config_py] = config_py_file
 
+    quickmarks_file = os.path.join(_locations[_Location.config], 'quickmarks')
+    if getattr(args, 'quickmarks', None) is not None:
+        assert args is not None
+        quickmarks_file = os.path.abspath(args.quickmarks)
+    _locations[_Location.quickmarks] = quickmarks_file
+
 
 def config() -> str:
     """Get the location for the config directory."""
@@ -88,6 +95,15 @@ def config_py() -> str:
     with the --config-py argument.
     """
     return _locations[_Location.config_py]
+
+
+def quickmarks() -> str:
+    """Get the location for the quickmarks file.
+
+    Usually, it is in standarddir.config(), but this can be overridden with
+    the --quickmarks argument.
+    """
+    return _locations[_Location.quickmarks]
 
 
 def _init_data(args: argparse.Namespace | None) -> None:
