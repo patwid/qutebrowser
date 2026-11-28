@@ -15,7 +15,7 @@ import subprocess
 from typing import Optional, IO
 from collections.abc import Iterator
 
-from qutebrowser.qt.core import QUrl, QTimer
+from qutebrowser.qt.core import QUrl
 
 from qutebrowser.api import (
     hook,
@@ -28,6 +28,7 @@ from qutebrowser.api import (
 from qutebrowser.api.interceptor import ResourceType
 from qutebrowser.components.utils import blockutils
 from qutebrowser.utils import version  # FIXME: Move needed parts into api namespace?
+from qutebrowser.utils import usertypes
 
 try:
     import adblock
@@ -155,7 +156,7 @@ class BraveAdBlocker:
         self._has_basedir = has_basedir
         self._cache_path = data_dir / "adblock-cache.dat"
         self._update_running = False
-        self._auto_update_timers: list[QTimer] = []
+        self._auto_update_timers: list[usertypes.Timer] = []
         try:
             self._engine = adblock.Engine(adblock.FilterSet())
         except AttributeError:
@@ -327,10 +328,10 @@ class BraveAdBlocker:
 
     def start_auto_update(self) -> None:
         """Check for outdated block lists soon, and then regularly."""
-        startup_timer = QTimer()
+        startup_timer = usertypes.Timer(name='adblock-update-startup')
         startup_timer.setSingleShot(True)
         startup_timer.setInterval(_AUTO_UPDATE_STARTUP_DELAY)
-        regular_timer = QTimer()
+        regular_timer = usertypes.Timer(name='adblock-update-regular')
         regular_timer.setInterval(_AUTO_UPDATE_CHECK_INTERVAL)
         self._auto_update_timers = [startup_timer, regular_timer]
         for timer in self._auto_update_timers:
